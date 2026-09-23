@@ -169,6 +169,19 @@ begin
 exception when insufficient_privilege then null;
 end;
 $$;
+-- Trigger laufen auch nach Entzug von EXECUTE (Härtung) für Personal
+insert into public.bookings (source, external_ref, customer_name, plate, start_at, end_at, parking_type)
+values ('manual', 'T-RLS', 'Personal-Test', 'B-XY 1', now(), now() + interval '2 days', 'outdoor');
+select pg_temp.assert_eq(
+  (select count(*)::int from public.tasks t join public.bookings b on b.id = t.booking_id where b.external_ref = 'T-RLS'),
+  1, 'Trigger erzeugen Aufgabe auch als authenticated');
+do $$
+begin
+  perform public.log_booking_change(gen_random_uuid(), '{}');
+  raise exception 'FEHLER: interne Funktion per RPC aufrufbar';
+exception when insufficient_privilege then null;
+end;
+$$;
 reset role;
 reset request.jwt.claim.sub;
 

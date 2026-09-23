@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.3.1 – 23.09.2026
+
+### Sicherheit & Performance
+- Trigger- und interne Datenbankfunktionen sind nicht mehr per API aufrufbar
+- Feste `search_path` für alle Funktionen
+- RLS-Policies werten Berechtigungen einmal pro Abfrage aus; überlappende Policies aufgelöst
+- Zusätzliche Indizes für Fremdschlüssel
+
 ## 0.3.0 – 23.09.2026
 
 ### Neu

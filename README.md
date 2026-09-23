@@ -15,6 +15,21 @@ npm test                     # Unit-Tests (Vitest)
 npm run build                # Typecheck + Produktions-Build nach dist/
 ```
 
+## Supabase
+
+Migrationen liegen in `supabase/migrations`, Stammdaten in `supabase/seed.sql` (idempotent),
+Edge Functions in `supabase/functions`. Lokale Tests: `npm run test:db` (benötigt Postgres).
+
+**Erstes Admin-Konto:** Nutzer im Supabase-Dashboard unter Authentication anlegen (Selbstregistrierung
+deaktivieren), dann im SQL-Editor freischalten:
+
+```sql
+update public.profiles set role = 'admin', active = true
+where id = (select id from auth.users where email = 'name@firma.de');
+```
+
+Neue Konten sind inaktiv, bis ein Admin sie freischaltet (`profiles.active`).
+
 ## Versionierung (Pflicht bei jeder Änderung)
 
 1. Version in `package.json` erhöhen (`npm version patch|minor|major --no-git-tag-version`):
