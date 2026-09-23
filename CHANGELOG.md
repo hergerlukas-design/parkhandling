@@ -3,6 +3,20 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.4.0 – 23.09.2026
+
+### Neu
+- Anmeldung mit E-Mail und Passwort; Zugang nur für freigeschaltetes Personal, Abmelden in den Einstellungen
+- Buchungsschnittstelle als Adapter-Schicht (`src/booking-adapters/`): manuelles Anlegen und CSV/Excel-Import (.xlsx)
+- Datenbankfunktion `upsert_booking`: idempotent über Quelle + Buchungsnummer, Umbuchungen mit Historie, Leistungen werden nachgebucht bzw. storniert, Storno per Import
+- Import mit automatischer Spaltenzuordnung (merkt sich die letzte Zuordnung), Vorschau mit Prüfung und Ergebnisliste; deutsche Datums-/Zeitformate in Europe/Berlin, getrennte Datums- und Zeitspalten
+- Fahrzeugliste mit Suche (Kennzeichen, Name, Buchungsnummer), Filtern nach Status, Bereich und Abholung, serverseitiger Keyset-Paginierung
+- Fahrzeug-Detail: Stammdaten, Leistungen mit Fortschritt, Bewegungs- und Buchungshistorie
+- Formular „Neue Buchung“ sichert Entwürfe automatisch
+
+### Geändert
+- Öffentliche Supabase-Werte (URL, Publishable Key) stehen in der eingecheckten `.env`; `.env.example` entfällt, Fly-Deploy ohne Build-Argumente
+
 ## 0.3.1 – 23.09.2026
 
 ### Sicherheit & Performance

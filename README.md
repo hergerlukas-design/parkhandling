@@ -7,8 +7,9 @@ Stack: React 19 · TypeScript · Vite · Tailwind CSS 4 · Supabase · Fly.io (n
 
 ## Entwicklung
 
+Supabase-URL und Publishable Key stehen in `.env` (öffentlich, eingecheckt). Abweichungen lokal in `.env.local`.
+
 ```bash
-cp .env.example .env.local   # Supabase-URL und anon Key eintragen
 npm install
 npm run dev                  # http://localhost:5173
 npm test                     # Unit-Tests (Vitest)
@@ -51,7 +52,7 @@ Die Version wird nur in `package.json` gepflegt und zur Build-Zeit als `__APP_VE
 ## Deployment (Fly.io)
 
 ```bash
-fly deploy --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=...
+fly deploy
 ```
 
 nginx liefert `/assets/*` unveränderlich gecacht aus, `index.html`, `sw.js`, `version.json` und

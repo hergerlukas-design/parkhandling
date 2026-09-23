@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Card, Page } from '../components/Page'
+import { signOut, useAuth } from '../lib/auth'
 import { formatBytes, formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
@@ -36,6 +37,7 @@ function useMediaUsage() {
 export function SettingsPage() {
   const update = useStore(updateStore)
   const usage = useMediaUsage()
+  const { session, profile } = useAuth()
 
   return (
     <Page title="Einstellungen">
@@ -70,6 +72,19 @@ export function SettingsPage() {
               Änderungsprotokoll
             </Link>
           </div>
+        </Card>
+        <Card title="Konto">
+          <dl>
+            <Row label="Angemeldet als">{session?.user.email ?? '–'}</Row>
+            <Row label="Rolle">{profile?.role === 'admin' ? 'Admin' : profile?.role === 'driver' ? 'Fahrer' : 'Personal'}</Row>
+          </dl>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="touch-target mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold"
+          >
+            Abmelden
+          </button>
         </Card>
         <Card title="Betrieb">
           <p className="text-sm text-slate-600">

@@ -4,11 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# Öffentliche Supabase-Werte werden zur Build-Zeit eingebettet (fly deploy --build-arg ...)
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
-    VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+# Öffentliche Supabase-Werte kommen aus der eingecheckten .env
 RUN npm run build
 
 # --- Auslieferung (nur statische Dateien) ---
