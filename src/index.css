@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-nav: #0f172a;
+  --color-nav-active: #1e293b;
+
+  /* Abholdatum-Farben (Lageplan) */
+  --color-due-today: #ef4444;
+  --color-due-tomorrow: #f97316;
+  --color-due-week: #eab308;
+  --color-due-later: #22c55e;
+  --color-slot-free: #e2e8f0;
+  --color-slot-blocked: #94a3b8;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+}
+
+@utility touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
