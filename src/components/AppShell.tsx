@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
 import { NAV_ITEMS } from './navigation'
+import { UploadStatus } from './media/UploadStatus'
 import { UpdateBanner } from './UpdateBanner'
 
 export function AppShell() {
@@ -42,6 +43,7 @@ export function AppShell() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <UpdateBanner />
+        <UploadStatus />
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet />
         </main>

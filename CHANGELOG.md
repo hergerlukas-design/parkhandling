@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.3.0 – 23.09.2026
+
+### Neu
+- Media-Service mit Speicher-Abstraktion `MediaStore` (`src/lib/media/`); erste Implementierung Supabase Storage, DB speichert nur provider/bucket/path
+- Bild-Pipeline im Browser (Web Worker): WebP-Vollbild max. 1600 px (~250 KB) und Thumbnail 320 px (~20 KB), EXIF-Ausrichtung berücksichtigt, GPS/EXIF entfernt; JPEG-Fallback ohne WebP-Encoder
+- Unterschriften als verkleinertes PNG
+- Direkter Upload vom Gerät per Signed Upload URL (Edge Function `media-sign`) mit Größenlimit und Rate-Limit pro Gerät
+- Private Buckets `media` und `media-archive` mit hartem Größen- und Typlimit; Auslieferung nur über kurzlebige, gecachte Signed URLs
+- Offline-Queue in IndexedDB mit automatischem Hochladen, Backoff und sichtbarem Upload-Status
+- Thumbnails mit Lazy Loading, Vollbild erst in der Lightbox
+- Einstellungen zeigen Speicherverbrauch und Anzahl Dateien
+
 ## 0.2.0 – 23.09.2026
 
 ### Neu
