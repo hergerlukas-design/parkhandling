@@ -43,3 +43,10 @@ export function formatBytes(bytes: number): string {
   }
   return `${value.toLocaleString('de-DE', { maximumFractionDigits: 1 })} ${units[unit]}`
 }
+
+const moneyFmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+
+/** 1234.5 → "1.234,50 €" */
+export function formatMoney(value: number): string {
+  return moneyFmt.format(value)
+}

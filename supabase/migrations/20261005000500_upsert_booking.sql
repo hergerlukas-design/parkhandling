@@ -2,6 +2,7 @@
 -- Buchungsschnittstelle: idempotentes Anlegen/Aktualisieren (Arbeitsanweisung Abschnitt 4)
 -- Einziger Schreibweg für alle Adapter (manuell, Excel/CSV, später Portal).
 --  * Idempotenz über (source, external_ref); ohne external_ref wird immer neu angelegt
+--  * "id" im JSON: gezielte Bearbeitung einer bestehenden Buchung (manuelles Bearbeiten im UI)
 --  * Umbuchung: nur mitgelieferte Felder werden übernommen, Änderungen landen per
 --    Trigger in booking_history (Quelle = source)
 --  * Leistungen: ["CODE", …] oder [{"code": "ZUSATZ", "price": 45.5, "description": "…"}];
@@ -50,7 +51,12 @@ begin
   from unnest(v_cols) k
   where p ? k;
 
-  if v_ref is not null then
+  if p ? 'id' then
+    select * into existing from public.bookings where id = (p ->> 'id')::uuid for update;
+    if existing.id is null then
+      raise exception 'Buchung % nicht gefunden', p ->> 'id' using errcode = 'P0002';
+    end if;
+  elsif v_ref is not null then
     select * into existing from public.bookings
     where source = v_source and external_ref = v_ref
     for update;
@@ -80,7 +86,8 @@ begin
     select count(*) into v_history_before from public.booking_history where booking_id = v_id;
     merged := jsonb_populate_record(existing, v_fields);
 
-    if row(
+    if (p ? 'id' and p ? 'external_ref' and v_ref is distinct from existing.external_ref)
+       or row(
          merged.received_at, merged.customer_name, merged.company, merged.customer_email,
          merged.customer_phone, merged.plate, merged.vehicle_model, merged.fuel_type, merged.persons,
          merged.start_at, merged.end_at, merged.parking_type, merged.return_mode, merged.notes,
@@ -94,6 +101,7 @@ begin
        or (v_cancel and existing.status not in ('cancelled', 'completed'))
     then
       update public.bookings set
+        external_ref = case when p ? 'id' and p ? 'external_ref' then v_ref else external_ref end,
         received_at = merged.received_at,
         customer_name = merged.customer_name,
         company = merged.company,

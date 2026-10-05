@@ -105,6 +105,22 @@ select pg_temp.assert_eq((select price_at_booking from public.booking_services b
 select public.upsert_booking('{"external_ref": "XL-7", "payment_status": "paid"}'::jsonb, 'excel') as x3 \gset
 select pg_temp.assert_eq((:'x3'::jsonb) ->> 'action', 'updated', 'Zahlungsstatus geändert');
 
+
+-- Bearbeiten per id (manuelle Buchung ohne Buchungs-Nr.)
+select (:'r5'::jsonb) ->> 'id' as mid \gset
+select public.upsert_booking(jsonb_build_object('id', :'mid', 'plate', 'M-NE 1', 'external_ref', 'NEU-1',
+  'services', jsonb_build_array('POLITUR')), 'manual') as e1 \gset
+select pg_temp.assert_eq((:'e1'::jsonb) ->> 'action', 'updated', 'per id bearbeitet');
+select pg_temp.assert_eq((select plate || '|' || external_ref from public.bookings where id = :'mid'), 'M-NE 1|NEU-1',
+  'Kennzeichen und Buchungs-Nr. geändert');
+do $$
+begin
+  perform public.upsert_booking('{"id": "00000000-0000-0000-0000-000000000000", "plate": "X"}'::jsonb);
+  raise exception 'FEHLER: unbekannte id akzeptiert';
+exception when no_data_found then null;
+end;
+$$;
+
 -- Storno per Import
 select public.upsert_booking('{"external_ref": "CSV-1", "cancelled": true}'::jsonb, 'csv');
 select pg_temp.assert_eq((select status from public.bookings where id = :'bid'), 'cancelled', 'storniert');
