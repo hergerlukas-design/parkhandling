@@ -48,5 +48,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Geräte: Android-/iOS-Tablets quer und Smartphones, Chrome/Safari aktuell
 
 ## Technik
-- [ANNAHME] Supabase-Region EU (Frankfurt)
+- [ANNAHME] Schrift IBM Plex Sans/Mono wie im Klick-Prototyp, per Google Fonts geladen und vom Service Worker zwischengespeichert (offline nach erstem Laden)
+- [ANNAHME] Shuttle/Vallet ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
+- [ANNAHME] Supabase-Region EU (Frankfurt) – das bestehende Projekt `parkhandling` liegt laut Supabase in `eu-west-1` (Irland); Region nur bei Neuanlage wählbar
 - [ANNAHME] Nur Testdaten bis Datenschutz und Hosting geklärt sind

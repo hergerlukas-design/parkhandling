@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Park &amp; Fly – Einchecken</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1ED;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1A1D21}
+a{color:#0E5E6F}a:hover{color:#0A4652}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; display: flex; flex-direction: column; background: #F3F1ED; overflow: hidden;">
+
+<header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 20px; background: #FFFFFF; border-bottom: 1px solid #DDD8D0; box-sizing: border-box;">
+<a href="Main.dc.html" style="height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 6px; border-radius: 10px; color: #1A1D21; font-size: 14px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>Abbrechen</a>
+<span style="font-size: 18px; font-weight: 600;">Fahrzeug einchecken</span>
+<div style="flex-grow: 1;"></div>
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: {{s.tx}}; font-weight: {{s.weight}};">
+<span style="width: 24px; height: 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: {{s.dotBg}}; color: {{s.dotTx}};">{{s.mark}}</span>{{s.label}}
+</div>
+</sc-for>
+</header>
+
+<main style="flex-grow: 1; min-height: 0; padding: 20px; box-sizing: border-box; display: flex; gap: 20px;">
+
+<div style="width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;">
+<section style="background: #FFFFFF; border: 1px solid #DDD8D0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 12px; color: #5B5750;">Schlüssel K-18 gescannt · Annahmeprotokoll unterschrieben</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600;">FS-BC 902</span>
+<span style="font-size: 15px;">Audi Q7 · Buchung PF-2026-0437</span>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+<span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #1A1D21; color: #FFFFFF;">Premium · Halle</span>
+<span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #E2ECE5; color: #1C4531;">Abholung 04.10. 11:00</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 13px;">
+<span style="font-weight: 600;">Gebuchte Leistungen</span>
+<span>Grundreinigung · Aufbereitung innen · Politur · Tanken</span>
+</div>
+</section>
+
+<section style="background: #FCEBD3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; color: #6E2C04;">
+<span style="font-size: 14px; font-weight: 600;">4 Leistungen offen</span>
+<span style="font-size: 13px; line-height: 1.45;">Wird das Fahrzeug jetzt auf E3 eingelagert, kostet jede spätere Arbeit zwei Umsetzvorgänge. Empfehlung: erst Aufbereitung, dann einlagern.</span>
+<div style="display: flex; gap: 8px;">
+<a href="Aufgaben.dc.html" style="flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #6E2C04; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none;">Erst Aufbereitung</a>
+<button type="button" style="flex: 1; height: 44px; border: 1px solid #B54708; border-radius: 10px; background: #FFFFFF; color: #6E2C04; font-size: 14px; font-weight: 500;">Trotzdem einlagern</button>
+</div>
+</section>
+
+<section style="flex-grow: 1; background: #1A1D21; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #C9C4BC;">
+<div style="width: 160px; height: 160px; border: 3px solid #FFFFFF; border-radius: 18px; box-sizing: border-box;"></div>
+<span style="font-size: 13px;">Stellplatz-QR scannen zum Bestätigen</span>
+</section>
+</div>
+
+<section style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-size: 18px;">Platz wählen</h2>
+<sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+<button type="button" style="text-align: left; display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-radius: 14px; background: {{o.bg}}; border: 2px {{o.bs}} {{o.bc}}; opacity: {{o.opacity}};">
+<span style="width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: #1A1D21;">{{o.id}}</span>
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+<span style="font-size: 14px; font-weight: 600; color: #1A1D21;">{{o.title}}</span>
+<span style="font-size: 13px; color: #4A463F; line-height: 1.4;">{{o.text}}</span>
+</div>
+<span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{o.tagBg}}; color: {{o.tagTx}};">{{o.tag}}</span>
+</button>
+</sc-for>
+<div style="margin-top: auto; display: flex; gap: 10px;">
+<button type="button" style="height: 48px; padding: 0 18px; border: 1px solid #C9C4BC; border-radius: 10px; background: #FFFFFF; font-size: 14px;">In Pufferzone abstellen</button>
+<div style="flex-grow: 1;"></div>
+<a href="Main.dc.html" style="height: 48px; display: flex; align-items: center; padding: 0 24px; border-radius: 10px; background: #0E5E6F; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none;">R7-E3 bestätigen</a>
+</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  renderVals() {
+    function step(label, state) {
+      var done = state === 'done', active = state === 'active';
+      return {
+        label: label, mark: done ? '✓' : (active ? '•' : ''),
+        dotBg: done ? '#2F6B4F' : (active ? '#0E5E6F' : '#E6E2DB'),
+        dotTx: '#FFFFFF', tx: state === 'todo' ? '#5B5750' : '#1A1D21', weight: active ? '600' : '400'
+      };
+    }
+    function opt(id, title, text, tag, kind) {
+      var K = {
+        best: ['#FFFFFF', 'solid', '#0E5E6F', '#DEEAF3', '#123E5C', '1'],
+        ok: ['#FFFFFF', 'solid', '#DDD8D0', '#E2ECE5', '#1C4531', '1'],
+        bad: ['#F3F1ED', 'dashed', '#ABA398', '#FBE4E1', '#7A1A12', '0.75']
+      }[kind];
+      return { id: id, title: title, text: text, tag: tag, bg: K[0], bs: K[1], bc: K[2], tagBg: K[3], tagTx: K[4], opacity: K[5] };
+    }
+    return {
+      steps: [step('Protokoll', 'done'), step('Schlüssel', 'done'), step('Platz wählen', 'active'), step('Platz scannen', 'todo')],
+      options: [
+        opt('R7-E3', 'Empfohlen', 'Leere Spalte. Späteste Abholung (04.10.) gehört nach oben, E1 und E2 bleiben für frühere Abholungen frei.', 'passt', 'best'),
+        opt('R4-E2', 'Nicht geeignet', 'Darüber steht FS-MA 330 mit Abholung 01.10. Dieses Fahrzeug würde es blockieren.', 'Konflikt', 'bad'),
+        opt('R2-E3', 'Nur mit Umsetzen', 'Darunter stehen EBE-T 402 und M-DS 1290. Einlagern kostet 4 Bewegungen.', 'gesperrt', 'bad'),
+        opt('R6-E3', 'Nur mit Umsetzen', 'Darunter stehen M-XY 11 und ED-S 450. Einlagern kostet 4 Bewegungen.', 'gesperrt', 'bad')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
