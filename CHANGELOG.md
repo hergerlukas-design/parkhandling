@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.2.0 – 05.10.2026
+
+### Neu
+- Datenmodell als Supabase-Migrationen (Abschnitt 3): Buchungen inkl. Eingang, Firma, Gesamtpreis, Zahlungsstatus und Hol- & Bringservice; Leistungen mit optionalem Preis, Beschreibung und Teilschritten; Aufgaben mit Checkliste; Medien, Orte, Bewegungen, Schlüsselfächer, Protokolle, Shuttle, Historie, Einstellungen
+- Trigger: Grundreinigung wird immer gebucht, je Leistung eine Aufgabe (mit Teilschritten), alle erledigt → „bereit“, Stornos ohne Löschen, Bewegungen pflegen aktuellen Ort und Platzstatus (Halle: „nur mit Umsetzen“), Buchungshistorie
+- Buchungsschnittstelle `upsert_booking`: idempotent über Quelle + Buchungs-Nr., Umbuchungen, individuelle Preise bleiben bei Re-Import erhalten
+- RLS für Rollen staff/admin, Realtime für Stellplätze, Aufgaben und Transportaufträge, Indizes laut Abschnitt 11.5
+- Private Storage-Buckets mit Größenlimit, Speicherverbrauch-Abfrage
+- Stammdaten laut ANNAHMEN.md (Halle 8×3, Außen A/B je 2×24, Arbeitsorte, Schlüsselfächer K-001–K-150, Leistungskatalog) und 40 Demo-Buchungen inkl. falsch sortierter Regalspalte R6
+- Datenbank-Tests (`npm run test:db`)
+
 ## 0.1.0 – 05.10.2026
 
 ### Neu

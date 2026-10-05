@@ -14,16 +14,23 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 24 Plätze (A1, A2)
 - [ANNAHME] Außen B (ohne Plane): 2 Reihen × 24 Plätze (B1, B2)
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone
-- [ANNAHME] Schlüssel: Tresor mit Fächern K-001 bis K-150
+- [ANNAHME] Schlüssel: Tresor mit Fächern K-001 bis K-150 (ein Datensatz je Fach in `keys`, `booking_id` leer = frei)
+- [ANNAHME] Platz-Codes: Halle `R<Spalte>-E<Ebene>`, Außen `A1-07`, Arbeitsorte `W-AUF1`, `W-LAD1`, `W-UEB`, Puffer `P-01`; QR-Inhalt `PF-LOC:<Code>` bzw. `PF-KEY:<Fach>`
+- [ANNAHME] Kapazität: Aufbereitung/Ladeplatz/Puffer je 1 Fahrzeug, Übergabezone 6, „Vallet unterwegs“ 50
+- [ANNAHME] Spalte `column` aus der Arbeitsanweisung heißt in der DB `rack_column` (SQL-Schlüsselwort)
 
 ## Leistungen
 - [BELEGT] Leistungsarten laut Excel: Park & Fly, Premium-Stellplatz, Fahrzeugpflege/Aufbereitung, Hol- & Bringservice, Transfer Flughafen, Zusatzleistung
 - [BELEGT] Grundreinigung bei jeder Buchung; Aufbereitung in Teilschritten
 - [BELEGT] Preise werden derzeit manuell bzw. individuell vereinbart
+- [ANNAHME] Leistungs-Codes: GRUND, AUF_INNEN, AUF_AUSSEN, POLITUR, LADEN, TANKEN, SERVICE, ZUSATZ; Teilschritte je Leistung als Checkliste in `services.steps` (z. B. Aufbereitung innen: Saugen, Kunststoffe, Scheiben, Fußmatten)
 - [ANNAHME] Katalog: Grundreinigung (Standard), Aufbereitung innen, Aufbereitung außen, Politur, Laden, Tanken, Servicearbeiten, Zusatzleistung (Freitext)
 - [ANNAHME] Preise im Katalog leer (`null`); Gesamtpreis pro Buchung manuell eintragbar
 
 ## Buchungen
+- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- vs. Akkustand im Protokoll
+- [ANNAHME] „Kunde / Firma“ landet in `customer_name`; `company` ist optional zusätzlich
+- [ANNAHME] Leistungsaufgaben sind 120 min vor Abholung fällig (`settings.task_due_before_pickup_minutes`)
 - [BELEGT] Zeitraum von Datum/Uhrzeit bis Datum/Uhrzeit, Umbuchungen möglich
 - [BELEGT] Stornierte Buchungen werden nicht gelöscht, sondern auf „storniert" gesetzt
 - [BELEGT] Felder laut Excel: Buchungs-Nr., Eingang am, Status, Kunde/Firma, Telefon, E-Mail, Kennzeichen, Leistung, Anreise, Abholung, Anzahl Tage, Parkplatz, Aufbereitung, Hol- & Bringservice, Transfer, Preis, Zahlungsstatus, Notizen
