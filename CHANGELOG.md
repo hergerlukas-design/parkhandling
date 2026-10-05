@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.4.1 – 05.10.2026
+
+### Behoben
+- Migrationen laufen auch auf einem Projekt mit vorhandenem Altschema: Login-Trigger wird ersetzt statt neu angelegt, Storage-Policies werden nur angelegt, wenn sie fehlen
+- Neues Schema, Stammdaten und Demo-Buchungen im Supabase-Projekt eingespielt; Altschema liegt in `legacy_v1`
+
 ## 0.4.0 – 05.10.2026
 
 ### Neu
