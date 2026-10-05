@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.4.0 – 05.10.2026
+
+### Neu
+- Buchungsadapter für die Excel-Vorlage „ParkHandling_Buchungsliste“ (Sheet „Buchungseingänge“): Kopfzeile wird auch unter Titelzeilen gefunden, Kennzeichen und Fahrzeug werden getrennt (unsichere Fälle bleiben im Kennzeichen und werden mit „⚠ Kennzeichen prüfen“ markiert), Preise mit Dezimalkomma, Zahlungsstatus, Aufbereitung/Pflege, Hol- & Bringservice, Transfer und Storno werden übernommen; „Anzahl Tage“ wird berechnet statt importiert
+- Buchungsformular für Anlegen und Bearbeiten mit Firma, Antrieb, Gesamtpreis, Zahlungsstatus und individuellen Preisen/Beschreibungen je Leistung
+- Stornieren setzt den Status „storniert“, es wird nichts gelöscht
+- `upsert_booking` kann bestehende Buchungen gezielt per id bearbeiten
+
 ## 0.3.0 – 05.10.2026
 
 ### Neu
