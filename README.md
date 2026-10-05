@@ -19,6 +19,18 @@ npm test                     # Unit-Tests
 npm run build                # Typecheck + Produktions-Build nach dist/
 ```
 
+## Supabase
+
+- Migrationen: `supabase/migrations/` (Schema, Trigger, RLS, Storage, `upsert_booking`)
+- Stammdaten laut `ANNAHMEN.md`: `psql "$DATABASE_URL" -f supabase/seed.sql` (idempotent)
+- 40 Demo-Buchungen: `psql "$DATABASE_URL" -f supabase/demo.sql` (wiederholbar, ersetzt vorhandene Demo-Daten)
+- Lokale DB-Tests (Postgres nötig): `npm run test:db`
+- Neue Konten sind inaktiv, bis ein Admin `profiles.active` setzt.
+
+Hinweis Projekt `parkhandling`: Das Schema des ersten Anlaufs liegt unverändert im Schema `legacy_v1`
+(nicht über die API erreichbar). Es kann bei Bedarf im SQL-Editor entfernt werden:
+`drop schema legacy_v1 cascade;`
+
 ## Versionierung (Pflicht bei jeder Änderung)
 
 Version in `package.json` erhöhen (`patch` / `minor` / `major`, siehe Arbeitsanweisung Grundregel 1) und

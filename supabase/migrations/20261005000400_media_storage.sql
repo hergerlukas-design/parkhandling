@@ -27,21 +27,32 @@ on conflict (id) do update
 
 -- Lesen (für kurzlebige Signed URLs): Personal. Hochladen nur über Signed Upload URLs
 -- der Edge Function media-sign – daher keine insert-Policy. Löschen/Verschieben: Admins.
-create policy media_staff_read on storage.objects
-  for select to authenticated
-  using (bucket_id in ('media', 'media-archive') and (select public.is_staff()));
-
-create policy media_admin_delete on storage.objects
-  for delete to authenticated
-  using (bucket_id in ('media', 'media-archive') and (select public.is_admin()));
-
-create policy media_admin_update on storage.objects
-  for update to authenticated
-  using (bucket_id in ('media', 'media-archive') and (select public.is_admin()));
-
-create policy media_admin_archive_insert on storage.objects
-  for insert to authenticated
-  with check (bucket_id = 'media-archive' and (select public.is_admin()));
+-- Policies auf storage.objects nur anlegen, wenn sie fehlen: storage.objects gehört Supabase,
+-- bestehende Policies lassen sich per Migration weder ändern noch löschen.
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'media_staff_read') then
+    create policy media_staff_read on storage.objects
+      for select to authenticated
+      using (bucket_id in ('media', 'media-archive') and (select public.is_staff()));
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'media_admin_delete') then
+    create policy media_admin_delete on storage.objects
+      for delete to authenticated
+      using (bucket_id in ('media', 'media-archive') and (select public.is_admin()));
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'media_admin_update') then
+    create policy media_admin_update on storage.objects
+      for update to authenticated
+      using (bucket_id in ('media', 'media-archive') and (select public.is_admin()));
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'media_admin_archive_insert') then
+    create policy media_admin_archive_insert on storage.objects
+      for insert to authenticated
+      with check (bucket_id = 'media-archive' and (select public.is_admin()));
+  end if;
+end;
+$$;
 
 -- -----------------------------------------------------------------------------
 -- Speicherverbrauch (Einstellungen → App & Version)
