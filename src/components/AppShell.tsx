@@ -3,6 +3,7 @@ import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
 import { BOTTOM_ITEMS, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
+import { UploadStatus } from './media/UploadStatus'
 import { UpdateBanner } from './UpdateBanner'
 
 const WEEKDAY = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short' })
@@ -70,6 +71,7 @@ export function AppShell() {
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <UpdateBanner />
+          <UploadStatus />
           <main className="min-h-0 flex-1 overflow-y-auto">
             <Outlet />
           </main>
