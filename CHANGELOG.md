@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.6.0 – 05.10.2026
+
+### Neu
+- Regal-Logik Halle (Abschnitt 5) als Datenbankfunktionen mit Tests:
+  - `suggest_hall_location`: Platzvorschlag „passt“ / „nicht geeignet“ / „nur mit Umsetzen (N Bewegungen)“, Pufferplatz als Ausweichmöglichkeit
+  - `check_column`: Konflikte einer Regalspalte inkl. Anzahl Umsetzvorgänge
+  - Automatische Umsetz-Aufgaben bei Konflikten (auch nach Umbuchung), fällig vor der früheren Abholung; aufgelöste Konflikte schließen ihre Aufgabe
+- `move_vehicle`: einziger Weg für Ein-/Auschecken und Umsetzen – prüft „Einlagern von oben, Auslagern von unten“, Belegung und Kapazität, setzt Status (eingelagert, unterwegs, übergeben), ordnet Schlüsselfach zu bzw. gibt es frei, warnt bei offenen Leistungen auf E2/E3 und bei Abweichung von der Sollreihenfolge
+- View `location_board` (Belegung je Ort für den Lageplan)
+
 ## 0.5.0 – 05.10.2026
 
 ### Neu
