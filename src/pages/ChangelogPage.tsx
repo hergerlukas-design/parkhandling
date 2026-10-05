@@ -63,7 +63,7 @@ export function ChangelogPage() {
   return (
     <Page title="Änderungsprotokoll">
       <Card>
-        {error && <p className="text-sm text-red-600">Konnte nicht geladen werden ({error}).</p>}
+        {error && <p className="text-sm text-danger">Konnte nicht geladen werden ({error}).</p>}
         {!error && text === null && <p className="text-sm text-muted">Lädt …</p>}
         {text && renderChangelog(text)}
       </Card>

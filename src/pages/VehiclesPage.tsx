@@ -2,27 +2,62 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { ImportDialog } from '../components/bookings/ImportDialog'
-import { Page } from '../components/Page'
-import { Button, Select, StatusBadge, TextInput } from '../components/ui'
-import { listBookings, type BookingCursor, type BookingFilter, type BookingListItem, type PickupFilter } from '../lib/bookings'
-import { formatDate, formatTime } from '../lib/format'
-import { BOOKING_STATUS_LABEL, PARKING_TYPE_LABEL, type BookingStatus, type ParkingType } from '../types/domain'
+import { Icon } from '../components/Icon'
+import { Button, PaymentBadge, StatusBadge } from '../components/ui'
+import {
+  countByChip,
+  LIST_CHIPS,
+  listBookings,
+  type BookingCursor,
+  type BookingListItem,
+  type ListChip,
+  type TaskChip,
+} from '../lib/bookings'
+import { DUE_STYLE, dueCategory, formatPeriod, formatPickup } from '../lib/due'
 
-const PICKUP: [PickupFilter, string][] = [
-  ['all', 'Alle'],
-  ['today', 'Heute'],
-  ['tomorrow', 'Morgen'],
-  ['week', '7 Tage'],
-  ['overdue', 'Überfällig'],
-]
+/** "Aufbereitung innen" → "Innen" (kompakte Chips wie im Klick-Prototyp) */
+function shortTitle(title: string | null): string {
+  const t = (title ?? '').replace(/^Aufbereitung\s+/, '')
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+
+function ServiceChips({ chips }: { chips: TaskChip[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {chips.map((c, i) => {
+        const done = c.status === 'done'
+        const cls = done
+          ? 'bg-ok-soft text-ok-ink'
+          : c.is_default
+            ? 'bg-chip text-subtle'
+            : 'bg-warn-soft text-warn-ink'
+        return (
+          <span key={i} className={`rounded px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${cls}`}>
+            {shortTitle(c.title)}
+            {done && ' ✓'}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function PickupCell({ b }: { b: BookingListItem }) {
+  const due = dueCategory(b.end_at)
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+      <span className={`size-2.5 rounded-sm ${DUE_STYLE[due].dot}`} aria-hidden="true" />
+      {formatPickup(b.end_at)}
+    </span>
+  )
+}
 
 export function VehiclesPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
-  const [pickup, setPickup] = useState<PickupFilter>('all')
-  const [status, setStatus] = useState<BookingStatus | ''>('')
-  const [parkingType, setParkingType] = useState<ParkingType | ''>('')
+  const [chip, setChip] = useState<ListChip>('all')
+  const [counts, setCounts] = useState<Partial<Record<ListChip, number>>>({})
   const [items, setItems] = useState<BookingListItem[]>([])
   const [next, setNext] = useState<BookingCursor | null>(null)
   const [loading, setLoading] = useState(false)
@@ -35,21 +70,13 @@ export function VehiclesPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  const filter: BookingFilter = {
-    search: debounced,
-    pickup,
-    parkingType,
-    statuses: status ? [status] : undefined,
-    activeOnly: !status,
-  }
-
   const load = useCallback(
     async (cursor: BookingCursor | null) => {
       const id = ++requestId.current
       setLoading(true)
       setError(null)
       try {
-        const page = await listBookings(filter, cursor)
+        const page = await listBookings({ search: debounced, chip }, cursor)
         if (id !== requestId.current) return
         setItems((prev) => (cursor ? [...prev, ...page.items] : page.items))
         setNext(page.next)
@@ -59,109 +86,152 @@ export function VehiclesPage() {
         if (id === requestId.current) setLoading(false)
       }
     },
-    [debounced, pickup, status, parkingType],
+    [debounced, chip],
   )
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     void load(null)
-  }, [load])
+    countByChip(debounced).then(setCounts).catch(() => undefined)
+  }, [load, debounced])
+
+  useEffect(() => {
+    reload()
+  }, [reload])
 
   return (
-    <Page
-      title="Fahrzeuge"
-      actions={
+    <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 p-4 md:p-6">
+      <div className="flex flex-col gap-2 md:flex-row">
+        <label className="relative flex-1">
+          <span className="sr-only">Suche</span>
+          <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Kennzeichen, Kunde oder Buchungsnummer"
+            className="touch-target w-full rounded-xl border border-line-strong bg-surface py-2 pr-3 pl-10 text-base md:text-sm"
+          />
+        </label>
         <div className="flex gap-2">
-          <Button onClick={() => setDialog('import')}>Import</Button>
-          <Button variant="primary" onClick={() => setDialog('new')}>Neue Buchung</Button>
-        </div>
-      }
-    >
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="grid gap-2 md:grid-cols-[2fr_1fr_1fr]">
-          <TextInput type="search" placeholder="Kennzeichen, Name oder Buchungsnr." value={search}
-            onChange={(e) => setSearch(e.target.value)} />
-          <Select value={status} onChange={(e) => setStatus(e.target.value as BookingStatus | '')} aria-label="Status">
-            <option value="">Alle aktiven</option>
-            {Object.entries(BOOKING_STATUS_LABEL).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </Select>
-          <Select value={parkingType} onChange={(e) => setParkingType(e.target.value as ParkingType | '')} aria-label="Bereich">
-            <option value="">Alle Bereiche</option>
-            {Object.entries(PARKING_TYPE_LABEL).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </Select>
-        </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Abholung">
-          {PICKUP.map(([v, l]) => (
-            <button key={v} type="button" onClick={() => setPickup(v)}
-              className={`touch-target rounded-full px-4 py-1.5 text-sm font-medium ${
-                pickup === v ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-              {l}
-            </button>
-          ))}
+          <Button className="flex-1 md:flex-none" onClick={() => setDialog('import')}>
+            <span className="md:hidden">Import</span>
+            <span className="hidden md:inline">Buchungen importieren</span>
+          </Button>
+          <Button variant="primary" className="flex-1 md:flex-none" onClick={() => setDialog('new')}>
+            + <span className="md:hidden">Buchung</span>
+            <span className="hidden md:inline">Buchung anlegen</span>
+          </Button>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="Filter">
+        {LIST_CHIPS.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setChip(value)}
+            className={`touch-target shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap ${
+              chip === value ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'
+            }`}
+          >
+            {label}
+            {counts[value] !== undefined && <span className="ml-1.5 opacity-70">{counts[value]}</span>}
+          </button>
+        ))}
+      </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      {/* Tablet/Desktop: Tabelle */}
+      <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface md:block">
         <table className="w-full text-left text-sm">
-          <thead className="hidden bg-slate-50 text-xs text-slate-500 md:table-header-group">
+          <thead className="border-b border-line bg-ground/60 text-xs font-semibold text-subtle">
             <tr>
-              <th className="px-4 py-2">Kennzeichen</th>
-              <th className="px-4 py-2">Kunde</th>
-              <th className="px-4 py-2">Abholung</th>
-              <th className="px-4 py-2">Parkart</th>
-              <th className="px-4 py-2">Ort</th>
-              <th className="px-4 py-2">Offen</th>
-              <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2.5">Kennzeichen</th>
+              <th className="px-3 py-2.5">Fahrzeug</th>
+              <th className="px-3 py-2.5">Ort</th>
+              <th className="px-3 py-2.5">Zeitraum</th>
+              <th className="px-3 py-2.5">Abholung</th>
+              <th className="px-3 py-2.5">Leistungen</th>
+              <th className="px-3 py-2.5">Zahlung</th>
+              <th className="px-3 py-2.5">Status</th>
             </tr>
           </thead>
           <tbody>
-            {items.map((b) => {
-              const open = b.open_tasks[0]?.count ?? 0
-              return (
-                <tr key={b.id} onClick={() => navigate(`/fahrzeuge/${b.id}`)}
-                  className="grid cursor-pointer grid-cols-[1fr_auto] gap-x-3 border-t border-slate-100 px-4 py-3 first:border-0 hover:bg-slate-50 md:table-row md:p-0">
-                  <td className="font-semibold md:px-4 md:py-3">{b.plate}</td>
-                  <td className="col-start-1 text-slate-600 md:px-4 md:py-3 md:text-slate-900">{b.customer_name}</td>
-                  <td className="col-start-2 row-start-1 text-right md:px-4 md:py-3 md:text-left">
-                    {formatDate(b.end_at)} <span className="text-slate-500">{formatTime(b.end_at)}</span>
-                  </td>
-                  <td className="hidden md:table-cell md:px-4 md:py-3">{PARKING_TYPE_LABEL[b.parking_type]}</td>
-                  <td className="hidden md:table-cell md:px-4 md:py-3">{b.location?.code ?? '–'}</td>
-                  <td className="hidden md:table-cell md:px-4 md:py-3">
-                    {open > 0 ? <span className="font-semibold text-amber-700">{open}</span> : '–'}
-                  </td>
-                  <td className="col-start-2 row-start-2 text-right md:px-4 md:py-3 md:text-left">
-                    <StatusBadge status={b.status} />
-                  </td>
-                </tr>
-              )
-            })}
+            {items.map((b) => (
+              <tr
+                key={b.id}
+                onClick={() => navigate(`/fahrzeuge/${b.id}`)}
+                className="cursor-pointer border-t border-line first:border-0 hover:bg-ground/60"
+              >
+                <td className="px-4 py-3 font-mono font-semibold whitespace-nowrap">{b.plate}</td>
+                <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
+                <td className="px-3 py-3 whitespace-nowrap">{b.location_code ?? '–'}</td>
+                <td className="px-3 py-3 whitespace-nowrap">{formatPeriod(b.start_at, b.end_at)}</td>
+                <td className="px-3 py-3"><PickupCell b={b} /></td>
+                <td className="px-3 py-3"><ServiceChips chips={b.task_chips} /></td>
+                <td className="px-3 py-3"><PaymentBadge status={b.payment_status} /></td>
+                <td className="px-3 py-3"><StatusBadge status={b.status} /></td>
+              </tr>
+            ))}
           </tbody>
         </table>
-        {!loading && items.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-500">Keine Fahrzeuge gefunden.</p>
-        )}
-        {(loading || next) && (
-          <div className="border-t border-slate-100 p-3 text-center">
-            {loading ? (
-              <span className="text-sm text-slate-500">Lädt …</span>
-            ) : (
-              <Button onClick={() => void load(next)}>Weitere laden</Button>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Smartphone: Karten mit Farbbalken nach Abholdatum */}
+      <ul className="flex flex-col gap-2 md:hidden">
+        {items.map((b) => {
+          const due = dueCategory(b.end_at)
+          return (
+            <li key={b.id}>
+              <button
+                type="button"
+                onClick={() => navigate(`/fahrzeuge/${b.id}`)}
+                className="flex w-full gap-3 rounded-2xl border border-line bg-surface p-3 text-left"
+              >
+                <span className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar}`} aria-hidden="true" />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="font-mono text-base font-semibold">{b.plate}</span>
+                    <span className="text-sm text-subtle">{b.location_code ?? ''}</span>
+                  </span>
+                  <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
+                  <span className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="font-semibold">Abholung {formatPickup(b.end_at)}</span>
+                    {b.status === 'cancelled' ? (
+                      <span className="text-danger">storniert</span>
+                    ) : b.open_task_count > 0 ? (
+                      <span className="text-warn">{b.open_task_count} offen</span>
+                    ) : (
+                      <span className="text-ok">fertig</span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      {!loading && items.length === 0 && (
+        <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
+          Keine Fahrzeuge gefunden.
+        </p>
+      )}
+      {(loading || next) && (
+        <div className="p-2 text-center">
+          {loading ? (
+            <span className="text-sm text-muted">Lädt …</span>
+          ) : (
+            <Button onClick={() => void load(next)}>Weitere laden</Button>
+          )}
+        </div>
+      )}
 
       {dialog === 'new' && (
         <BookingFormDialog onClose={() => setDialog(null)} onSaved={(id) => navigate(`/fahrzeuge/${id}`)} />
       )}
-      {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} onDone={() => void load(null)} />}
-    </Page>
+      {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} onDone={reload} />}
+    </div>
   )
 }

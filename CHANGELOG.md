@@ -3,6 +3,22 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.5.0 – 05.10.2026
+
+### Neu
+- Anmeldung (E-Mail + Passwort) mit Freischaltprüfung; Konto und Abmelden in den Einstellungen
+- Fahrzeugliste nach Klick-Prototyp: Suche (Kennzeichen, Kunde, Firma, Buchungs-Nr.), Filter-Chips mit Anzahl (Halle, Außen, Heute raus, Offene Leistungen, Laden/Tanken, Storniert), Abholung mit Farbpunkt nach Datum, Leistungs-Chips, Spalte Zahlungsstatus; Smartphone als Karten mit Farbbalken
+- Fahrzeug-Detail: Buchung, Ort & Schlüssel, Leistungen mit Fortschritt, Protokolle (Platzhalter), Verlauf aus Bewegungen und Buchungshistorie; Bearbeiten und Stornieren
+- Hinweis bei importierten Buchungen mit unsicherem Kennzeichen
+- Datenbank-View `booking_list` für die Liste (eine Abfrage, RLS des Aufrufers)
+- Testdatei `docs/testdaten/Buchungsliste_Test_5_Zeilen.xlsx` im Format der Vorlage
+
+### Behoben
+- Excel-Uhrzeiten werden auf Minuten gerundet (Excel liefert 07:00 als 06:59:59.999)
+
+### Geändert
+- Öffentliche Supabase-Werte (URL, Publishable Key) stehen in der eingecheckten `.env`; Fly-Deploy ohne Build-Argumente
+
 ## 0.4.1 – 05.10.2026
 
 ### Behoben

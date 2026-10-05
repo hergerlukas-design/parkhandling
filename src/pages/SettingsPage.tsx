@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { Card, Page } from '../components/Page'
+import { signOut, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -17,6 +18,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export function SettingsPage() {
   const update = useStore(updateStore)
+  const { session, profile } = useAuth()
 
   return (
     <Page title="Einstellungen">
@@ -31,7 +33,7 @@ export function SettingsPage() {
             </Row>
             <Row label="Datenbank">{isSupabaseConfigured ? 'verbunden' : 'nicht konfiguriert'}</Row>
           </dl>
-          {update.error && <p className="mt-2 text-sm text-red-600">{update.error}</p>}
+          {update.error && <p className="mt-2 text-sm text-danger">{update.error}</p>}
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
@@ -47,6 +49,19 @@ export function SettingsPage() {
               Änderungsprotokoll
             </Link>
           </div>
+        </Card>
+        <Card title="Konto">
+          <dl>
+            <Row label="Angemeldet als">{session?.user.email ?? '–'}</Row>
+            <Row label="Rolle">{profile?.role === 'admin' ? 'Admin' : 'Personal'}</Row>
+          </dl>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="touch-target mt-4 rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold"
+          >
+            Abmelden
+          </button>
         </Card>
         <Card title="Betrieb">
           <p className="text-sm text-subtle">

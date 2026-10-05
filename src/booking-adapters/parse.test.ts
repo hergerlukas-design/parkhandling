@@ -39,6 +39,7 @@ describe('parseDateTime', () => {
   it('interpretiert Excel-Datumswerte als Berliner Ortszeit', () => {
     expect(parseDateTime(new Date(Date.UTC(2026, 8, 24, 6, 30)))).toBe('2026-09-24T04:30:00.000Z')
     expect(parseDateTime(46289.25)).toBe('2026-09-24T04:00:00.000Z')
+    expect(parseDateTime(new Date(Date.UTC(2026, 9, 12, 6, 59, 59, 999)))).toBe('2026-10-12T05:00:00.000Z')
   })
   it('meldet ungültige Werte', () => {
     expect(parseDateTime('morgen')).toBeNull()

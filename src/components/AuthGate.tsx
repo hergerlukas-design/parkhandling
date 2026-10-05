@@ -11,7 +11,7 @@ function Screen({ title, children }: { title: string; children: ReactNode }) {
           <img src="/favicon.svg" alt="" className="size-10" />
           <div>
             <h1 className="text-lg font-semibold">{title}</h1>
-            <p className="text-xs text-slate-500">Park &amp; Fly Manager · Version {APP_VERSION}</p>
+            <p className="text-xs text-muted">Park &amp; Fly Manager · Version {APP_VERSION}</p>
           </div>
         </div>
         {children}
@@ -33,7 +33,7 @@ function LoginForm() {
     setBusy(false)
   }
 
-  const input = 'touch-target w-full rounded-lg border border-slate-300 px-3 py-2 text-base'
+  const input = 'touch-target w-full rounded-lg border border-line-strong px-3 py-2 text-base'
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -46,9 +46,9 @@ function LoginForm() {
         <input className={input} type="password" autoComplete="current-password" required value={password}
           onChange={(e) => setPassword(e.target.value)} />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <button type="submit" disabled={busy}
-        className="touch-target mt-2 rounded-lg bg-brand-600 px-4 py-2 font-semibold text-white disabled:opacity-60">
+        className="touch-target mt-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-60">
         {busy ? 'Anmelden …' : 'Anmelden'}
       </button>
     </form>
@@ -62,14 +62,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isSupabaseConfigured) {
     return (
       <Screen title="Nicht konfiguriert">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-subtle">
           VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY fehlen (siehe .env).
         </p>
       </Screen>
     )
   }
   if (loading) {
-    return <div className="flex h-full items-center justify-center text-sm text-slate-500">Lädt …</div>
+    return <div className="flex h-full items-center justify-center text-sm text-muted">Lädt …</div>
   }
   if (!session) {
     return (
@@ -81,11 +81,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!profile?.active) {
     return (
       <Screen title="Konto nicht freigeschaltet">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-subtle">
           Ihr Konto ({session.user.email}) muss von einem Admin freigeschaltet werden.
         </p>
         <button type="button" onClick={() => void signOut()}
-          className="touch-target mt-4 w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold">
+          className="touch-target mt-4 w-full rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">
           Abmelden
         </button>
       </Screen>

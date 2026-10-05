@@ -11,8 +11,10 @@ Stack: React 19 · TypeScript · Vite · Tailwind CSS 4 · Supabase · Fly.io (n
 
 ## Entwicklung
 
+Supabase-URL und Publishable Key stehen in `.env` (öffentlich, eingecheckt; Zugriff über Login + RLS geschützt).
+Abweichungen lokal in `.env.local`. Der service_role-Key gehört nie ins Repo.
+
 ```bash
-cp .env.example .env.local   # Supabase-URL und Publishable Key eintragen
 npm install
 npm run dev                  # http://localhost:5173
 npm test                     # Unit-Tests
@@ -45,7 +47,7 @@ bei Rückkehr in den Vordergrund und alle 10 Minuten. Offene Vorgänge halten Up
 ## Deployment (Fly.io)
 
 ```bash
-fly deploy --build-arg VITE_SUPABASE_URL=... --build-arg VITE_SUPABASE_ANON_KEY=...
+fly deploy
 ```
 
 Die vollständige Anleitung (Seed-Befehl, Testablauf) folgt am Ende von Phase 1.

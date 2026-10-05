@@ -52,6 +52,8 @@ export function parseDateTime(dateValue: CellValue, timeValue?: CellValue): stri
 
   if (dateValue instanceof Date) {
     if (Number.isNaN(dateValue.getTime())) return null
+    // Excel speichert Zeiten als Gleitkommazahl: 07:00 kommt als 06:59:59.999 an → auf Minuten runden
+    dateValue = new Date(Math.round(dateValue.getTime() / 60000) * 60000)
     const h = time ? hour : dateValue.getUTCHours()
     const m = time ? minute : dateValue.getUTCMinutes()
     return berlinToIso(dateValue.getUTCFullYear(), dateValue.getUTCMonth() + 1, dateValue.getUTCDate(), h, m)
@@ -87,7 +89,10 @@ export function parseDateTime(dateValue: CellValue, timeValue?: CellValue): stri
 /** HH:MM, H.MM, "6 Uhr", Excel-Zeitanteil (0–1) oder Date → [Stunde, Minute] */
 export function parseTime(value: CellValue): [number, number] | null {
   if (value === null || value === undefined) return null
-  if (value instanceof Date) return [value.getUTCHours(), value.getUTCMinutes()]
+  if (value instanceof Date) {
+    const rounded = new Date(Math.round(value.getTime() / 60000) * 60000)
+    return [rounded.getUTCHours(), rounded.getUTCMinutes()]
+  }
   if (typeof value === 'number') {
     if (value < 0 || value >= 1) return null
     const total = Math.round(value * 24 * 60)

@@ -46,5 +46,14 @@ select pg_temp.assert_eq((select status from public.locations where code = 'R6-E
 select pg_temp.assert_eq((select count(*)::int from public.locations where code like 'R7-%' and status = 'free'), 3,
   'R7 frei');
 
+-- Listen-View: Filterzahlen und Chips
+select pg_temp.assert_eq((select count(*)::int from public.booking_list where source = 'demo'), 40, 'View liefert alle Buchungen');
+select pg_temp.assert_eq((select count(*)::int from public.booking_list where source = 'demo' and open_charge_fuel_count > 0) > 0,
+  true, 'Laden/Tanken offen vorhanden');
+select pg_temp.assert_eq((select jsonb_array_length(task_chips) from public.booking_list where external_ref = 'DEMO-0012') >= 1,
+  true, 'Leistungs-Chips vorhanden');
+select pg_temp.assert_eq((select task_chips -> 0 ->> 'title' from public.booking_list where external_ref = 'DEMO-0012'),
+  'Grundreinigung', 'Grundreinigung zuerst');
+
 \o
 \echo '  ✓ 30_demo'

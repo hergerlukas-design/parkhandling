@@ -2,6 +2,7 @@ node_modules
 dist
 dev-dist
 .git
-.env
-.env.*
+.env.local
+.env.*.local
 supabase
+mockup
