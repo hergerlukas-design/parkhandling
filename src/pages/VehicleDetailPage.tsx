@@ -9,6 +9,7 @@ import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
 import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/bookings'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney } from '../lib/format'
+import { listProtocols, type ProtocolRow } from '../lib/protocols'
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
@@ -122,10 +123,12 @@ export function VehicleDetailPage() {
   const [moveNotice, setMoveNotice] = useState<string | null>(null)
   const [openTask, setOpenTask] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [protocols, setProtocols] = useState<ProtocolRow[]>([])
 
   const load = useCallback(() => {
     if (!id) return
     getBookingDetail(id).then(setData).catch((e: Error) => setError(e.message))
+    listProtocols(id).then(setProtocols).catch(() => undefined)
   }, [id])
 
   useEffect(load, [load])
@@ -140,6 +143,13 @@ export function VehicleDetailPage() {
   const closed = b.status === 'cancelled' || b.status === 'completed'
 
   const timeline = [
+    ...protocols
+      .filter((p) => p.status === 'final' && p.finalized_at)
+      .map((p) => ({
+        at: p.finalized_at!,
+        text: `${p.type === 'intake' ? 'Annahmeprotokoll' : 'Übergabeprotokoll'} unterschrieben${p.inspector_name ? ` · ${p.inspector_name}` : ''}`,
+        tone: 'bg-ok',
+      })),
     ...movements.map((m) => ({
       at: m.moved_at,
       text: !m.to
@@ -291,14 +301,40 @@ export function VehicleDetailPage() {
         <div className="flex flex-col gap-4">
           <Card title="Protokolle">
             <ul className="flex flex-col gap-2 text-sm">
-              <li className="rounded-xl border border-dashed border-line-strong px-3 py-2.5">
-                <div className="font-medium">Annahme</div>
-                <div className="text-xs text-subtle">noch nicht erstellt</div>
-              </li>
-              <li className="rounded-xl border border-dashed border-line-strong px-3 py-2.5">
-                <div className="font-medium">Übergabe</div>
-                <div className="text-xs text-subtle">offen · bei Abholung {formatPickup(b.end_at)}</div>
-              </li>
+              {(['intake', 'handover'] as const).map((type) => {
+                const p = protocols.find((x) => x.type === type)
+                const label = type === 'intake' ? 'Annahme' : 'Übergabe'
+                const path = `/protokoll/${type === 'intake' ? 'annahme' : 'uebergabe'}/${b.id}`
+                const status = p?.status === 'final'
+                  ? `abgeschlossen ${formatDateTime(p.finalized_at!)}${p.mileage != null ? ` · ${p.mileage.toLocaleString('de-DE')} km` : ''}`
+                  : p
+                    ? 'Entwurf – noch nicht unterschrieben'
+                    : type === 'intake'
+                      ? 'noch nicht erstellt'
+                      : `offen · bei Abholung ${formatPickup(b.end_at)}`
+                const canStart = !closed || !!p
+                return (
+                  <li key={type}>
+                    {canStart ? (
+                      <Link to={path}
+                        className={`touch-target flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 hover:bg-ground ${p?.status === 'final' ? 'border-ok/50 bg-ok-soft' : 'border-dashed border-line-strong'}`}>
+                        <span>
+                          <span className="block font-medium">{label}</span>
+                          <span className="block text-xs text-subtle">{status}</span>
+                        </span>
+                        <span className="text-sm font-semibold text-accent">
+                          {p?.status === 'final' ? 'PDF' : p ? 'Fortsetzen' : 'Starten'}
+                        </span>
+                      </Link>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-line-strong px-3 py-2.5">
+                        <div className="font-medium">{label}</div>
+                        <div className="text-xs text-subtle">{status}</div>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </Card>
 

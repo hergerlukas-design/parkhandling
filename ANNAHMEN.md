@@ -54,6 +54,14 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2
 - [ANNAHME] Im Prototyp gehen alle Mails nur an eine Testadresse aus `settings`
+- [ANNAHME] PDF-Vorlage aus `fahrzeug-protokolle-v2` (Commit 5d29dc6, Ordner `pdf-template/`) unverändert übernommen, nur um eine Option für Beschriftungen ergänzt; CarHandling-Logo und Branding bleiben, bis ein Park-&-Fly-Logo vorliegt
+- [ANNAHME] Das PDF wird im Browser erzeugt (pdf-lib, wie in der Vorlage) und über den Media-Service gespeichert, nicht serverseitig. Grund: Vorlage ist Browser-Code, funktioniert offline; die Edge Function verschickt nur das gespeicherte PDF
+- [ANNAHME] Die Standardschrift der Vorlage (Helvetica) kann nicht alle Sonderzeichen; feste Beschriftungen sind daher ohne Umlaute („Uebergabe“), eingegebene Texte mit Umlauten funktionieren
+- [ANNAHME] Übergabeprotokoll nutzt das Überführungs-Layout der Vorlage mit Titel „Fahrzeug-Uebergabeprotokoll“, Empfänger = Kunde; der Vergleich zur Annahme (KM, Tank/Akku, neue Schäden) steht in den Bemerkungen
+- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tank- bzw. Akkustand (nach Antriebsart), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
+- [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
+- [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
+- [ANNAHME] Mail-Dienst: Resend (Edge Function `protocol-mail`, Secrets `RESEND_API_KEY`, `MAIL_FROM`). Ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, das Protokoll bleibt gültig
 - [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
 
 ## Nutzer & Geräte

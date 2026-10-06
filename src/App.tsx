@@ -8,6 +8,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { ScanPage } from './pages/ScanPage'
 import { SitePlanPage } from './pages/SitePlanPage'
 import { TasksPage } from './pages/TasksPage'
+import { ProtocolPage } from './pages/ProtocolPage'
 import { TodayPage } from './pages/TodayPage'
 import { VehicleDetailPage } from './pages/VehicleDetailPage'
 import { VehiclesPage } from './pages/VehiclesPage'
@@ -26,6 +27,7 @@ export function App() {
               <Route path="aufgaben" element={<TasksPage />} />
               <Route path="scan" element={<ScanPage />} />
               <Route path="einchecken" element={<CheckinPage />} />
+              <Route path="protokoll/:type/:bookingId" element={<ProtocolPage />} />
               <Route path="einstellungen" element={<SettingsPage />} />
               <Route path="changelog" element={<ChangelogPage />} />
               <Route path="*" element={<TodayPage />} />

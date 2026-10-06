@@ -5,6 +5,7 @@ import { QrScanner } from '../components/QrScanner'
 import { Button, ErrorList, TextInput } from '../components/ui'
 import { formatPickup } from '../lib/due'
 import { formatDate } from '../lib/format'
+import { getProtocol } from '../lib/protocols'
 import {
   getCheckinCandidate,
   listCheckinCandidates,
@@ -28,9 +29,11 @@ const KIND_STYLE: Record<Suggestion['kind'], { badge: string; label: string; box
   buffer: { badge: 'bg-chip text-subtle', label: 'Puffer', box: 'border-dashed border-line-strong', title: 'Pufferzone' },
 }
 
-function Stepper({ step }: { step: Step }) {
+type IntakeState = 'none' | 'draft' | 'final' | null
+
+function Stepper({ step, intake }: { step: Step; intake: IntakeState }) {
   const items: [string, boolean, boolean][] = [
-    ['Protokoll', false, false],
+    ['Protokoll', false, intake === 'final'],
     ['Schlüssel', step === 'key', step === 'place'],
     ['Platz wählen', step === 'place', false],
   ]
@@ -42,7 +45,6 @@ function Stepper({ step }: { step: Step }) {
             {done ? '✓' : active ? '•' : ''}
           </span>
           {label}
-          {label === 'Protokoll' && <span className="text-xs">(folgt)</span>}
         </li>
       ))}
     </ol>
@@ -62,9 +64,19 @@ export function CheckinPage() {
   const [errors, setErrors] = useState<string[]>([])
   const [warnings, setWarnings] = useState<string[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const [intake, setIntake] = useState<IntakeState>(null)
 
   const step: Step = !booking ? 'vehicle' : !keyCode ? 'key' : 'place'
   useUpdateBlocker(!!booking && !warnings, 'Check-in')
+
+  // Annahmeprotokoll der gewählten Buchung
+  useEffect(() => {
+    setIntake(null)
+    if (!booking) return
+    getProtocol(booking.id, 'intake')
+      .then((p) => setIntake(p ? p.status : 'none'))
+      .catch(() => setIntake(null))
+  }, [booking])
 
   // Buchung aus URL übernehmen
   useEffect(() => {
@@ -190,7 +202,7 @@ export function CheckinPage() {
           <Icon name="close" className="size-5" /> Abbrechen
         </Link>
         <h1 className="text-lg font-semibold">Fahrzeug einchecken</h1>
-        <div className="ml-auto"><Stepper step={step} /></div>
+        <div className="ml-auto"><Stepper step={step} intake={intake} /></div>
       </header>
 
       <div className="grid flex-1 gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
@@ -199,7 +211,8 @@ export function CheckinPage() {
           {booking ? (
             <section className="rounded-2xl border border-line bg-surface p-4">
               <p className="text-xs text-subtle">
-                {keyCode ? `Schlüssel ${keyCode}` : 'Schlüssel noch nicht gescannt'} · Annahmeprotokoll folgt in Schritt 10
+                {keyCode ? `Schlüssel ${keyCode}` : 'Schlüssel noch nicht gescannt'}
+                {intake === 'final' && ' · Annahmeprotokoll unterschrieben'}
               </p>
               <div className="mt-1 font-mono text-3xl font-bold">{booking.plate}</div>
               <div className="text-subtle">{[booking.vehicle_model, booking.external_ref && `Buchung ${booking.external_ref}`].filter(Boolean).join(' · ')}</div>
@@ -207,6 +220,13 @@ export function CheckinPage() {
                 <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">{PARKING_TYPE_LABEL[booking.parking_type]}</span>
                 <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-ink">Abholung {formatPickup(booking.end_at)}</span>
               </div>
+              {intake && intake !== 'final' && (
+                <Link to={`/protokoll/annahme/${booking.id}`}
+                  className="touch-target mt-3 flex items-center justify-between gap-2 rounded-xl border border-warn bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+                  <span>{intake === 'draft' ? 'Annahmeprotokoll angefangen, noch nicht unterschrieben' : 'Annahmeprotokoll fehlt noch'}</span>
+                  <span className="font-semibold">{intake === 'draft' ? 'Fortsetzen' : 'Erstellen'}</span>
+                </Link>
+              )}
               {booking.task_chips.length > 0 && (
                 <p className="mt-3 text-sm"><span className="font-semibold">Gebuchte Leistungen</span><br />{booking.task_chips.map((c) => c.title).join(' · ')}</p>
               )}

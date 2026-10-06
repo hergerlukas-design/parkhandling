@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.9.0 – 06.10.2026
+
+### Neu
+- Annahme- und Übergabeprotokoll nach Klick-Prototyp: Basisdaten, Kilometerstand, Tankstand (Res./¼/½/¾/voll) bzw. Akkustand nach Antriebsart, Bedingungen, Checkliste Sauberkeit/Zubehör, Fotos vorne/hinten/links/rechts/Fahrzeugschein, Schäden mit Position, Art, Intensität und Foto, weitere Fotos, Bemerkung
+- Unterschrift Kunde und Mitarbeiter per Finger/Stift, als PNG über den Media-Service gespeichert
+- Übergabeprotokoll zeigt den Vergleich zur Annahme (KM, Tank/Akku, neue Schäden) und übernimmt FIN und Zubehör
+- PDF im Layout der Vorlage aus Vehicle Protocol Pro V2 (fahrzeug-protokolle-v2), wird beim Abschließen erzeugt, gespeichert und kann geteilt bzw. heruntergeladen werden; Vorschau als Entwurf mit Wasserzeichen
+- Versand des PDFs per E-Mail über die Edge Function, im Prototyp nur an die Testadresse; Versandstatus wird angezeigt, erneutes Senden möglich
+- Entwürfe werden automatisch gesichert (sofort auf dem Gerät, kurz danach in der Datenbank) und nach Neuladen wiederhergestellt; App-Updates warten, solange ein Protokoll offen ist
+- Nach der Annahme „Weiter zum Einchecken“, nach der Übergabe „Fahrzeug übergeben“
+- Fahrzeug-Detail: Protokolle mit Status, Starten/Fortsetzen/PDF; Verlauf zeigt unterschriebene Protokolle
+- Check-in: Schritt „Protokoll“ zeigt, ob das Annahmeprotokoll fehlt, angefangen oder unterschrieben ist
+
 ## 0.8.1 – 06.10.2026
 
 ### Intern

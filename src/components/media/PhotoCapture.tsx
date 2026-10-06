@@ -3,7 +3,7 @@ import { addPhotos, type MediaOwner } from '../../lib/media/mediaService'
 import { Icon } from '../Icon'
 
 /** Kamera/Galerie öffnen, Fotos im Browser komprimieren und in die Upload-Queue legen. */
-export function PhotoCapture({ owner, label = 'Foto aufnehmen' }: { owner: MediaOwner; label?: string }) {
+export function PhotoCapture({ owner, label = 'Foto aufnehmen', single = false }: { owner: MediaOwner; label?: string; single?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +38,7 @@ export function PhotoCapture({ owner, label = 'Foto aufnehmen' }: { owner: Media
         type="file"
         accept="image/*"
         capture="environment"
-        multiple
+        multiple={!single}
         hidden
         onChange={(e) => void onFiles(e.target.files)}
       />
