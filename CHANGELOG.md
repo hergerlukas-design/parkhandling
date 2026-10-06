@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.8.1 – 06.10.2026
+
+### Intern
+- Datenbank für Protokolle vorbereitet: Entwurf/abgeschlossen, Prüfer, Ort, FIN, Bedingungen, Checkliste, Kunden-Unterschrift, Mail-Status; abgeschlossene Protokolle sind unveränderlich (Trigger), je Buchung höchstens ein Annahme- und ein Übergabeprotokoll
+- Medien erhalten einen Foto-Slot (z. B. vorne, schaden_0, signature); Media-Service kann PDFs hochladen
+- Edge Function `protocol-mail` vorbereitet: versendet das Protokoll-PDF im Prototyp nur an die Testadresse, ohne eingerichteten Mail-Dienst wird „nicht eingerichtet“ vermerkt
+- Datenbank-Test `60_protocols`
+
 ## 0.8.0 – 06.10.2026
 
 ### Neu

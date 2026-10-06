@@ -63,6 +63,8 @@ export interface MediaOwner {
   bookingId: string | null
   ownerType: MediaOwnerType
   ownerId: string | null
+  /** Foto-Slot (z. B. vorne, schaden_0) */
+  slot?: string | null
 }
 
 /** Fotos komprimieren (Worker) und zum Upload einreihen. Originale verlassen das Gerät nie. */
@@ -83,6 +85,19 @@ export async function addPhotos(files: Iterable<File>, owner: MediaOwner): Promi
     )
   }
   return queued
+}
+
+/** Fertiges PDF (z. B. Protokoll) zum Upload einreihen. */
+export async function addPdf(pdf: Blob, owner: MediaOwner): Promise<QueueItem> {
+  return uploadQueue.enqueue({
+    ...owner,
+    kind: 'pdf',
+    full: pdf.type === 'application/pdf' ? pdf : new Blob([pdf], { type: 'application/pdf' }),
+    width: null,
+    height: null,
+    thumb: null,
+    takenAt: new Date().toISOString(),
+  })
 }
 
 export async function addSignature(png: Blob, owner: MediaOwner): Promise<QueueItem> {

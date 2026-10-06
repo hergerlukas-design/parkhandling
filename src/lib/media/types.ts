@@ -20,6 +20,8 @@ export interface UploadRequest {
   height: number | null
   takenAt: string | null
   deviceId: string
+  /** Foto-Slot (z. B. vorne, schaden_0, signature) */
+  slot?: string | null
 }
 
 /** Provider-neutrales Upload-Ziel: das Gerät lädt direkt per HTTP PUT hoch. */

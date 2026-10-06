@@ -56,6 +56,7 @@ export function createSupabaseMediaStore(client: SupabaseClient, anonKey: string
           height: req.height,
           taken_at: req.takenAt,
           device_id: req.deviceId,
+          slot: req.slot ?? null,
         },
       })
       if (error || !data) throw error ?? new Error('media-sign ohne Antwort')

@@ -33,6 +33,8 @@ interface SignRequest {
   height?: number | null
   taken_at?: string | null
   device_id: string
+  /** Foto-Slot, z. B. vorne, schaden_0, signature */
+  slot?: string | null
 }
 
 function validate(body: Partial<SignRequest>): string | null {
@@ -45,6 +47,7 @@ function validate(body: Partial<SignRequest>): string | null {
   if (body.booking_id && !UUID.test(body.booking_id)) return 'booking_id ungültig'
   if (body.owner_id && !UUID.test(body.owner_id)) return 'owner_id ungültig'
   if (!body.device_id || body.device_id.length > 64) return 'device_id fehlt'
+  if (body.slot && !/^[a-z0-9_]{1,40}$/.test(body.slot)) return 'slot ungültig'
   return null
 }
 
@@ -122,6 +125,7 @@ Deno.serve(async (req) => {
     mime_type: body.content_type,
     taken_at: body.taken_at ?? null,
     device_id: body.device_id,
+    slot: body.slot ?? null,
     created_by: userData.user.id,
   })
   if (insertError) return json({ error: insertError.message }, 500)

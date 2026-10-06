@@ -18,6 +18,7 @@ export interface QueueInput {
   height: number | null
   thumb: Blob | null
   takenAt: string | null
+  slot?: string | null
 }
 
 export interface QueueItem extends QueueInput {
@@ -34,6 +35,7 @@ export interface QueueItem extends QueueInput {
 export interface UploadedEvent {
   localId: string
   mediaId: string
+  slot: string | null
   bookingId: string | null
   ownerType: MediaOwnerType
   ownerId: string | null
@@ -139,6 +141,7 @@ export function createUploadQueue(deps: QueueDeps) {
           height: current.height,
           takenAt: current.takenAt,
           deviceId: deps.deviceId(),
+          slot: current.slot ?? null,
         })
         current = { ...current, ticket }
         await save(current)
@@ -150,6 +153,7 @@ export function createUploadQueue(deps: QueueDeps) {
       const event: UploadedEvent = {
         localId: current.id,
         mediaId: ticket.mediaId,
+        slot: current.slot ?? null,
         bookingId: current.bookingId,
         ownerType: current.ownerType,
         ownerId: current.ownerId,
