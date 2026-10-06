@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.5 – 06.10.2026
+
+### Behoben
+- Prüfung „Supabase Preview“ schlug bei jedem Pull Request fehl („Remote migration versions not found in local migrations directory“): Die Migrationsdateien tragen jetzt exakt die Versionen aus der Migrationshistorie in Supabase; die sieben Migrationen des ersten Anlaufs (inkl. Archivierung nach `legacy_v1`) sind aus der Historie übernommen. Inhalt der aktuellen Migrationen unverändert, an der Datenbank wurde nichts geändert
+
 ## 0.10.4 – 06.10.2026
 
 ### Behoben

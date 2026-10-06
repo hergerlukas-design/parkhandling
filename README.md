@@ -32,7 +32,16 @@ Abweichungen lokal in `.env.local` (nicht eingecheckt). Der service_role-Key geh
 ### 2. Datenbank
 
 Migrationen in `supabase/migrations/` der Reihe nach ausführen (Supabase CLI `supabase db push` oder
-SQL-Editor). Danach:
+SQL-Editor). Die Dateinamen entsprechen exakt den Versionen in der Migrationshistorie von Supabase
+(`supabase_migrations.schema_migrations`); nur so funktionieren `supabase db push` und die
+Supabase-Vorschau für Pull Requests. Die ersten sieben Dateien (23.09. bis `archive_schema_v1`) stammen
+aus dem ersten Anlauf: Sie legen das alte Schema an und verschieben es nach `legacy_v1`.
+
+Neue Migrationen: Datei anlegen, einspielen und danach prüfen, dass die Version in Supabase dem
+Dateinamen entspricht. Wird über das Dashboard oder ein Werkzeug eine andere Version vergeben, die
+Datei entsprechend umbenennen.
+
+Danach:
 
 ```bash
 psql "$DATABASE_URL" -f supabase/seed.sql   # Stammdaten: Stellplätze, Schlüssel, Leistungen, Einstellungen (idempotent)
