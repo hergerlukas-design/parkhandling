@@ -3,6 +3,15 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.0 – 06.10.2026
+
+### Neu
+- Heute-Ansicht nach Klick-Prototyp: Kennzahlen Ankünfte, Abholungen (davon Halle), offene Aufgaben (fällig heute) und Umsetzen nötig
+- Ablauf heute: Ankünfte und Abholungen nach Uhrzeit mit Status (erledigt, erwartet, überfällig, bereit, „n offen“), Rückgabeart, Stellplatz, offene Leistungen und Hinweis „Zahlung offen“; Tippen öffnet das Fahrzeug
+- „Braucht Aufmerksamkeit“: Abholungen heute/morgen mit offenen Leistungen, Umsetz-Konflikte im Regal, nicht angekommene Anreisen, offene Zahlungen vor Abholung
+- Belegung Halle / Außen A / Außen B; Live-Aktualisierung über Realtime und jede Minute
+- Fahrzeugliste und Aufgaben-Board lassen sich per Link vorfiltern (`?filter=`)
+
 ## 0.9.0 – 06.10.2026
 
 ### Neu

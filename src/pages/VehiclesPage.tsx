@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { ImportDialog } from '../components/bookings/ImportDialog'
 import { Icon } from '../components/Icon'
@@ -56,7 +56,11 @@ export function VehiclesPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debounced, setDebounced] = useState('')
-  const [chip, setChip] = useState<ListChip>('all')
+  const [params] = useSearchParams()
+  const [chip, setChip] = useState<ListChip>(() => {
+    const f = params.get('filter')
+    return LIST_CHIPS.some(([c]) => c === f) ? (f as ListChip) : 'all'
+  })
   const [counts, setCounts] = useState<Partial<Record<ListChip, number>>>({})
   const [items, setItems] = useState<BookingListItem[]>([])
   const [next, setNext] = useState<BookingCursor | null>(null)

@@ -15,7 +15,10 @@ const COLUMNS: [Column, string][] = [
 export function TasksPage() {
   const [params, setParams] = useSearchParams()
   const [tasks, setTasks] = useState<BoardTask[]>([])
-  const [filter, setFilter] = useState<TaskFilter>('all')
+  const [filter, setFilter] = useState<TaskFilter>(() => {
+    const f = params.get('filter')
+    return TASK_FILTERS.some(([v]) => v === f) ? (f as TaskFilter) : 'all'
+  })
   const [mobileColumn, setMobileColumn] = useState<Column>('open')
   const [error, setError] = useState<string | null>(null)
   const openId = params.get('aufgabe')
