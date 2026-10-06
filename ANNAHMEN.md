@@ -61,7 +61,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tank- bzw. Akkustand (nach Antriebsart), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
 - [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
-- [ANNAHME] Mail-Dienst: Resend (Edge Function `protocol-mail`, Secrets `RESEND_API_KEY`, `MAIL_FROM`). Ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, das Protokoll bleibt gültig
+- [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
 - [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
 
 ## Nutzer & Geräte

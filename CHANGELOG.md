@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.2 – 06.10.2026
+
+### Dokumentation
+- Mail-Dienst als zurückgestellt vermerkt (ANNAHMEN.md); Protokolle und PDFs funktionieren ohne ihn
+
 ## 0.10.1 – 06.10.2026
 
 ### Dokumentation
