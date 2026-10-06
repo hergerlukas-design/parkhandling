@@ -1,23 +1,27 @@
-# Fly.io hostet ausschließlich das statische Frontend. Geschäftslogik liegt in Supabase.
-app = "parkhandling"
-primary_region = "fra"
+# fly.toml app configuration file generated for parkhandling on 2026-09-23T20:01:04Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'parkhandling'
+primary_region = 'fra'
 
 [build]
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[http_service.checks]]
-    grace_period = "5s"
-    interval = "30s"
-    method = "GET"
-    path = "/version.json"
-    timeout = "3s"
+    interval = '30s'
+    timeout = '3s'
+    grace_period = '5s'
+    method = 'GET'
+    path = '/version.json'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
