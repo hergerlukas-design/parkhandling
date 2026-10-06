@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.3 – 06.10.2026
+
+### Intern
+- Automatisches Deployment: Jeder Merge auf `main` wird geprüft (Typecheck, Tests, Build) und auf Fly.io ausgeliefert (GitHub-Workflow, Secret `FLY_API_TOKEN`)
+
 ## 0.10.2 – 06.10.2026
 
 ### Dokumentation

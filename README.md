@@ -140,6 +140,15 @@ halten Updates zurück (`useUpdateBlocker`), Entwürfe liegen in IndexedDB (`use
 
 ## Deployment (Fly.io)
 
+Automatisch: Jeder Merge auf `main` startet `.github/workflows/deploy.yml` (Typecheck, Tests, Build,
+dann `flyctl deploy`). Einmalig nötig:
+
+1. Token erzeugen: `fly tokens create deploy -a parkhandling`
+2. Auf GitHub unter *Settings → Secrets and variables → Actions* als `FLY_API_TOKEN` speichern
+3. Optional manuell starten: *Actions → Deploy (Fly.io) → Run workflow*
+
+Manuell von einem Rechner mit `flyctl`:
+
 ```bash
 fly deploy
 ```

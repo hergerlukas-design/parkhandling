@@ -1,0 +1,52 @@
+name: Deploy (Fly.io)
+
+# Jeder Merge bzw. Push auf main wird geprüft und auf Fly.io ausgeliefert.
+# Voraussetzung: Repository-Secret FLY_API_TOKEN (erzeugen mit `fly tokens create deploy`).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Nie zwei Deployments gleichzeitig; ein neuerer Push ersetzt einen wartenden
+concurrency:
+  group: deploy-fly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, Tests, Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: Fly.io
+    needs: check
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secret vorhanden?
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::Secret FLY_API_TOKEN fehlt (Settings → Secrets and variables → Actions). Token mit 'fly tokens create deploy' erzeugen."
+            exit 1
+          fi
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Image wird auf Fly gebaut (Dockerfile); die App läuft nur, wenn /version.json antwortet (Health-Check in fly.toml)
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
