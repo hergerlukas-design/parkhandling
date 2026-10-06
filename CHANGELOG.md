@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.4 – 06.10.2026
+
+### Behoben
+- App war unter parkhandling.fly.dev nicht erreichbar (keine öffentliche IP-Adresse, daher kein DNS-Eintrag): Der Deploy-Workflow vergibt fehlende Adressen jetzt automatisch (IPv6 und geteilte IPv4)
+
+### Intern
+- Deploy-Workflow prüft nach jedem Deployment, ob `/version.json` von außen die neue Version liefert, und schlägt sonst fehl
+
 ## 0.10.3 – 06.10.2026
 
 ### Intern
