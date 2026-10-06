@@ -50,3 +50,39 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # Ohne öffentliche IP gibt es keinen DNS-Eintrag für <app>.fly.dev (ERR_NAME_NOT_RESOLVED).
+      # Fehlende Adressen werden einmalig vergeben: IPv6 (dediziert) und IPv4 (geteilt, kostenlos).
+      - name: Öffentliche IP-Adressen sicherstellen
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          ips=$(flyctl ips list --json)
+          echo "$ips" | jq -r '.[]? | "\(.Type) \(.Address)"' || true
+          if ! echo "$ips" | jq -e 'any(.[]; .Type == "v6")' > /dev/null; then
+            echo "Keine IPv6-Adresse – wird vergeben"
+            flyctl ips allocate-v6
+          fi
+          if ! echo "$ips" | jq -e 'any(.[]; .Type == "v4" or .Type == "shared_v4")' > /dev/null; then
+            echo "Keine IPv4-Adresse – geteilte Adresse wird vergeben"
+            flyctl ips allocate-v4 --shared
+          fi
+          flyctl ips list
+      # Erreichbarkeit von außen prüfen und ausgelieferte Version mit package.json vergleichen
+      - name: App erreichbar?
+        run: |
+          app=$(sed -nE "s/^app *= *['\"]([^'\"]+)['\"].*/\1/p" fly.toml)
+          expected=$(jq -r .version package.json)
+          url="https://${app}.fly.dev/version.json"
+          for i in $(seq 1 24); do
+            body=$(curl -fsS --max-time 10 "$url" 2>/dev/null) && {
+              echo "Antwort: $body"
+              if echo "$body" | jq -e --arg v "$expected" '.version == $v' > /dev/null; then
+                echo "Version $expected ist unter https://${app}.fly.dev erreichbar"
+                exit 0
+              fi
+            }
+            echo "Versuch $i: noch nicht erreichbar oder alte Version – neuer Versuch in 10 s"
+            sleep 10
+          done
+          echo "::error::$url liefert nach 4 Minuten nicht Version $expected (DNS, IP-Adressen oder Maschinen prüfen)"
+          exit 1
