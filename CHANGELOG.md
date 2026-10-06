@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.10.1 – 06.10.2026
+
+### Dokumentation
+- README vollständig: Einrichtung (Umgebungsvariablen, Migrationen, Seed- und Demo-Befehl, Konten freischalten, Edge Functions und Mail-Secrets), Prüfbefehle und Testablauf für die Abnahme von Phase 1
+
 ## 0.10.0 – 06.10.2026
 
 ### Neu
