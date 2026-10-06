@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { formFromBooking } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { MoveDialog } from '../components/siteplan/MoveDialog'
+import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
 import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/bookings'
@@ -81,12 +82,14 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, onOpen }: { task: Task; onOpen: (id: string) => void }) {
   const done = task.status === 'done'
   const steps = task.checklist ?? []
   const stepsDone = steps.filter((s) => s.done).length
   return (
-    <li className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${done ? 'bg-ground' : 'bg-warn-soft/50'}`}>
+    <li>
+      <button type="button" onClick={() => onOpen(task.id)}
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left ${done ? 'bg-ground' : 'bg-warn-soft/50'}`}>
       <span
         className={`flex size-5 shrink-0 items-center justify-center rounded-full text-xs ${
           done ? 'text-ok' : task.status === 'in_progress' ? 'border-2 border-warn' : 'border-2 border-warn/70'
@@ -104,6 +107,7 @@ function TaskRow({ task }: { task: Task }) {
         </span>
       </span>
       {steps.length > 0 && <span className="text-xs text-muted">{stepsDone}/{steps.length}</span>}
+      </button>
     </li>
   )
 }
@@ -116,6 +120,7 @@ export function VehicleDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [move, setMove] = useState<'checkout' | 'relocate' | null>(null)
   const [moveNotice, setMoveNotice] = useState<string | null>(null)
+  const [openTask, setOpenTask] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
@@ -265,7 +270,7 @@ export function VehicleDetailPage() {
           </div>
           <ul className="flex flex-col gap-2">
             {relevant.map((t) => (
-              <TaskRow key={t.id} task={t} />
+              <TaskRow key={t.id} task={t} onOpen={setOpenTask} />
             ))}
           </ul>
           {services.some((s) => s.price_at_booking != null || s.description) && (
@@ -332,6 +337,7 @@ export function VehicleDetailPage() {
           }}
         />
       )}
+      {openTask && <TaskSheet taskId={openTask} onClose={() => setOpenTask(null)} onChanged={load} />}
       {move && (
         <MoveDialog
           bookingId={b.id}

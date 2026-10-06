@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.8.0 – 06.10.2026
+
+### Neu
+- Aufgaben-Board nach Klick-Prototyp: Spalten Offen / In Arbeit / Erledigt heute (Smartphone als Tabs), Filter Aufbereitung, Laden/Tanken, Umsetzen, Service, „Nur heute fällig“, sortiert nach Fälligkeit, überfällige Fristen rot, Live-Aktualisierung über Realtime
+- Aufgabe öffnen (Board oder Fahrzeug-Detail): Teilschritte abhaken (erster Haken startet die Aufgabe), Fotos aufnehmen über den Media-Service (Komprimierung, Offline-Queue, nur Thumbnails in der Liste), Notiz, Starten / Erledigt / Wieder öffnen
+- Wer eine Aufgabe begonnen bzw. erledigt hat, wird mit Zeit gespeichert und auf den Karten angezeigt
+- Umsetz-Aufgaben zeigen Anzahl Bewegungen und verlinken in den Lageplan
+- Sind alle Leistungsaufgaben erledigt, wechselt das Fahrzeug automatisch auf „bereit“
+- View `task_board` (Aufgabe mit Fahrzeug, Ort, Leistung, Personen, Fotoanzahl)
+
 ## 0.7.0 – 06.10.2026
 
 ### Neu
