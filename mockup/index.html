@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Park &amp; Fly – Klick-Prototyp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+  :root { --ground:#F3F1ED; --surface:#FFFFFF; --ink:#1A1D21; --muted:#5B5750; --line:#DDD8D0; --accent:#0E5E6F; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif; line-height:1.5; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 24px 64px; }
+  h1 { font-size: 34px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .lead { color: var(--muted); max-width: 640px; margin: 0 0 40px; }
+  h2 { font-size: 18px; margin: 36px 0 14px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  a.card { display:flex; flex-direction:column; gap:4px; padding:16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; color:var(--ink); text-decoration:none; min-height:96px; }
+  a.card:hover { border-color: var(--accent); }
+  a.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .num { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accent); font-weight:600; }
+  .title { font-weight:600; font-size:16px; }
+  .desc { font-size:13px; color:var(--muted); }
+  .note { margin-top: 44px; padding: 16px 18px; background: var(--surface); border:1px solid var(--line); border-radius: 14px; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Park &amp; Fly</h1>
+  <p class="lead">Klickbarer Prototyp der internen App für Einlagerung, Leistungen, Shuttle und Protokolle. Alle Screens sind miteinander verlinkt. Fahrzeuge, Kennzeichen und Zahlen sind Beispieldaten.</p>
+
+  <h2>Tablet (Hauptgerät, quer)</h2>
+  <div class="grid">
+    <a class="card" href="Heute.dc.html"><span class="num">01</span><span class="title">Heute</span><span class="desc">Kennzahlen, Tagesablauf, Warnungen, Belegung</span></a>
+    <a class="card" href="Main.dc.html"><span class="num">02</span><span class="title">Lageplan</span><span class="desc">Halle mit 3-Ebenen-Regalen und Außenbereich, klickbar</span></a>
+    <a class="card" href="Fahrzeuge.dc.html"><span class="num">03</span><span class="title">Fahrzeuge</span><span class="desc">Liste mit Suche, Filtern und Status</span></a>
+    <a class="card" href="Fahrzeug.dc.html"><span class="num">04</span><span class="title">Fahrzeug-Detail</span><span class="desc">Buchung, Ort, Leistungen, Protokolle, Verlauf</span></a>
+    <a class="card" href="Protokoll.dc.html"><span class="num">05</span><span class="title">Annahmeprotokoll</span><span class="desc">Zustand, Fotos, Schäden, Kundenunterschrift</span></a>
+    <a class="card" href="Checkin.dc.html"><span class="num">06</span><span class="title">Einchecken</span><span class="desc">Platzvorschlag nach Regal-Logik</span></a>
+    <a class="card" href="Aufgaben.dc.html"><span class="num">07</span><span class="title">Aufgaben</span><span class="desc">Aufbereitung, Laden, Umsetzen als Kanban</span></a>
+    <a class="card" href="Shuttle.dc.html"><span class="num">08</span><span class="title">Shuttle &amp; Vallet</span><span class="desc">Stündliche Slots und Premium-Aufträge</span></a>
+    <a class="card" href="Einstellungen.dc.html"><span class="num">09</span><span class="title">Einstellungen</span><span class="desc">Leistungskatalog und Update-Hinweis</span></a>
+  </div>
+
+  <h2>Smartphone</h2>
+  <div class="grid">
+    <a class="card" href="MHeute.dc.html"><span class="num">M1</span><span class="title">Heute</span><span class="desc">Tagesübersicht kompakt</span></a>
+    <a class="card" href="MLageplan.dc.html"><span class="num">M2</span><span class="title">Lageplan</span><span class="desc">Regal gedreht, Details im Bottom-Sheet</span></a>
+    <a class="card" href="MScan.dc.html"><span class="num">M3</span><span class="title">Scannen &amp; Einchecken</span><span class="desc">QR-Scan mit Platzvorschlag</span></a>
+    <a class="card" href="MFahrzeuge.dc.html"><span class="num">M4</span><span class="title">Fahrzeuge</span><span class="desc">Karten mit Abholfarbe</span></a>
+    <a class="card" href="MFahrzeug.dc.html"><span class="num">M5</span><span class="title">Fahrzeug-Detail</span><span class="desc">Leistungen und Aktionen</span></a>
+    <a class="card" href="MAufgaben.dc.html"><span class="num">M6</span><span class="title">Aufgaben</span><span class="desc">Offen, in Arbeit, erledigt</span></a>
+    <a class="card" href="Fahrer.dc.html"><span class="num">10</span><span class="title">Fahreransicht</span><span class="desc">Aktuelle Fahrt und nächste Aufträge</span></a>
+  </div>
+
+  <p class="note">Tablet-Screens werden auf kleineren Bildschirmen automatisch verkleinert. Die Smartphone-Screens am besten direkt auf dem Handy öffnen. Zurück zu dieser Übersicht über die Zurück-Funktion des Browsers.</p>
+</main>
+</body>
+</html>

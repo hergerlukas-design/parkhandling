@@ -1,0 +1,73 @@
+@import 'tailwindcss';
+
+/* Farben und Typografie aus dem Klick-Prototyp (mockup/) */
+@theme {
+  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-ground: #f3f1ed;
+  --color-surface: #ffffff;
+  --color-ink: #1a1d21;
+  --color-muted: #5b5750;
+  --color-subtle: #4a463f;
+  --color-line: #ddd8d0;
+  --color-line-strong: #c9c4bc;
+  --color-chip: #e6e2db;
+
+  --color-accent: #0e5e6f;
+  --color-accent-dark: #0a4652;
+  --color-accent-soft: #deeaf3;
+
+  --color-nav: #1a1d21;
+  --color-nav-active: #2e343b;
+
+  --color-danger: #b42318;
+  --color-danger-soft: #fbe4e1;
+  --color-danger-ink: #7a1a12;
+  --color-warn: #b54708;
+  --color-warn-soft: #fcebd3;
+  --color-warn-ink: #6e2c04;
+  --color-ok: #2f6b4f;
+  --color-ok-soft: #e2ece5;
+  --color-ok-ink: #1c4531;
+
+  /* Abholdatum-Farben (Lageplan): Rahmen / Fläche / Text */
+  --color-due-today: #b42318;
+  --color-due-today-bg: #fbe4e1;
+  --color-due-today-ink: #7a1a12;
+  --color-due-tomorrow: #b54708;
+  --color-due-tomorrow-bg: #fcebd3;
+  --color-due-tomorrow-ink: #6e2c04;
+  --color-due-week: #1d5f8a;
+  --color-due-week-bg: #deeaf3;
+  --color-due-week-ink: #123e5c;
+  --color-due-later: #2f6b4f;
+  --color-due-later-bg: #e2ece5;
+  --color-due-later-ink: #1c4531;
+  --color-slot-free: #9c958c;
+  --color-slot-blocked: #aba398;
+  --color-slot-blocked-bg: #ece8e2;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+}
+
+@utility touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}

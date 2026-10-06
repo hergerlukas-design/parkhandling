@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Park &amp; Fly mobil – M-AU 5520</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1ED;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1A1D21}
+a{color:#0E5E6F}a:hover{color:#0A4652}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; background: #F3F1ED; overflow: hidden;">
+
+<header style="flex-shrink: 0; padding: 8px 12px 14px; background: #FFFFFF; border-bottom: 1px solid #DDD8D0; display: flex; flex-direction: column; gap: 6px;">
+<a href="MFahrzeuge.dc.html" style="align-self: flex-start; height: 44px; display: flex; align-items: center; gap: 4px; padding-right: 10px; color: #1A1D21; font-size: 14px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Fahrzeuge</a>
+<div style="padding: 0 4px; display: flex; flex-direction: column; gap: 4px;">
+<div style="display: flex; align-items: center; justify-content: space-between;">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600;">M-AU 5520</span>
+<span style="padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #FCEBD3; color: #6E2C04;">in Arbeit</span>
+</div>
+<span style="font-size: 14px; color: #4A463F;">Porsche Taycan · PF-2026-0412</span>
+</div>
+</header>
+
+<main style="flex-grow: 1; min-height: 0; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<div style="padding: 10px; border-radius: 12px; background: #FBE4E1; border: 2px solid #B42318; color: #7A1A12; display: flex; flex-direction: column;"><span style="font-size: 11px;">Platz</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600;">R3-E1</span></div>
+<div style="padding: 10px; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column;"><span style="font-size: 11px; color: #5B5750;">Schlüssel</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600;">K-06</span></div>
+<div style="padding: 10px; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column;"><span style="font-size: 11px; color: #5B5750;">Abholung</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 600;">17:00</span></div>
+</div>
+
+<section style="background: #FFFFFF; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 15px;">Leistungen</h2><span style="font-size: 12px; color: #5B5750;">3 von 4</span></div>
+<div style="height: 6px; border-radius: 3px; background: #E6E2DB; overflow: hidden;"><div style="height: 6px; width: 75%; background: #2F6B4F;"></div></div>
+<sc-for list="{{services}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 44px;">
+<sc-if value="{{s.done}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6B4F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"></path></svg></sc-if>
+<sc-if value="{{s.open}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B54708" stroke-width="2"><circle cx="12" cy="12" r="7"></circle></svg></sc-if>
+<div style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px;">{{s.name}}</span><span style="font-size: 11px; color: {{s.metaTx}};">{{s.meta}}</span></div>
+</div>
+</sc-for>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+<h2 style="margin: 0; font-size: 15px;">Buchung</h2>
+<div style="display: flex; justify-content: space-between;"><span style="color: #5B5750;">Zeitraum</span><span>17.09. – 23.09.</span></div>
+<div style="display: flex; justify-content: space-between;"><span style="color: #5B5750;">Rückgabe</span><span>Vallet · Terminal 1</span></div>
+<div style="display: flex; justify-content: space-between;"><span style="color: #5B5750;">Kunde</span><span>[Kundenname]</span></div>
+<div style="display: flex; justify-content: space-between;"><span style="color: #5B5750;">Annahme</span><span style="color: #2F6B4F; font-weight: 600;">unterschrieben 17.09.</span></div>
+</section>
+</main>
+
+<div style="flex-shrink: 0; padding: 12px 16px 16px; background: #FFFFFF; border-top: 1px solid #DDD8D0; display: flex; gap: 8px;">
+<a href="MAufgaben.dc.html" style="flex: 1; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; border: 1px solid #C9C4BC; color: #1A1D21; font-size: 15px; text-decoration: none;">Laden starten</a>
+<a href="MScan.dc.html" style="flex: 1; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #0E5E6F; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none;">Auschecken</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    function s(name, done, meta) { return { name: name, done: done, open: !done, meta: meta, metaTx: done ? '#5B5750' : '#B54708' }; }
+    return {
+      services: [
+        s('Grundreinigung', true, '17.09. · 4 Fotos'),
+        s('Aufbereitung innen', true, '17.09. · 6 Fotos'),
+        s('Aufbereitung außen', true, '17.09. · 8 Fotos'),
+        s('Laden', false, 'Akku 41 % · fällig vor 16:30')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -14,22 +14,36 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 24 Plätze (A1, A2)
 - [ANNAHME] Außen B (ohne Plane): 2 Reihen × 24 Plätze (B1, B2)
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone
-- [ANNAHME] Schlüssel: Tresor mit Fächern K-001 bis K-150
+- [ANNAHME] Schlüssel: Tresor mit Fächern K-001 bis K-150 (ein Datensatz je Fach in `keys`, `booking_id` leer = frei)
+- [ANNAHME] Platz-Codes: Halle `R<Spalte>-E<Ebene>`, Außen `A1-07`, Arbeitsorte `W-AUF1`, `W-LAD1`, `W-UEB`, Puffer `P-01`; QR-Inhalt `PF-LOC:<Code>` bzw. `PF-KEY:<Fach>`
+- [ANNAHME] Kapazität: Aufbereitung/Ladeplatz/Puffer je 1 Fahrzeug, Übergabezone 6, „Vallet unterwegs“ 50
+- [ANNAHME] Spalte `column` aus der Arbeitsanweisung heißt in der DB `rack_column` (SQL-Schlüsselwort)
 
 ## Leistungen
 - [BELEGT] Leistungsarten laut Excel: Park & Fly, Premium-Stellplatz, Fahrzeugpflege/Aufbereitung, Hol- & Bringservice, Transfer Flughafen, Zusatzleistung
 - [BELEGT] Grundreinigung bei jeder Buchung; Aufbereitung in Teilschritten
 - [BELEGT] Preise werden derzeit manuell bzw. individuell vereinbart
+- [ANNAHME] Leistungs-Codes: GRUND, AUF_INNEN, AUF_AUSSEN, POLITUR, LADEN, TANKEN, SERVICE, ZUSATZ; Teilschritte je Leistung als Checkliste in `services.steps` (z. B. Aufbereitung innen: Saugen, Kunststoffe, Scheiben, Fußmatten)
 - [ANNAHME] Katalog: Grundreinigung (Standard), Aufbereitung innen, Aufbereitung außen, Politur, Laden, Tanken, Servicearbeiten, Zusatzleistung (Freitext)
 - [ANNAHME] Preise im Katalog leer (`null`); Gesamtpreis pro Buchung manuell eintragbar
 
 ## Buchungen
+- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- vs. Akkustand im Protokoll
+- [ANNAHME] „Kunde / Firma“ landet in `customer_name`; `company` ist optional zusätzlich
+- [ANNAHME] Leistungsaufgaben sind 120 min vor Abholung fällig (`settings.task_due_before_pickup_minutes`)
 - [BELEGT] Zeitraum von Datum/Uhrzeit bis Datum/Uhrzeit, Umbuchungen möglich
 - [BELEGT] Stornierte Buchungen werden nicht gelöscht, sondern auf „storniert" gesetzt
 - [BELEGT] Felder laut Excel: Buchungs-Nr., Eingang am, Status, Kunde/Firma, Telefon, E-Mail, Kennzeichen, Leistung, Anreise, Abholung, Anzahl Tage, Parkplatz, Aufbereitung, Hol- & Bringservice, Transfer, Preis, Zahlungsstatus, Notizen
 - [ANNAHME] Buchungsquelle im Prototyp: manuelles Anlegen + Excel-/CSV-Import im Format der Vorlage „ParkHandling_Buchungsliste" + Demo-Daten
 - [ANNAHME] Zahlungsstatus: offen, teilweise, bezahlt, erstattet (nur Anzeige, keine Zahlungsabwicklung)
 - [OFFEN] Anbindung des echten Buchungsportals
+
+## Lageplan & Scannen
+- [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
+- [ANNAHME] QR-Inhalte: Stellplatz `PF-LOC:<Code>`, Schlüssel `PF-KEY:K-018`; reine Codes werden ebenfalls erkannt
+- [ANNAHME] Außenplatz-Vorschlag: „Außen mit Plane“ → Außen A, „Außen“ → Außen B, sonst Pufferzone
+- [ANNAHME] Übergabe ist bis zum Übergabeprotokoll (Schritt 10) ohne Unterschrift möglich
+- [ANNAHME] Umsetzen eines Blockierers kostet 2 Bewegungen (raus und wieder rein)
 
 ## Shuttle & Transfer
 - [BELEGT] Shuttle stündlich innerhalb von Betriebszeiten, Premium auf Abruf
@@ -40,6 +54,14 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2
 - [ANNAHME] Im Prototyp gehen alle Mails nur an eine Testadresse aus `settings`
+- [ANNAHME] PDF-Vorlage aus `fahrzeug-protokolle-v2` (Commit 5d29dc6, Ordner `pdf-template/`) unverändert übernommen, nur um eine Option für Beschriftungen ergänzt; CarHandling-Logo und Branding bleiben, bis ein Park-&-Fly-Logo vorliegt
+- [ANNAHME] Das PDF wird im Browser erzeugt (pdf-lib, wie in der Vorlage) und über den Media-Service gespeichert, nicht serverseitig. Grund: Vorlage ist Browser-Code, funktioniert offline; die Edge Function verschickt nur das gespeicherte PDF
+- [ANNAHME] Die Standardschrift der Vorlage (Helvetica) kann nicht alle Sonderzeichen; feste Beschriftungen sind daher ohne Umlaute („Uebergabe“), eingegebene Texte mit Umlauten funktionieren
+- [ANNAHME] Übergabeprotokoll nutzt das Überführungs-Layout der Vorlage mit Titel „Fahrzeug-Uebergabeprotokoll“, Empfänger = Kunde; der Vergleich zur Annahme (KM, Tank/Akku, neue Schäden) steht in den Bemerkungen
+- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tank- bzw. Akkustand (nach Antriebsart), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
+- [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
+- [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
+- [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
 - [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
 
 ## Nutzer & Geräte
@@ -48,5 +70,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Geräte: Android-/iOS-Tablets quer und Smartphones, Chrome/Safari aktuell
 
 ## Technik
-- [ANNAHME] Supabase-Region EU (Frankfurt)
+- [ANNAHME] Schrift IBM Plex Sans/Mono wie im Klick-Prototyp, per Google Fonts geladen und vom Service Worker zwischengespeichert (offline nach erstem Laden)
+- [ANNAHME] Shuttle/Vallet ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
+- [ANNAHME] Supabase-Region EU (Frankfurt) – das bestehende Projekt `parkhandling` liegt laut Supabase in `eu-west-1` (Irland); Region nur bei Neuanlage wählbar
 - [ANNAHME] Nur Testdaten bis Datenschutz und Hosting geklärt sind

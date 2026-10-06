@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Park &amp; Fly – Annahmeprotokoll</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F3F1ED;font-family:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;color:#1A1D21}
+a{color:#0E5E6F}a:hover{color:#0A4652}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1194px; height: 834px; box-sizing: border-box; display: flex; flex-direction: column; background: #F3F1ED; overflow: hidden;">
+
+<header style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 20px; background: #FFFFFF; border-bottom: 1px solid #DDD8D0; box-sizing: border-box;">
+<a href="Fahrzeug.dc.html" style="height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 12px 0 6px; border-radius: 10px; color: #1A1D21; font-size: 14px; text-decoration: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>Zurück</a>
+<span style="font-size: 18px; font-weight: 600;">Annahmeprotokoll</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600;">FS-BC 902</span>
+<span style="font-size: 14px; color: #5B5750;">Audi Q7 · 23.09.2026 16:24 · Terminal 1</span>
+<div style="flex-grow: 1;"></div>
+<div style="display: flex; gap: 4px; padding: 4px; background: #E6E2DB; border-radius: 12px;">
+<button type="button" style="height: 36px; padding: 0 14px; border: none; border-radius: 9px; background: #FFFFFF; font-size: 13px; font-weight: 600;">Annahme</button>
+<button type="button" style="height: 36px; padding: 0 14px; border: none; border-radius: 9px; background: transparent; color: #4A463F; font-size: 13px; font-weight: 600;">Übergabe</button>
+</div>
+</header>
+
+<main style="flex-grow: 1; min-height: 0; padding: 18px 20px; box-sizing: border-box; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+
+<section style="background: #FFFFFF; border: 1px solid #DDD8D0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+<h2 style="margin: 0; font-size: 16px;">Zustand</h2>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4A463F;">Kilometerstand
+<input type="text" value="48 213" style="height: 44px; padding: 0 12px; border: 1px solid #C9C4BC; border-radius: 10px; font-size: 18px; font-family: 'IBM Plex Mono', monospace; color: #1A1D21;">
+</label>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: #4A463F;">Tankstand</span>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;">
+<button type="button" style="height: 44px; border: 1px solid #C9C4BC; border-radius: 10px; background: #FFFFFF; font-size: 14px;">Res.</button>
+<button type="button" style="height: 44px; border: 1px solid #C9C4BC; border-radius: 10px; background: #FFFFFF; font-size: 14px;">¼</button>
+<button type="button" style="height: 44px; border: 2px solid #0E5E6F; border-radius: 10px; background: #DEEAF3; font-size: 14px; font-weight: 600;">½</button>
+<button type="button" style="height: 44px; border: 1px solid #C9C4BC; border-radius: 10px; background: #FFFFFF; font-size: 14px;">¾</button>
+<button type="button" style="height: 44px; border: 1px solid #C9C4BC; border-radius: 10px; background: #FFFFFF; font-size: 14px;">voll</button>
+</div>
+<span style="font-size: 12px; color: #5B5750;">Bei E-Fahrzeugen: Akkustand in %</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: #4A463F;">Übergeben</span>
+<sc-for list="{{items}}" as="i" hint-placeholder-count="4">
+<label style="display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px;"><input type="checkbox" checked="{{i.checked}}" style="width: 22px; height: 22px; accent-color: #0E5E6F;">{{i.label}}</label>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: #4A463F;">Fotos</span>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+<sc-for list="{{photos}}" as="p" hint-placeholder-count="6">
+<div style="height: 54px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; background: {{p.bg}}; color: {{p.tx}}; border: 1px {{p.bs}} #ABA398;">{{p.label}}</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #DDD8D0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: baseline; justify-content: space-between;"><h2 style="margin: 0; font-size: 16px;">Schäden</h2><span style="font-size: 12px; color: #5B5750;">Auf das Fahrzeug tippen</span></div>
+<svg viewBox="0 0 200 300" width="100%" height="300" aria-label="Fahrzeug von oben mit zwei markierten Schäden">
+<rect x="45" y="20" width="110" height="260" rx="40" fill="#F3F1ED" stroke="#4A463F" stroke-width="2"></rect>
+<rect x="58" y="70" width="84" height="45" rx="10" fill="#FFFFFF" stroke="#4A463F" stroke-width="1.5"></rect>
+<rect x="58" y="190" width="84" height="38" rx="10" fill="#FFFFFF" stroke="#4A463F" stroke-width="1.5"></rect>
+<path d="M58 125h84M58 180h84" stroke="#ABA398" stroke-width="1.5"></path>
+<text x="100" y="14" text-anchor="middle" font-size="10" fill="#5B5750">Front</text>
+<circle cx="62" cy="38" r="11" fill="#B42318"></circle><text x="62" y="42" text-anchor="middle" font-size="12" font-weight="600" fill="#FFFFFF">1</text>
+<circle cx="112" cy="84" r="11" fill="#B42318"></circle><text x="112" y="88" text-anchor="middle" font-size="12" font-weight="600" fill="#FFFFFF">2</text>
+</svg>
+<sc-for list="{{damages}}" as="d" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #FBE4E1; color: #7A1A12;">
+<span style="width: 22px; height: 22px; border-radius: 11px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: #B42318; color: #FFFFFF;">{{d.n}}</span>
+<div style="display: flex; flex-direction: column; font-size: 13px;"><span style="font-weight: 600;">{{d.title}}</span><span>{{d.meta}}</span></div>
+</div>
+</sc-for>
+<button type="button" style="margin-top: auto; height: 44px; border: 1px dashed #9C958C; border-radius: 10px; background: #FFFFFF; font-size: 14px;">+ Schaden hinzufügen</button>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #DDD8D0; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-size: 16px;">Bestätigung Kunde</h2>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4A463F;">Bemerkung
+<input type="text" value="Kindersitz hinten rechts verbleibt im Fahrzeug" style="height: 44px; padding: 0 12px; border: 1px solid #C9C4BC; border-radius: 10px; font-size: 14px; color: #1A1D21;">
+</label>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 12px; color: #4A463F;">Unterschrift Kunde</span>
+<div style="height: 170px; border: 1px solid #C9C4BC; border-radius: 12px; background: #FAF9F7; position: relative;">
+<svg viewBox="0 0 300 170" width="100%" height="170" aria-label="Unterschrift"><path d="M30 110c20-40 40-60 50-40s-10 50 5 45 30-60 45-55-5 50 15 45 20-30 35-28 10 20 25 15 25-20 50-18" fill="none" stroke="#1A1D21" stroke-width="2.4" stroke-linecap="round"></path><path d="M24 138h252" stroke="#C9C4BC" stroke-width="1"></path></svg>
+<button type="button" style="position: absolute; top: 8px; right: 8px; height: 32px; padding: 0 10px; border: 1px solid #C9C4BC; border-radius: 8px; background: #FFFFFF; font-size: 12px;">Löschen</button>
+</div>
+<span style="font-size: 12px; color: #5B5750;">[Kundenname] · Mitarbeiter 1</span>
+</div>
+<label style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.4;"><input type="checkbox" checked="{{confirmed}}" style="width: 22px; height: 22px; flex-shrink: 0; accent-color: #0E5E6F;">Kunde bestätigt den dokumentierten Zustand und die gebuchten Leistungen.</label>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px;">
+<a href="Checkin.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #0E5E6F; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none;">Abschließen &amp; PDF senden</a>
+<span style="font-size: 12px; color: #5B5750; text-align: center;">PDF im Layout Vehicle Protocol Pro V2 an [E-Mail Kunde]</span>
+</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1194,"height":834}}'>
+class Component extends DCLogic {
+  renderVals() {
+    function photo(label, done) {
+      return { label: done ? label + ' ✓' : label, bg: done ? '#E2ECE5' : '#FFFFFF', tx: done ? '#1C4531' : '#5B5750', bs: done ? 'solid' : 'dashed' };
+    }
+    return {
+      confirmed: true,
+      items: [
+        { label: 'Fahrzeugschlüssel (1×)', checked: true },
+        { label: 'Zweitschlüssel', checked: false },
+        { label: 'Ladekabel', checked: false },
+        { label: 'Parkkarte / Tankkarte', checked: false }
+      ],
+      photos: [photo('Front', true), photo('Heck', true), photo('Links', true), photo('Rechts', true), photo('Innenraum', false), photo('Tacho', false)],
+      damages: [
+        { n: '1', title: 'Kratzer Stoßfänger vorne links', meta: 'ca. 5 cm · 2 Fotos' },
+        { n: '2', title: 'Steinschlag Windschutzscheibe', meta: 'Fahrerseite · 1 Foto' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+Park & Fly – Klick-Prototyp
+===========================
+
+Ansehen ohne Installation:
+  ZIP entpacken und index.html im Browser öffnen (Chrome, Edge, Safari, Firefox).
+  Es wird kein Account und keine Internetverbindung benötigt
+  (nur die Schriftart wird bei bestehender Verbindung nachgeladen).
+
+Als Link teilen:
+  Den entpackten Ordner auf einen beliebigen statischen Webspace legen,
+  z. B. GitHub Pages oder eine kleine Fly.io-App mit statischem Server.
+  Einstiegsseite ist index.html.
+
+Hinweis: Alle Fahrzeuge, Kennzeichen und Zahlen sind Beispieldaten.
