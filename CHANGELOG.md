@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.7.0 – 06.10.2026
+
+### Neu
+- Lageplan nach Klick-Prototyp: Halle als Regalraster (Tablet R1–R8 × E3–E1, Smartphone je Regal eine Zeile), Außen A/B als Reihen mit Platznummern, Arbeitsorte/Puffer/unterwegs mit Auslastung; Farben nach Abholdatum, freie Plätze gestrichelt, „nur mit Umsetzen“ grau; Kapazitätsanzeige Halle/Außen; Konflikt-Banner je Regalspalte; Live-Aktualisierung über Realtime
+- Detailpanel rechts (Tablet) bzw. als Bottom-Sheet (Smartphone) mit Auschecken, Umsetzen, Details; freie Plätze mit „Fahrzeug hier einchecken“
+- Einchecken in Schritten: Fahrzeug wählen → Schlüssel scannen oder freies Fach wählen → Platzvorschlag (Halle über Regal-Logik, Außen nach Abdeckplane) → bestätigen per Button oder Stellplatz-QR; Hinweis bei offenen Leistungen mit „Erst Aufbereitung“; Abweichung vom Vorschlag wird als Warnung angezeigt; App-Updates werden während des Check-ins zurückgehalten
+- Auschecken/Umsetzen/Übergeben mit Zielauswahl (Aufbereitung, Ladeplatz, Übergabezone, Vallet unterwegs, anderer Stellplatz, Übergabe); Regelverstöße meldet die Datenbank im Klartext
+- Scannen: Schlüssel frei → Einchecken, Schlüssel belegt → Fahrzeug, Stellplatz → Lageplan; Kamera über BarcodeDetector bzw. jsQR (iPad/iPhone), manuelle Eingabe immer möglich
+- Fahrzeug-Detail: Einchecken bzw. Umsetzen/Auschecken direkt im Bereich „Ort & Schlüssel“, Link „Im Lageplan zeigen“
+
 ## 0.6.0 – 05.10.2026
 
 ### Neu

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { formFromBooking } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
+import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
 import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/bookings'
@@ -113,6 +114,8 @@ export function VehicleDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
+  const [move, setMove] = useState<'checkout' | 'relocate' | null>(null)
+  const [moveNotice, setMoveNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const load = useCallback(() => {
@@ -232,7 +235,27 @@ export function VehicleDetailPage() {
                 <div className="text-xs text-subtle">{key ? key.storage_place : 'nicht zugeordnet'}</div>
               </div>
             </div>
-            <p className="mt-3 text-xs text-muted">Ein-/Auschecken und Umsetzen über Lageplan oder Scan.</p>
+            {!closed && (
+              <div className="mt-3 flex flex-col gap-2">
+                {b.location ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={() => setMove('relocate')}>Umsetzen</Button>
+                    <Button variant="primary" onClick={() => setMove('checkout')}>Auschecken</Button>
+                  </div>
+                ) : (
+                  <Link to={`/einchecken?booking=${b.id}`}
+                    className="touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+                    Einchecken
+                  </Link>
+                )}
+                {b.location && (
+                  <Link to={`/lageplan?platz=${encodeURIComponent(b.location.code)}`} className="text-center text-sm text-accent underline">
+                    Im Lageplan zeigen
+                  </Link>
+                )}
+              </div>
+            )}
+            {moveNotice && <p className="mt-2 rounded-lg bg-ok-soft px-3 py-2 text-sm text-ok-ink">{moveNotice}</p>}
           </Card>
         </div>
 
@@ -305,6 +328,20 @@ export function VehicleDetailPage() {
           onClose={() => setEditing(false)}
           onSaved={() => {
             setEditing(false)
+            load()
+          }}
+        />
+      )}
+      {move && (
+        <MoveDialog
+          bookingId={b.id}
+          plate={b.plate}
+          fromCode={b.location?.code ?? null}
+          mode={move}
+          onClose={() => setMove(null)}
+          onDone={(res) => {
+            setMove(null)
+            setMoveNotice(`${res.from ?? '–'} → ${res.to ?? 'übergeben'}`)
             load()
           }}
         />

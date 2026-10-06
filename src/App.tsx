@@ -3,6 +3,7 @@ import { AppShell } from './components/AppShell'
 import { AuthGate } from './components/AuthGate'
 import { AuthProvider } from './lib/auth'
 import { ChangelogPage } from './pages/ChangelogPage'
+import { CheckinPage } from './pages/CheckinPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ScanPage } from './pages/ScanPage'
 import { SitePlanPage } from './pages/SitePlanPage'
@@ -24,6 +25,7 @@ export function App() {
               <Route path="fahrzeuge/:id" element={<VehicleDetailPage />} />
               <Route path="aufgaben" element={<TasksPage />} />
               <Route path="scan" element={<ScanPage />} />
+              <Route path="einchecken" element={<CheckinPage />} />
               <Route path="einstellungen" element={<SettingsPage />} />
               <Route path="changelog" element={<ChangelogPage />} />
               <Route path="*" element={<TodayPage />} />

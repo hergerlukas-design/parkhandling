@@ -6,6 +6,13 @@ import { BOTTOM_ITEMS, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { UpdateBanner } from './UpdateBanner'
 
+/** Seitentitel für Ansichten ohne eigenen Navigationseintrag */
+const EXTRA_TITLES = [
+  { to: '/einchecken', label: 'Einchecken' },
+  { to: '/scan', label: 'Scannen' },
+  { to: '/changelog', label: 'Änderungen' },
+]
+
 const WEEKDAY = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', weekday: 'short' })
 
 function railClass(isActive: boolean) {
@@ -16,7 +23,7 @@ function railClass(isActive: boolean) {
 
 export function AppShell() {
   const { pathname } = useLocation()
-  const current = [...NAV_ITEMS, SETTINGS_ITEM].find((i) =>
+  const current = [...NAV_ITEMS, SETTINGS_ITEM, ...EXTRA_TITLES].find((i) =>
     i.to === '/' ? pathname === '/' : pathname.startsWith(i.to),
   )
   const now = new Date()

@@ -38,6 +38,13 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Zahlungsstatus: offen, teilweise, bezahlt, erstattet (nur Anzeige, keine Zahlungsabwicklung)
 - [OFFEN] Anbindung des echten Buchungsportals
 
+## Lageplan & Scannen
+- [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
+- [ANNAHME] QR-Inhalte: Stellplatz `PF-LOC:<Code>`, Schlüssel `PF-KEY:K-018`; reine Codes werden ebenfalls erkannt
+- [ANNAHME] Außenplatz-Vorschlag: „Außen mit Plane“ → Außen A, „Außen“ → Außen B, sonst Pufferzone
+- [ANNAHME] Übergabe ist bis zum Übergabeprotokoll (Schritt 10) ohne Unterschrift möglich
+- [ANNAHME] Umsetzen eines Blockierers kostet 2 Bewegungen (raus und wieder rein)
+
 ## Shuttle & Transfer
 - [BELEGT] Shuttle stündlich innerhalb von Betriebszeiten, Premium auf Abruf
 - [ANNAHME] Betriebszeiten 05:00–23:00, Takt 60 min, 1 Bus mit 8 Plätzen
