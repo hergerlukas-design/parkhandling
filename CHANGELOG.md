@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.11.0 – 07.10.2026
+
+### Neu
+- Schadenskarte aus dem ADE Fleet Manager in Annahme- und Übergabeprotokoll: Position wird in der Fahrzeuggrafik (Oben, Vorne, Hinten, Links, Rechts, Innenraum) angetippt statt aus einer Liste gewählt; Positionen weiterer Schäden sind rot markiert, Reiter mit Schäden tragen einen roten Punkt
+- Abgeschlossene Protokolle zeigen die Grafik nur zur Ansicht
+
 ## 0.10.3 – 06.10.2026
 
 ### Intern

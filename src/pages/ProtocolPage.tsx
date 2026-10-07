@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
+import { CarDamageSelector } from '../components/protocols/CarDamageSelector'
 import { SignaturePad } from '../components/protocols/SignaturePad'
 import { Button, Dialog, ErrorList, Field, Select, TextInput } from '../components/ui'
 import { useAuth } from '../lib/auth'
@@ -17,7 +18,6 @@ import {
   compareWithIntake,
   CONDITION_ITEMS,
   DAMAGE_INTENSITIES,
-  DAMAGE_POSITIONS,
   DAMAGE_TYPES,
   damageSlot,
   EQUIPMENT_ITEMS,
@@ -541,10 +541,12 @@ export function ProtocolPage() {
                       </button>
                     )}
                   </div>
-                  <Select aria-label="Position" value={d.pos} onChange={(e) => patchDamage({ pos: e.target.value })}>
-                    <option value="">Position wählen …</option>
-                    {DAMAGE_POSITIONS.map((p) => <option key={p}>{p}</option>)}
-                  </Select>
+                  <CarDamageSelector
+                    value={d.pos}
+                    onChange={(pos) => patchDamage({ pos })}
+                    markers={form.damages.filter((x) => x.id !== d.id && x.pos).map((x) => x.pos)}
+                    readOnly={fieldsDisabled}
+                  />
                   <div className="grid grid-cols-2 gap-2">
                     <Select aria-label="Art" value={d.type} onChange={(e) => patchDamage({ type: e.target.value })}>
                       <option value="">Art …</option>
