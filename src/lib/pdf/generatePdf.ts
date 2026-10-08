@@ -2,7 +2,7 @@
 // Fahrzeug-Protokoll-PDF (Annahme / Überführung) – eigenständige Vorlage.
 //
 // Kopie von pdf-template/src/generatePdf.ts aus fahrzeug-protokolle-v2 (5d29dc6),
-// ergänzt um PdfOptions.labels, optionale Checkliste und Schadens-Freitext (desc).
+// ergänzt um PdfOptions.labels/photoQuality, optionale Checkliste und Schadens-Freitext (desc).
 // Ursprünglich ohne
 // Abhängigkeiten auf den Rest der App. Einzige Abhängigkeit: pdf-lib.
 // Das Logo wird von `logoUrl` geladen (Standard: /carhandling.png, also
@@ -1096,9 +1096,21 @@ async function buildExtraPhotoPages(
 // Main export
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Fotoqualität im PDF: Faktor auf die Bildbreite und JPEG-Qualität */
+export interface PhotoQuality {
+  /** 1 = Fahrzeug-/Schadensfotos 700 px, Zusatzfotos 900 px breit */
+  scale: number
+  /** JPEG-Qualität 0–1 */
+  quality: number
+}
+
+export const DEFAULT_PHOTO_QUALITY: PhotoQuality = { scale: 1, quality: 0.72 }
+
 export interface PdfOptions {
   /** URL des Logos oben rechts (PNG). Standard: '/carhandling.png' */
   logoUrl?: string
+  /** Park & Fly: Fotos kleiner rechnen, damit das PDF unter das Upload-Limit passt */
+  photoQuality?: PhotoQuality
   /** Park & Fly: einzelne Beschriftungen überschreiben (z. B. Übergabe an den Kunden) */
   labels?: Partial<PdfLabels>
 }
@@ -1106,8 +1118,9 @@ export interface PdfOptions {
 export async function generatePdf(
   data: PdfData,
   lang: 'de' | 'en' = 'de',
-  { logoUrl = '/carhandling.png', labels }: PdfOptions = {}
+  { logoUrl = '/carhandling.png', labels, photoQuality = DEFAULT_PHOTO_QUALITY }: PdfOptions = {}
 ): Promise<Uint8Array> {
+  const photoPx = (base: number) => Math.round(base * photoQuality.scale)
   _lang = lang
   _L = labels ? { ...PDF_LABELS[lang], ...labels } : PDF_LABELS[lang]
   const pdfDoc = await PDFDocument.create()
@@ -1133,7 +1146,7 @@ export async function generatePdf(
     photoKeys.map(async (k) => {
       const url = data.photos[k]
       if (!url) return
-      const bytes = await fetchJpeg(url)
+      const bytes = await fetchJpeg(url, photoPx(700), photoQuality.quality)
       if (bytes) vehiclePhotoImgs[k] = await pdfDoc.embedJpg(bytes)
     })
   )
@@ -1165,7 +1178,7 @@ export async function generatePdf(
   const damagePhotoEntries = Object.entries(data.photos).filter(([k]) => k.startsWith('schaden_'))
   await Promise.all(
     damagePhotoEntries.map(async ([k, url]) => {
-      const bytes = await fetchJpeg(url)
+      const bytes = await fetchJpeg(url, photoPx(700), photoQuality.quality)
       if (bytes) damagePhotoImgs[k] = await pdfDoc.embedJpg(bytes)
     })
   )
@@ -1173,7 +1186,7 @@ export async function generatePdf(
   // ── Load additional photos (in order; failed downloads are skipped) ─────────
   const extraImgs = (await Promise.all(
     extraPhotoEntries(data.photos).map(async ([, url]) => {
-      const bytes = await fetchJpeg(url, 900)
+      const bytes = await fetchJpeg(url, photoPx(900), photoQuality.quality)
       return bytes ? pdfDoc.embedJpg(bytes) : null
     })
   )).filter((img): img is PDFImage => img !== null)

@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.13.2 – 08.10.2026
+
+### Behoben
+- Protokoll-PDFs mit vielen Fotos passen immer unter das Upload-Limit von 1,5 MB: Ist das PDF zu groß, werden die Fotos darin stufenweise kleiner gerechnet (bisher wurde ein PDF mit z. B. 23 Fotos 1,7 MB groß und vom Server abgelehnt)
+
 ## 0.13.1 – 08.10.2026
 
 ### Behoben
