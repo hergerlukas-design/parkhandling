@@ -64,6 +64,45 @@ export async function suggestHallLocation(bookingId: string): Promise<Suggestion
   return (data ?? []) as Suggestion[]
 }
 
+type ParkingType = CheckinCandidate['parking_type']
+
+/** Hallenvorschläge kürzen: bis zu 3 passende, 3 weitere, dann Puffer */
+export function rankHallSuggestions(list: Suggestion[]): Suggestion[] {
+  const fits = list.filter((s) => s.kind === 'fits').slice(0, 3)
+  const rest = list.filter((s) => s.kind !== 'fits' && s.kind !== 'buffer').slice(0, 3)
+  const buffer = list.filter((s) => s.kind === 'buffer')
+  return [...fits, ...rest, ...buffer]
+}
+
+/** Außen: erste freie Plätze im passenden Bereich (mit Plane → A, ohne → B), dazu ein Pufferplatz */
+export function outdoorSuggestions(board: BoardSlot[], parkingType: ParkingType): Suggestion[] {
+  const area = parkingType === 'outdoor_cover' ? 'outdoor_a' : 'outdoor_b'
+  const free = board.filter((s) => s.status === 'free' && !s.booking_id)
+  const inArea = free.filter((s) => s.area === area).slice(0, 4)
+  const buffer = free.filter((s) => s.area === 'buffer').slice(0, 1)
+  return [
+    ...inArea.map((s, i) => ({
+      location_id: s.id, code: s.code, kind: 'fits' as const, moves: 0, score: i,
+      reason: area === 'outdoor_a' ? 'Freier Platz mit Abdeckplane.' : 'Freier Außenplatz.',
+    })),
+    ...buffer.map((s) => ({
+      location_id: s.id, code: s.code, kind: 'buffer' as const, moves: 0, score: 9999,
+      reason: 'Pufferzone: kurzfristig abstellen und später einlagern.',
+    })),
+  ]
+}
+
+/** Platzvorschläge für eine Buchung: Halle über Regal-Logik, Außen erster freier Platz */
+export async function suggestLocations(b: { id: string; parking_type: ParkingType }): Promise<Suggestion[]> {
+  if (b.parking_type === 'indoor') return rankHallSuggestions(await suggestHallLocation(b.id))
+  return outdoorSuggestions(await loadBoard(), b.parking_type)
+}
+
+/** Empfohlener Platz: erster passender, sonst Puffer */
+export function recommendedSuggestion(list: Suggestion[]): Suggestion | null {
+  return list.find((s) => s.kind === 'fits') ?? list.find((s) => s.kind === 'buffer') ?? null
+}
+
 export interface MoveResult {
   from: string | null
   to: string | null

@@ -3,8 +3,8 @@ import { protocolFilename } from './protocolPdf'
 import {
   buildPdfData,
   compareWithIntake,
-  EMPTY_CHECKLIST,
   formFromRow,
+  normalizeDamage,
   parseMileage,
   pickSlotUrls,
   validateForFinalize,
@@ -48,14 +48,13 @@ describe('formFromRow', () => {
     expect(f.inspector_name).toBe('Mitarbeiter 1')
     expect(f.location_text).toBe('Park & Fly Flughafen München')
     expect(f.customer_signer_name).toBe('Erika Test')
-    expect(f.checklist).toEqual(EMPTY_CHECKLIST)
+    expect(f.damages).toEqual([])
   })
 
-  it('übernimmt bei der Übergabe FIN und Checkliste aus der Annahme', () => {
-    const intake = { vin: 'WVWZZZ1KZ6W000001', checklist: { cable: true } } as never
+  it('übernimmt bei der Übergabe die FIN aus der Annahme', () => {
+    const intake = { vin: 'WVWZZZ1KZ6W000001' } as never
     const f = formFromRow(null, { type: 'handover', booking, inspectorName: 'M2', intake })
     expect(f.vin).toBe('WVWZZZ1KZ6W000001')
-    expect(f.checklist.cable).toBe(true)
     expect(f.location_text).toBe('Park & Fly Flughafen München → Erika Test')
   })
 })
@@ -78,11 +77,18 @@ describe('validateForFinalize', () => {
 
   it('verlangt vollständige Schadensangaben', () => {
     const errors = validateForFinalize(
-      form({ damages: [{ id: 'a', pos: 'Dach', type: '', int: '' }] }),
+      form({ damages: [{ id: 'a', pos: 'Dach', desc: '  ' }, { id: 'b', pos: '', desc: 'Delle' }] }),
       'combustion',
       { staff: true, customer: true },
     )
-    expect(errors).toEqual(['Schaden 1: Position, Art und Intensität angeben'])
+    expect(errors).toEqual(['Schaden 1: Position und Beschreibung angeben', 'Schaden 2: Position und Beschreibung angeben'])
+  })
+})
+
+describe('normalizeDamage', () => {
+  it('führt ältere Einträge mit Art und Intensität in Freitext über', () => {
+    expect(normalizeDamage({ id: 'x', pos: 'Dach', type: 'Kratzer', int: 'Mittel' })).toEqual({ id: 'x', pos: 'Dach', desc: 'Kratzer, Mittel' })
+    expect(normalizeDamage({ id: 'y', pos: 'Dach', desc: 'Delle' })).toEqual({ id: 'y', pos: 'Dach', desc: 'Delle' })
   })
 })
 
@@ -98,8 +104,8 @@ describe('compareWithIntake', () => {
       mileage: '48120',
       fuel_level: 50,
       damages: [
-        { id: 'y', pos: 'Dach', type: 'Kratzer', int: 'Mittel' },
-        { id: 'z', pos: 'Tür vorne links', type: 'Delle', int: 'Tief' },
+        { id: 'y', pos: 'Dach', desc: 'Kratzer, etwas größer' },
+        { id: 'z', pos: 'Tür vorne links', desc: 'Delle, tief' },
       ],
     })
     const c = compareWithIntake(intake, handover)
@@ -107,7 +113,7 @@ describe('compareWithIntake', () => {
     expect(c.fuelDiff).toBe(-25)
     expect(c.newDamages.map((d) => d.id)).toEqual(['z'])
     expect(c.lines).toContain('KM seit Annahme: +120 km (Annahme 48000 km)')
-    expect(c.lines).toContain('Neue Schaeden seit Annahme: Tür vorne links (Delle)')
+    expect(c.lines).toContain('Neue Schäden seit Annahme: Tür vorne links (Delle, tief)')
   })
 
   it('meldet fehlende Annahme', () => {
@@ -130,8 +136,8 @@ describe('pickSlotUrls / buildPdfData', () => {
   it('ordnet Schadensfotos nach Position in der Liste und Unterschriften der Vorlage zu', () => {
     const f = form({
       damages: [
-        { id: 'aa', pos: 'Dach', type: 'Kratzer', int: 'Mittel' },
-        { id: 'bb', pos: 'Motorhaube', type: 'Delle', int: 'Tief' },
+        { id: 'aa', pos: 'Dach', desc: 'Kratzer' },
+        { id: 'bb', pos: 'Motorhaube', desc: ' Delle, tief ' },
       ],
     })
     const slotUrls = { schaden_bb: 'u-bb', signature: 'sig', signature_customer: 'kunde', vorne: 'v' }
@@ -139,8 +145,9 @@ describe('pickSlotUrls / buildPdfData', () => {
     expect(intake.protocol_type).toBe('annahme')
     expect(intake.photos).toEqual({ schaden_1: 'u-bb', signature: 'sig', signature_carrier: 'kunde', vorne: 'v' })
     expect(intake.odometer).toBe(48210)
-    expect(intake.remarks).toContain('Fahrzeug uebergeben von: Erika Test')
-    expect(intake.damage_records[1]).toEqual({ pos: 'Motorhaube', type: 'Delle', int: 'Tief' })
+    expect(intake.remarks).toContain('Fahrzeug übergeben von: Erika Test')
+    expect(intake.damage_records[1]).toEqual({ pos: 'Motorhaube', desc: 'Delle, tief' })
+    expect(intake.checkliste).toBeUndefined()
 
     const handover = buildPdfData({ type: 'handover', status: 'final', form: f, booking, slotUrls, inspectionDate: '2026-10-06T08:00:00Z' })
     expect(handover.protocol_type).toBe('transfer')

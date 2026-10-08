@@ -2,7 +2,8 @@
 // Fahrzeug-Protokoll-PDF (Annahme / Überführung) – eigenständige Vorlage.
 //
 // Kopie von pdf-template/src/generatePdf.ts aus fahrzeug-protokolle-v2 (5d29dc6),
-// ergänzt nur um PdfOptions.labels. Ursprünglich ohne
+// ergänzt um PdfOptions.labels, optionale Checkliste und Schadens-Freitext (desc).
+// Ursprünglich ohne
 // Abhängigkeiten auf den Rest der App. Einzige Abhängigkeit: pdf-lib.
 // Das Logo wird von `logoUrl` geladen (Standard: /carhandling.png, also
 // public/carhandling.png in einer Vite-App).
@@ -18,9 +19,11 @@ export interface DamageItem {
   /** Position, z.B. "Tür vorne links" (deutsche Schlüssel, werden für EN übersetzt) */
   pos: string
   /** Art, z.B. "Kratzer" */
-  type: string
+  type?: string
   /** Intensität: "Oberflächlich" | "Mittel" | "Tief" */
-  int: string
+  int?: string
+  /** Freitext statt Art + Intensität (Park & Fly); ersetzt in der Tabelle beide Spalten */
+  desc?: string
 }
 
 /** Links: sauber (true) / schmutzig (false). Rechts: vorhanden ja/nein. */
@@ -70,33 +73,33 @@ export interface PdfLabels {
   photo: { vorne: string; hinten: string; links: string; rechts: string; schein: string }
   checklist: { floor: string; seats: string; entry: string; instruments: string; trunk: string; engine: string
                aid_kit: string; triangle: string; vest: string; cable: string; registration: string; card: string }
-  damage_pos: string; damage_type: string; damage_intensity: string
+  damage_pos: string; damage_type: string; damage_intensity: string; damage_desc: string
 }
 
 const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
   de: {
-    title_annahme: 'Fahrzeug-Annahmeprotokoll', title_transfer: 'Fahrzeug-Ueberfuehrungsprotokoll',
-    watermark: 'VORLAEUFIGER ENTWURF',
+    title_annahme: 'Fahrzeug-Annahmeprotokoll', title_transfer: 'Fahrzeug-Überführungsprotokoll',
+    watermark: 'VORLÄUFIGER ENTWURF',
     section1: '1. Basisdaten', section2: '2. Technik & Betriebsstoffe',
     section3: '3. Checkliste', section4: '4. Bemerkungen',
-    section5: '5. Fotodokumentation', section6: '6. Erfasste Schaeden',
+    section5: '5. Fotodokumentation', section6: '6. Erfasste Schäden',
     section7: '7. Weitere Fotos', extra_photo: 'Foto',
     plate: 'Kennzeichen', brand_model: 'Marke / Modell', vin: 'VIN',
     creator: 'Ersteller', odometer: 'KM-Stand', location: 'Standort',
-    receiver: 'Empfaenger', from: 'Von', to: 'Nach',
-    transfer_type_label: 'Art der Ueberfuehrung', conditions: 'Bedingungen',
+    receiver: 'Empfänger', from: 'Von', to: 'Nach',
+    transfer_type_label: 'Art der Überführung', conditions: 'Bedingungen',
     fuel: 'Kraftstoff', battery: 'Batterie',
-    condition_header: 'Zustand', equipment_header: 'Zubehoer',
+    condition_header: 'Zustand', equipment_header: 'Zubehör',
     clean: 'Sauber', dirty: 'Schmutzig', yes: 'Ja', no: 'Nein',
-    carrier_sig: 'Uebergabe durch Spediteur', creator_sig_label: 'Annahme durch (Ersteller)',
-    sig_creator: 'Ersteller', sig_receiver: 'Empfaenger',
+    carrier_sig: 'Übergabe durch Spediteur', creator_sig_label: 'Annahme durch (Ersteller)',
+    sig_creator: 'Ersteller', sig_receiver: 'Empfänger',
     no_photo: 'Kein Foto', damage_label: 'Schaden',
     photo: { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', schein: 'Schein' },
     checklist: { floor: 'Boden', seats: 'Sitze', entry: 'Einstiege', instruments: 'Armaturen',
                  trunk: 'Kofferraum', engine: 'Motorraum', aid_kit: 'Verbandskasten',
                  triangle: 'Warndreieck', vest: 'Warnweste', cable: 'Ladekabel',
                  registration: 'Fahrzeugschein', card: 'Ladekarte' },
-    damage_pos: 'Position', damage_type: 'Art', damage_intensity: 'Intensitaet',
+    damage_pos: 'Position', damage_type: 'Art', damage_intensity: 'Intensität', damage_desc: 'Beschreibung',
   },
   en: {
     title_annahme: 'Vehicle Intake Protocol', title_transfer: 'Vehicle Transfer Protocol',
@@ -120,7 +123,7 @@ const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
                  trunk: 'Trunk', engine: 'Engine Bay', aid_kit: 'First Aid Kit',
                  triangle: 'Warning Triangle', vest: 'Vest', cable: 'Charging Cable',
                  registration: 'Registration', card: 'Charging Card' },
-    damage_pos: 'Position', damage_type: 'Type', damage_intensity: 'Intensity',
+    damage_pos: 'Position', damage_type: 'Type', damage_intensity: 'Intensity', damage_desc: 'Description',
   },
 }
 
@@ -255,7 +258,8 @@ export interface PdfData {
   photos: Record<string, string>
   conditions: string[]
   damage_records: DamageItem[]
-  checkliste: Checkliste
+  /** Ohne Checkliste entfällt Abschnitt 3 */
+  checkliste?: Checkliste
   /** For transfer protocols: name of the receiving party. */
   receiver_name?: string
   /** For transfer protocols: art der Überführung (e.g. Selbstfahrer). */
@@ -361,9 +365,65 @@ function drawHeading(page: PDFPage, bold: PDFFont, cursorY: number, text: string
 }
 
 /** Guard against chars outside Latin-1 (pdf-lib WinAnsiEncoding). */
-function safe(s: string | number | null | undefined): string {
+/** Text an Wortgrenzen auf eine Breite umbrechen (überlange Wörter werden hart getrennt) */
+export function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+  const lines: string[] = []
+  for (const para of text.split('\n')) {
+    let line = ''
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      let w = word
+      while (font.widthOfTextAtSize(w, size) > maxWidth && w.length > 1) {
+        // Wort zu lang: so viel wie passt in eine eigene Zeile
+        let cut = w.length - 1
+        while (cut > 1 && font.widthOfTextAtSize(w.slice(0, cut), size) > maxWidth) cut--
+        if (line) lines.push(line)
+        lines.push(w.slice(0, cut))
+        line = ''
+        w = w.slice(cut)
+      }
+      const next = line ? `${line} ${w}` : w
+      if (font.widthOfTextAtSize(next, size) <= maxWidth) line = next
+      else {
+        if (line) lines.push(line)
+        line = w
+      }
+    }
+    lines.push(line)
+  }
+  return lines.length ? lines : ['']
+}
+
+// Helvetica (WinAnsi) kann Latin-1 plus diese Sonderzeichen darstellen
+const WIN_ANSI_EXTRA = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ')
+
+// Häufige Zeichen außerhalb von WinAnsi mit lesbarem Ersatz
+const REPLACEMENTS: Record<string, string> = {
+  '→': '->', '←': '<-', '↔': '<->', '⇒': '=>', '✓': 'x', '✔': 'x', '✗': 'x', '≈': '~', '≤': '<=', '≥': '>=',
+  '\u00a0': ' ', '\u2009': ' ', '\u202f': ' ', '−': '-', '‐': '-', '‑': '-', '‒': '-', '′': "'", '″': '"',
+}
+
+function encodable(ch: string): boolean {
+  const cp = ch.codePointAt(0)!
+  if (cp === 10) return true // Zeilenumbruch wird beim Umbrechen ausgewertet
+  if (cp < 0x20 || (cp >= 0x7f && cp < 0xa0)) return false // Steuerzeichen
+  return cp < 0x100 || WIN_ANSI_EXTRA.has(ch)
+}
+
+/** Text auf die Zeichen beschränken, die Helvetica darstellen kann */
+export function safe(s: string | number | null | undefined): string {
   if (s == null) return ''
-  return String(s).replace(/[\u0100-\uFFFF]/g, '?')
+  let out = ''
+  for (const ch of String(s).replace(/\r\n?/g, '\n')) {
+    if (encodable(ch)) out += ch
+    else if (REPLACEMENTS[ch] !== undefined) out += REPLACEMENTS[ch]
+    else if (/\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|[\u200b-\u200d\ufe0e\ufe0f\u20e3]/u.test(ch)) continue // Emoji & Co. entfallen
+    else {
+      // Akzente abtrennen (č → c, ł bleibt ?) – sonst Platzhalter
+      const base = ch.normalize('NFD').replace(/\p{M}/gu, '')
+      out += base && [...base].every(encodable) ? base : '?'
+    }
+  }
+  return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -537,10 +597,12 @@ function drawSection3Checkliste(
   cursorY: number,
   data: PdfData
 ): number {
+  const cl = data.checkliste
+  if (!cl) return cursorY
+
   cursorY -= mm(4)
   cursorY = drawHeading(page, fonts.bold, cursorY, _L.section3)
 
-  const cl = data.checkliste
   const accentColor = data.protocol_type === 'annahme' ? C_LBLUE : C_LGREEN
 
   // Column headers
@@ -624,18 +686,13 @@ function drawSection4Bemerkungen(
   cursorY -= mm(4)
   cursorY = drawHeading(page, fonts.bold, cursorY, _L.section4)
 
-  // multi_cell equivalent: wrap text manually
+  // Umbruch nach Breite und an Zeilenumbrüchen, damit der Rahmen mitwächst
   const cellH = mm(8)
-  const maxCharsPerLine = 90
-  const text = data.remarks.trim()
-  const lines: string[] = []
-  for (let i = 0; i < text.length; i += maxCharsPerLine) {
-    lines.push(text.slice(i, i + maxCharsPerLine))
-  }
-  const totalH = Math.max(cellH, lines.length * mm(4.5))
+  const lines = wrapText(safe(data.remarks.trim()), fonts.regular, 9, CW - mm(2))
+  const totalH = Math.max(cellH, mm(2) + lines.length * mm(4.5))
   page.drawRectangle({ x: ML, y: cursorY - totalH, width: CW, height: totalH, borderColor: C_BLACK, borderWidth: 0.5 })
   lines.forEach((line, i) => {
-    page.drawText(safe(line), {
+    page.drawText(line, {
       x: ML + mm(1),
       y: cursorY - mm(5) - i * mm(4.5),
       size: 9,
@@ -846,9 +903,12 @@ async function buildDamagePages(
   let cursorY = top(CONTENT_TOP)
   cursorY = drawHeading(page, fonts.bold, cursorY, _L.section6)
 
-  // Table header
-  const cols = [mm(12), mm(58), mm(55), mm(65)]
-  const headers = ['#', _L.damage_pos, _L.damage_type, _L.damage_intensity]
+  // Table header (Freitext: eine breite Spalte statt Art + Intensität)
+  const withDesc = data.damage_records.some((d) => d.desc !== undefined)
+  const cols = withDesc ? [mm(12), mm(58), mm(120)] : [mm(12), mm(58), mm(55), mm(65)]
+  const headers = withDesc
+    ? ['#', _L.damage_pos, _L.damage_desc]
+    : ['#', _L.damage_pos, _L.damage_type, _L.damage_intensity]
   let xOff = ML
   for (let i = 0; i < cols.length; i++) {
     page.drawRectangle({ x: xOff, y: cursorY - ROW7, width: cols[i], height: ROW7, color: C_CELL_BG, borderWidth: 0 })
@@ -863,16 +923,23 @@ async function buildDamagePages(
     const d = data.damage_records[idx]
     const isEn = _lang === 'en'
     const pos = isEn ? (DAMAGE_POSITIONS_EN[d.pos] ?? d.pos) : d.pos
-    const type = isEn ? (DAMAGE_TYPES_EN[d.type] ?? d.type) : d.type
-    const int = isEn ? (DAMAGE_INTENSITIES_EN[d.int] ?? d.int) : d.int
-    const values = [`${idx + 1}`, pos, type, int]
+    const type = d.type ?? ''
+    const int = d.int ?? ''
+    const values = withDesc
+      ? [`${idx + 1}`, pos, d.desc ?? '']
+      : [`${idx + 1}`, pos, isEn ? (DAMAGE_TYPES_EN[type] ?? type) : type, isEn ? (DAMAGE_INTENSITIES_EN[int] ?? int) : int]
+    // Zellen umbrechen; die Zeile wächst mit der längsten Zelle
+    const cellLines = values.map((v, i) => wrapText(safe(v), fonts.regular, 8, cols[i] - mm(2)))
+    const rowH = Math.max(ROW7, mm(2.5) + Math.max(...cellLines.map((l) => l.length)) * mm(3.8))
     xOff = ML
     for (let i = 0; i < cols.length; i++) {
-      page.drawRectangle({ x: xOff, y: cursorY - ROW7, width: cols[i], height: ROW7, borderColor: C_BLACK, borderWidth: 0.5 })
-      page.drawText(safe(values[i]), { x: xOff + mm(1), y: cursorY - mm(5), size: 8, font: fonts.regular, color: C_BLACK })
+      page.drawRectangle({ x: xOff, y: cursorY - rowH, width: cols[i], height: rowH, borderColor: C_BLACK, borderWidth: 0.5 })
+      cellLines[i].forEach((line, li) => {
+        page.drawText(line, { x: xOff + mm(1), y: cursorY - mm(5) - li * mm(3.8), size: 8, font: fonts.regular, color: C_BLACK })
+      })
       xOff += cols[i]
     }
-    cursorY -= ROW7
+    cursorY -= rowH
   }
 
   // Damage photos: 2-column layout

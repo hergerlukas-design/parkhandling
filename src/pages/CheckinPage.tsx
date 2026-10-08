@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { QrScanner } from '../components/QrScanner'
@@ -13,7 +13,8 @@ import {
   loadBoard,
   moveVehicle,
   parseScan,
-  suggestHallLocation,
+  recommendedSuggestion,
+  suggestLocations,
   type CheckinCandidate,
   type Suggestion,
 } from '../lib/siteplan'
@@ -96,41 +97,25 @@ export function CheckinPage() {
     if (step === 'key') listFreeKeys(6).then(setFreeKeys).catch(() => undefined)
   }, [step])
 
-  // Platzvorschläge: Halle über Regal-Logik, Außen erster freier Platz im passenden Bereich
-  const loadSuggestions = useCallback(async (b: CheckinCandidate) => {
-    if (b.parking_type === 'indoor') {
-      const list = await suggestHallLocation(b.id)
-      const fits = list.filter((s) => s.kind === 'fits').slice(0, 3)
-      const rest = list.filter((s) => s.kind !== 'fits' && s.kind !== 'buffer').slice(0, 3)
-      const buffer = list.filter((s) => s.kind === 'buffer')
-      setSuggestions([...fits, ...rest, ...buffer])
-      setChosen((c) => c ?? fits[0]?.code ?? buffer[0]?.code ?? null)
-    } else {
-      const board = await loadBoard()
-      const area = b.parking_type === 'outdoor_cover' ? 'outdoor_a' : 'outdoor_b'
-      const free = board.filter((s) => s.status === 'free' && !s.booking_id)
-      const inArea = free.filter((s) => s.area === area).slice(0, 4)
-      const buffer = free.filter((s) => s.area === 'buffer').slice(0, 1)
-      const list: Suggestion[] = [
-        ...inArea.map((s, i) => ({
-          location_id: s.id, code: s.code, kind: 'fits' as const, moves: 0, score: i,
-          reason: area === 'outdoor_a' ? 'Freier Platz mit Abdeckplane.' : 'Freier Außenplatz.',
-        })),
-        ...buffer.map((s) => ({
-          location_id: s.id, code: s.code, kind: 'buffer' as const, moves: 0, score: 9999,
-          reason: 'Pufferzone: kurzfristig abstellen und später einlagern.',
-        })),
-      ]
-      setSuggestions(list)
-      setChosen((c) => c ?? list[0]?.code ?? null)
-    }
-  }, [])
-
+  // Platzvorschläge sofort nach der Fahrzeugwahl laden, damit der empfohlene Platz
+  // schon beim Schlüssel-Schritt sichtbar ist
   useEffect(() => {
-    if (step === 'place' && booking) loadSuggestions(booking).catch((e: Error) => setErrors([e.message]))
-  }, [step, booking, loadSuggestions])
+    if (!booking) return
+    let cancelled = false
+    suggestLocations(booking)
+      .then((list) => {
+        if (cancelled) return
+        setSuggestions(list)
+        setChosen((c) => c ?? recommendedSuggestion(list)?.code ?? null)
+      })
+      .catch((e: Error) => !cancelled && setErrors([e.message]))
+    return () => {
+      cancelled = true
+    }
+  }, [booking])
 
   const recommended = suggestions.find((s) => s.kind === 'fits')?.code ?? null
+  const recommendation = recommendedSuggestion(suggestions)
   const openServices = booking?.open_task_count ?? 0
   const openNames = useMemo(
     () => (booking?.task_chips ?? []).filter((c) => c.status !== 'done').map((c) => c.title).join(' · '),
@@ -226,6 +211,11 @@ export function CheckinPage() {
                   <span>{intake === 'draft' ? 'Annahmeprotokoll angefangen, noch nicht unterschrieben' : 'Annahmeprotokoll fehlt noch'}</span>
                   <span className="font-semibold">{intake === 'draft' ? 'Fortsetzen' : 'Erstellen'}</span>
                 </Link>
+              )}
+              {step === 'key' && recommendation && (
+                <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent-dark">
+                  <span className="font-semibold">Empfohlener Platz {recommendation.code}</span> – {recommendation.reason}
+                </p>
               )}
               {booking.task_chips.length > 0 && (
                 <p className="mt-3 text-sm"><span className="font-semibold">Gebuchte Leistungen</span><br />{booking.task_chips.map((c) => c.title).join(' · ')}</p>

@@ -6,7 +6,7 @@ import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
 import { CarDamageSelector } from '../components/protocols/CarDamageSelector'
 import { SignaturePad } from '../components/protocols/SignaturePad'
-import { Button, Dialog, ErrorList, Field, Select, TextInput } from '../components/ui'
+import { Button, Dialog, ErrorList, Field, TextInput } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, usePendingMedia, type MediaOwner } from '../lib/media/mediaService'
@@ -16,11 +16,7 @@ import { sharePdfBlob } from '../lib/pdf/downloadPdf'
 import { createProtocolPdf, protocolFilename } from '../lib/protocolPdf'
 import {
   compareWithIntake,
-  CONDITION_ITEMS,
-  DAMAGE_INTENSITIES,
-  DAMAGE_TYPES,
   damageSlot,
-  EQUIPMENT_ITEMS,
   EXTRA_SLOT,
   finalizeProtocol,
   formFromRow,
@@ -31,6 +27,7 @@ import {
   INSPECTION_CONDITIONS,
   listProtocolMedia,
   newDamageId,
+  normalizeDamage,
   PDF_SLOT,
   pendingSlotItems,
   PHOTO_SLOTS,
@@ -47,7 +44,7 @@ import {
   type ProtocolRow,
   type SlotMedia,
 } from '../lib/protocols'
-import { moveVehicle } from '../lib/siteplan'
+import { getCheckinCandidate, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import type { ProtocolType } from '../types/domain'
 
@@ -82,28 +79,6 @@ function Section({ title, children, aside }: { title: string; children: ReactNod
       </div>
       {children}
     </section>
-  )
-}
-
-function Toggle({ checked, onChange, label, on = 'Ja', off = 'Nein' }: {
-  checked: boolean
-  onChange: (v: boolean) => void
-  label: string
-  on?: string
-  off?: string
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={checked}
-      onClick={() => onChange(!checked)}
-      className={`touch-target flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm ${
-        checked ? 'border-ok/50 bg-ok-soft text-ok-ink' : 'border-line-strong bg-surface text-subtle'
-      }`}
-    >
-      <span>{label}</span>
-      <span className="font-semibold">{checked ? on : off}</span>
-    </button>
   )
 }
 
@@ -157,6 +132,24 @@ export function ProtocolPage() {
 
   useUpdateBlocker(!!row && !isFinal, PROTOCOL_TITLE[type])
 
+  // Nach der Annahme direkt den passenden Stellplatz vorschlagen
+  const [recommendation, setRecommendation] = useState<Suggestion | null>(null)
+  const recommendFor = type === 'intake' && isFinal && booking && (booking.status === 'booked' || booking.status === 'arrived')
+    ? booking.id
+    : null
+  useEffect(() => {
+    setRecommendation(null)
+    if (!recommendFor) return
+    let cancelled = false
+    getCheckinCandidate(recommendFor)
+      .then((c) => (c ? suggestLocations(c) : []))
+      .then((list) => !cancelled && setRecommendation(recommendedSuggestion(list)))
+      .catch(() => undefined) // Vorschlag ist optional; das Einchecken zeigt ihn erneut
+    return () => {
+      cancelled = true
+    }
+  }, [recommendFor])
+
   // Laden: Buchung, ggf. Annahme, Protokoll (Entwurf anlegen), lokalen Entwurf wiederherstellen
   const load = useCallback(async () => {
     if (!bookingId || !profile) return
@@ -170,7 +163,8 @@ export function ProtocolPage() {
       let initial = formFromRow(current, ctx)
       if (current.status === 'draft') {
         const local = await get<LocalDraft>(draftKey(bookingId, type)).catch(() => undefined)
-        if (local && local.savedAt > current.updated_at) initial = local.form
+        // Lokale Entwürfe älterer Versionen: Schäden mit Art/Intensität in Freitext überführen
+        if (local && local.savedAt > current.updated_at) initial = { ...local.form, damages: (local.form.damages ?? []).map(normalizeDamage) }
       }
       setBooking(b)
       setIntake(base)
@@ -392,13 +386,20 @@ export function ProtocolPage() {
                     : 'PDF gespeichert, E-Mail wird vorbereitet …'
                   : 'PDF wird gespeichert …'}
             </p>
+            {type === 'intake' && canCheckIn && recommendation && (
+              <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
+                <span className="font-semibold">Empfohlener Stellplatz {recommendation.code}</span> – {recommendation.reason}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {row.pdf_media_id && row.mail_status !== 'sent' && (
               <Button onClick={() => void resendMail()} disabled={!!busy}>E-Mail erneut senden</Button>
             )}
             {type === 'intake' && canCheckIn && (
-              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}`)}>Weiter zum Einchecken</Button>
+              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${recommendation ? `&platz=${encodeURIComponent(recommendation.code)}` : ''}`)}>
+                {recommendation ? `Einchecken auf ${recommendation.code}` : 'Weiter zum Einchecken'}
+              </Button>
             )}
             {type === 'handover' && !handedOver && (
               <Button variant="primary" onClick={() => void handOver()} disabled={!!busy}>Fahrzeug übergeben</Button>
@@ -415,7 +416,7 @@ export function ProtocolPage() {
           <p className="mb-1 font-semibold">Vergleich zur Annahme</p>
           <ul className="list-disc pl-5">
             {comparison.lines.map((l) => (
-              <li key={l}>{l.replace('Schaeden', 'Schäden')}</li>
+              <li key={l}>{l}</li>
             ))}
           </ul>
         </div>
@@ -481,22 +482,6 @@ export function ProtocolPage() {
             </div>
           </Section>
 
-          <Section title="Checkliste">
-            <p className="text-xs text-muted">Sauberkeit</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {CONDITION_ITEMS.map(({ key, label }) => (
-                <Toggle key={key} label={label} on="sauber" off="schmutzig" checked={form.checklist[key]}
-                  onChange={(v) => update({ checklist: { ...form.checklist, [key]: v } })} />
-              ))}
-            </div>
-            <p className="text-xs text-muted">Übergeben / vorhanden</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {EQUIPMENT_ITEMS.map(({ key, label }) => (
-                <Toggle key={key} label={label} checked={form.checklist[key]}
-                  onChange={(v) => update({ checklist: { ...form.checklist, [key]: v } })} />
-              ))}
-            </div>
-          </Section>
         </div>
 
         {/* Spalte 2: Fotos und Schäden */}
@@ -517,7 +502,7 @@ export function ProtocolPage() {
           <Section
             title="Schäden"
             aside={!isFinal && (
-              <Button onClick={() => update({ damages: [...form.damages, { id: newDamageId(), pos: '', type: '', int: '' }] })}>
+              <Button onClick={() => update({ damages: [...form.damages, { id: newDamageId(), pos: '', desc: '' }] })}>
                 + Schaden
               </Button>
             )}
@@ -547,16 +532,14 @@ export function ProtocolPage() {
                     markers={form.damages.filter((x) => x.id !== d.id && x.pos).map((x) => x.pos)}
                     readOnly={fieldsDisabled}
                   />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select aria-label="Art" value={d.type} onChange={(e) => patchDamage({ type: e.target.value })}>
-                      <option value="">Art …</option>
-                      {DAMAGE_TYPES.map((t) => <option key={t}>{t}</option>)}
-                    </Select>
-                    <Select aria-label="Intensität" value={d.int} onChange={(e) => patchDamage({ int: e.target.value })}>
-                      <option value="">Intensität …</option>
-                      {DAMAGE_INTENSITIES.map((t) => <option key={t}>{t}</option>)}
-                    </Select>
-                  </div>
+                  <textarea
+                    aria-label="Beschreibung"
+                    rows={2}
+                    placeholder="Beschreibung, z. B. Kratzer ca. 10 cm, oberflächlich"
+                    value={d.desc}
+                    onChange={(e) => patchDamage({ desc: e.target.value })}
+                    className="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-base md:text-sm"
+                  />
                   <div className="flex items-center gap-3">
                     <SlotPreview media={latest.get(damageSlot(d.id))} pending={latestPending.get(damageSlot(d.id))} />
                     {!isFinal && <PhotoCapture owner={owner(damageSlot(d.id))} label={hasSlot(damageSlot(d.id)) ? 'Foto ersetzen' : 'Foto'} single />}

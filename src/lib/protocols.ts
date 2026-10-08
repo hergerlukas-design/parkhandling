@@ -1,7 +1,7 @@
 import type { FuelType, Media, ProtocolType } from '../types/domain'
 import { uploadQueue } from './media/mediaService'
 import type { QueueItem } from './media/uploadQueue'
-import type { Checkliste, DamageItem, PdfData, PdfLabels } from './pdf/generatePdf'
+import type { PdfData, PdfLabels } from './pdf/generatePdf'
 import { supabase } from './supabase'
 
 function db() {
@@ -15,8 +15,6 @@ function db() {
 
 export const SITE_NAME = 'Park & Fly Flughafen München'
 
-export const DAMAGE_TYPES = ['Kratzer', 'Delle', 'Riss', 'Bruch', 'Abplatzer', 'Fehlend'] as const
-export const DAMAGE_INTENSITIES = ['Oberflächlich', 'Mittel', 'Tief'] as const
 export const INSPECTION_CONDITIONS = ['Verschmutzung', 'Regen', 'Dunkelheit', 'Schlechtes Licht'] as const
 
 /** Schadenspositionen (deutsche Schlüssel wie in der PDF-Vorlage) */
@@ -40,23 +38,6 @@ export const PHOTO_SLOTS = [
   { slot: 'schein', label: 'Fahrzeugschein' },
 ] as const
 
-export const CONDITION_ITEMS: { key: keyof Checkliste; label: string }[] = [
-  { key: 'floor', label: 'Boden' },
-  { key: 'seats', label: 'Sitze' },
-  { key: 'entry', label: 'Einstiege' },
-  { key: 'instruments', label: 'Armaturen' },
-  { key: 'trunk', label: 'Kofferraum' },
-  { key: 'engine', label: 'Motorraum' },
-]
-export const EQUIPMENT_ITEMS: { key: keyof Checkliste; label: string }[] = [
-  { key: 'aid_kit', label: 'Verbandskasten' },
-  { key: 'triangle', label: 'Warndreieck' },
-  { key: 'vest', label: 'Warnweste' },
-  { key: 'cable', label: 'Ladekabel' },
-  { key: 'registration', label: 'Fahrzeugschein' },
-  { key: 'card', label: 'Ladekarte' },
-]
-
 export const SIGNATURE_STAFF = 'signature'
 export const SIGNATURE_CUSTOMER = 'signature_customer'
 export const EXTRA_SLOT = 'zusatz'
@@ -72,9 +53,25 @@ export const PROTOCOL_TITLE: Record<ProtocolType, string> = {
 // Datentypen
 // ---------------------------------------------------------------------------
 
-export interface DamageEntry extends DamageItem {
+export interface DamageEntry {
   /** Stabile ID (Foto-Slot schaden_<id>), damit Löschen die Fotozuordnung nicht verschiebt */
   id: string
+  /** Position aus der Schadensgrafik, z. B. "Tür vorne links" */
+  pos: string
+  /** Freitext, z. B. "Kratzer, ca. 10 cm, oberflächlich" */
+  desc: string
+}
+
+/** Gespeicherter Schaden; vor 0.13.0 mit Art (type) und Intensität (int) statt Freitext */
+export type StoredDamage = Partial<DamageEntry> & { type?: string; int?: string }
+
+/** Ältere Einträge (Art + Intensität) in einen Freitext überführen */
+export function normalizeDamage(d: StoredDamage): DamageEntry {
+  return {
+    id: d.id ?? newDamageId(),
+    pos: d.pos ?? '',
+    desc: d.desc ?? [d.type, d.int].filter(Boolean).join(', '),
+  }
 }
 
 export interface ProtocolForm {
@@ -85,7 +82,6 @@ export interface ProtocolForm {
   fuel_level: number | null
   soc_percent: number | null
   conditions: string[]
-  checklist: Checkliste
   damages: DamageEntry[]
   remarks: string
   customer_signer_name: string
@@ -103,8 +99,7 @@ export interface ProtocolRow {
   fuel_level: number | null
   soc_percent: number | null
   conditions: string[]
-  checklist: Partial<Checkliste>
-  damages: DamageEntry[]
+  damages: StoredDamage[]
   remarks: string | null
   customer_signer_name: string | null
   signature_media_id: string | null
@@ -128,11 +123,6 @@ export interface ProtocolBooking {
   status: string
   start_at: string
   end_at: string
-}
-
-export const EMPTY_CHECKLIST: Checkliste = {
-  floor: true, seats: true, entry: true, instruments: true, trunk: true, engine: true,
-  aid_kit: false, triangle: false, vest: false, cable: false, registration: false, card: false,
 }
 
 export function newDamageId(): string {
@@ -160,8 +150,7 @@ export function formFromRow(
     fuel_level: row?.fuel_level ?? null,
     soc_percent: row?.soc_percent ?? null,
     conditions: row?.conditions ?? [],
-    checklist: { ...EMPTY_CHECKLIST, ...(base?.checklist ?? {}), ...(row?.checklist ?? {}) },
-    damages: row?.damages ?? [],
+    damages: (row?.damages ?? []).map(normalizeDamage),
     remarks: row?.remarks ?? '',
     customer_signer_name: row?.customer_signer_name ?? ctx.booking.customer_name,
   }
@@ -185,7 +174,7 @@ export function validateForFinalize(
   if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
   if (showsBattery(fuel) && form.soc_percent == null) errors.push('Akkustand fehlt')
   for (const [i, d] of form.damages.entries()) {
-    if (!d.pos || !d.type || !d.int) errors.push(`Schaden ${i + 1}: Position, Art und Intensität angeben`)
+    if (!d.pos || !d.desc.trim()) errors.push(`Schaden ${i + 1}: Position und Beschreibung angeben`)
   }
   if (!form.customer_signer_name.trim()) errors.push('Name des Kunden fehlt')
   if (!signatures.staff) errors.push('Unterschrift Mitarbeiter fehlt')
@@ -205,7 +194,6 @@ export interface Comparison {
   lines: string[]
 }
 
-const damageKey = (d: DamageItem) => `${d.pos}|${d.type}`
 
 export function compareWithIntake(
   intake: Pick<ProtocolRow, 'mileage' | 'fuel_level' | 'soc_percent' | 'damages'> | null,
@@ -215,8 +203,9 @@ export function compareWithIntake(
   const mileageDiff = intake?.mileage != null && mileage != null ? mileage - intake.mileage : null
   const fuelDiff = intake?.fuel_level != null && form.fuel_level != null ? form.fuel_level - intake.fuel_level : null
   const socDiff = intake?.soc_percent != null && form.soc_percent != null ? form.soc_percent - intake.soc_percent : null
-  const known = new Set((intake?.damages ?? []).map(damageKey))
-  const newDamages = intake ? form.damages.filter((d) => d.pos && !known.has(damageKey(d))) : []
+  // Freitext lässt sich nicht verlässlich vergleichen: neu ist ein Schaden an einer Position ohne Schaden bei der Annahme
+  const known = new Set((intake?.damages ?? []).map((d) => d.pos))
+  const newDamages = intake ? form.damages.filter((d) => d.pos && !known.has(d.pos)) : []
   const sign = (n: number) => (n > 0 ? `+${n}` : String(n))
   const lines: string[] = []
   if (!intake) {
@@ -227,8 +216,8 @@ export function compareWithIntake(
     if (socDiff != null) lines.push(`Akku: ${sign(socDiff)} % (Annahme ${intake.soc_percent} %)`)
     lines.push(
       newDamages.length
-        ? `Neue Schaeden seit Annahme: ${newDamages.map((d) => `${d.pos} (${d.type})`).join(', ')}`
-        : 'Keine neuen Schaeden seit Annahme',
+        ? `Neue Schäden seit Annahme: ${newDamages.map((d) => (d.desc.trim() ? `${d.pos} (${d.desc.trim()})` : d.pos)).join(', ')}`
+        : 'Keine neuen Schäden seit Annahme',
     )
   }
   return { mileageDiff, fuelDiff, socDiff, newDamages, lines }
@@ -238,12 +227,21 @@ export function compareWithIntake(
 // PDF-Daten
 // ---------------------------------------------------------------------------
 
-/** Beschriftungen der Vorlage für Park & Fly (Helvetica: ohne Umlaute) */
+/** Ohne Checkliste rücken die Abschnitte der Vorlage eins nach vorn */
+const SECTION_LABELS: Partial<PdfLabels> = {
+  section4: '3. Bemerkungen',
+  section5: '4. Fotodokumentation',
+  section6: '5. Erfasste Schäden',
+  section7: '6. Weitere Fotos',
+}
+
+/** Beschriftungen der Vorlage für Park & Fly */
 export function pdfLabels(type: ProtocolType): Partial<PdfLabels> {
   return type === 'intake'
-    ? { carrier_sig: 'Uebergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
+    ? { ...SECTION_LABELS, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
     : {
-        title_transfer: 'Fahrzeug-Uebergabeprotokoll',
+        ...SECTION_LABELS,
+        title_transfer: 'Fahrzeug-Übergabeprotokoll',
         creator: 'Mitarbeiter',
         receiver: 'Kunde',
         sig_creator: 'Mitarbeiter',
@@ -289,7 +287,7 @@ export function buildPdfData(input: {
   }
 
   const remarks = [
-    type === 'intake' && form.customer_signer_name ? `Fahrzeug uebergeben von: ${form.customer_signer_name}` : '',
+    type === 'intake' && form.customer_signer_name ? `Fahrzeug übergeben von: ${form.customer_signer_name}` : '',
     ...(input.comparison?.lines ?? []),
     form.remarks.trim(),
   ]
@@ -313,10 +311,9 @@ export function buildPdfData(input: {
     vin: form.vin,
     photos,
     conditions: form.conditions,
-    damage_records: form.damages.map(({ pos, type: t, int }) => ({ pos, type: t, int })),
-    checkliste: form.checklist,
+    damage_records: form.damages.map(({ pos, desc }) => ({ pos, desc: desc.trim() })),
     receiver_name: type === 'handover' ? form.customer_signer_name : undefined,
-    transfer_type: type === 'handover' ? 'Rueckgabe an Kunde' : undefined,
+    transfer_type: type === 'handover' ? 'Rückgabe an Kunde' : undefined,
   }
 }
 
@@ -325,7 +322,7 @@ export function buildPdfData(input: {
 // ---------------------------------------------------------------------------
 
 const PROTOCOL_COLUMNS =
-  'id, booking_id, type, status, inspector_name, location_text, vin, mileage, fuel_level, soc_percent, conditions, checklist, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
+  'id, booking_id, type, status, inspector_name, location_text, vin, mileage, fuel_level, soc_percent, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
 
 export async function getProtocolBooking(bookingId: string): Promise<ProtocolBooking> {
   const { data, error } = await db()
@@ -383,7 +380,6 @@ function formToColumns(form: ProtocolForm) {
     fuel_level: form.fuel_level,
     soc_percent: form.soc_percent,
     conditions: form.conditions,
-    checklist: form.checklist,
     damages: form.damages,
     remarks: form.remarks.trim() || null,
     customer_signer_name: form.customer_signer_name.trim() || null,

@@ -3,6 +3,29 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.13.1 – 08.10.2026
+
+### Behoben
+- PDF: Fehlender Tank- oder Akkustand erscheint als „– %“ statt „? %“
+- PDF: Anführungszeichen („ “ ’), Gedankenstriche, € und … in Bemerkungen und Schadensbeschreibungen werden nicht mehr zu „?“; nicht darstellbare Zeichen werden lesbar ersetzt (→ wird ->, č wird c), Emojis entfallen
+- PDF: Beschriftungen mit echten Umlauten („Erfasste Schäden“, „Fahrzeug-Übergabeprotokoll“, „Vorläufiger Entwurf“)
+
+## 0.13.0 – 08.10.2026
+
+### Geändert
+- Protokolle ohne Checkliste (Sauberkeit/Zubehör): Die Karte entfällt im Formular, der Abschnitt entfällt im PDF; die folgenden Abschnitte rücken nach
+- Schäden werden mit einem Freitext beschrieben statt mit Art und Intensität; das PDF zeigt eine Spalte „Beschreibung“. Ältere Einträge werden automatisch übernommen („Kratzer, Mittel“)
+- Vergleich zur Annahme: Als neu gilt ein Schaden an einer Position, an der bei der Annahme keiner erfasst war
+
+### Behoben
+- PDF: Mehrzeilige Bemerkungen ragen nicht mehr aus ihrem Rahmen
+
+## 0.12.0 – 08.10.2026
+
+### Neu
+- Passender Stellplatz direkt nach der Annahme: Das abgeschlossene Annahmeprotokoll zeigt den empfohlenen Platz mit Begründung, „Einchecken auf …“ übernimmt ihn ins Einchecken
+- Einchecken zeigt den empfohlenen Platz schon beim Schlüssel-Schritt und wählt ihn vor
+
 ## 0.11.0 – 07.10.2026
 
 ### Neu
