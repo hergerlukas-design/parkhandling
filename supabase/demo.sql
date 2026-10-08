@@ -101,7 +101,7 @@ begin
       ((today + start_day)::timestamp + make_interval(hours => 5 + i % 6)) at time zone 'Europe/Berlin',
       ((today + end_day)::timestamp + make_interval(hours => end_hour)) at time zone 'Europe/Berlin',
       ptype,
-      case when i % 9 = 0 then 'pickup_delivery' when i % 6 = 0 then 'vallet' else 'shuttle' end,
+      case when i % 9 = 0 then 'pickup_delivery' when i % 6 = 0 then 'pickup_delivery' else 'shuttle' end,
       case when i % 3 = 0 then null else 59 + i * 4.5 end,
       case when i % 7 = 0 then 'partial' when i % 2 = 0 then 'paid' else 'open' end,
       case when i % 10 = 0 then 'Kindersitz im Kofferraum lassen' end

@@ -4,12 +4,12 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
-import { CarDamageSelector } from '../components/protocols/CarDamageSelector'
+import { DamageCard } from '../components/protocols/DamageCard'
 import { SignaturePad } from '../components/protocols/SignaturePad'
 import { Button, Dialog, ErrorList, Field, TextInput } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
-import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, usePendingMedia, type MediaOwner } from '../lib/media/mediaService'
+import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, useUploadQueue, type MediaOwner } from '../lib/media/mediaService'
 import { getMediaStore } from '../lib/media'
 import type { QueueItem } from '../lib/media/uploadQueue'
 import { sharePdfBlob } from '../lib/pdf/downloadPdf'
@@ -17,7 +17,9 @@ import { createProtocolPdf, protocolFilename } from '../lib/protocolPdf'
 import {
   compareWithIntake,
   damageSlot,
+  type DamageEntry,
   EXTRA_SLOT,
+  FUEL_SEGMENTS,
   finalizeProtocol,
   formFromRow,
   getMedia,
@@ -34,7 +36,6 @@ import {
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
-  showsBattery,
   showsFuel,
   SIGNATURE_CUSTOMER,
   SIGNATURE_STAFF,
@@ -47,14 +48,6 @@ import {
 import { getCheckinCandidate, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import type { ProtocolType } from '../types/domain'
-
-const FUEL_STEPS: [number, string][] = [
-  [10, 'Res.'],
-  [25, '¼'],
-  [50, '½'],
-  [75, '¾'],
-  [100, 'voll'],
-]
 
 const MAIL_STATUS: Record<string, string> = {
   sent: 'E-Mail an die Testadresse versendet',
@@ -106,6 +99,39 @@ function SlotPreview({ media, pending }: { media?: SlotMedia; pending?: QueueIte
   return null
 }
 
+/** Tankstand als Slider mit 8 Segmenten (0 = leer, 8 = voll) */
+function FuelSlider({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number) => void }) {
+  return (
+    <div className="flex flex-col gap-2 text-sm font-medium text-subtle">
+      <div className="flex items-baseline justify-between">
+        <span>Tankstand</span>
+        <span className="font-mono text-base text-ink">{value == null ? 'nicht erfasst' : `${value}/${FUEL_SEGMENTS}`}</span>
+      </div>
+      <div className="grid grid-cols-8 gap-1" aria-hidden="true">
+        {Array.from({ length: FUEL_SEGMENTS }, (_, i) => (
+          <span key={i} className={`h-3 rounded-sm ${value != null && i < value ? 'bg-accent' : 'bg-chip'}`} />
+        ))}
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={FUEL_SEGMENTS}
+        step={1}
+        value={value ?? 0}
+        disabled={disabled}
+        aria-label="Tankstand in Segmenten"
+        aria-valuetext={value == null ? 'nicht erfasst' : `${value} von ${FUEL_SEGMENTS}`}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="touch-target h-11 w-full accent-accent"
+      />
+      <div className="flex justify-between text-xs text-muted">
+        <span>leer</span>
+        <span>voll</span>
+      </div>
+    </div>
+  )
+}
+
 export function ProtocolPage() {
   const { type: typeParam, bookingId } = useParams()
   const type: ProtocolType = typeParam === 'uebergabe' ? 'handover' : 'intake'
@@ -125,8 +151,17 @@ export function ProtocolPage() {
   const [saveState, setSaveState] = useState<'saved' | 'local' | 'saving' | null>(null)
   const dirty = useRef(false)
 
+  // Neue Schadenseinträge, die noch nicht gespeichert sind (erscheinen erst nach „Speichern“ im Formular)
+  const [draftDamages, setDraftDamages] = useState<DamageEntry[]>([])
+  // Schadenskarten mit ungespeicherten Änderungen
+  const [dirtyDamages, setDirtyDamages] = useState<Record<string, boolean>>({})
+
   const isFinal = row?.status === 'final'
-  const pendingAll = usePendingMedia('protocol', row?.id ?? null)
+  const queue = useUploadQueue()
+  const pendingAll = useMemo(
+    () => queue.items.filter((i) => i.ownerId != null && i.ownerId === row?.id && (i.ownerType === 'protocol' || i.ownerType === 'damage')),
+    [queue.items, row?.id],
+  )
   const pending = useMemo(() => pendingAll.filter((p) => p.kind !== 'pdf'), [pendingAll])
   const pdfPending = pendingAll.some((p) => p.kind === 'pdf')
 
@@ -210,9 +245,10 @@ export function ProtocolPage() {
     setForm((f) => (f ? { ...f, ...patch } : f))
   }
 
+  // Schadensfotos (Slot schaden_<id>) mit owner_type „damage“ und höherer Auflösung, übrige Fotos als „protocol“
   const owner = (slot: string): MediaOwner => ({
     bookingId: row?.booking_id ?? null,
-    ownerType: 'protocol',
+    ownerType: slot.startsWith('schaden_') ? 'damage' : 'protocol',
     ownerId: row?.id ?? null,
     slot,
   })
@@ -264,6 +300,7 @@ export function ProtocolPage() {
       staff: hasSlot(SIGNATURE_STAFF),
       customer: hasSlot(SIGNATURE_CUSTOMER),
     })
+    if (unsavedDamages > 0) problems.unshift('Schäden noch nicht gespeichert: jeweils „Speichern“ drücken')
     setErrors(problems)
     if (problems.length) return
     setBusy('Protokoll wird abgeschlossen …')
@@ -339,6 +376,7 @@ export function ProtocolPage() {
   }
 
   const fieldsDisabled = isFinal || !!busy
+  const unsavedDamages = draftDamages.length + Object.values(dirtyDamages).filter(Boolean).length
   const canCheckIn = booking.status === 'booked' || booking.status === 'arrived'
   const handedOver = booking.status === 'completed'
   const extraMedia = media.filter((m) => m.slot === EXTRA_SLOT)
@@ -440,29 +478,11 @@ export function ProtocolPage() {
           </Section>
 
           <Section title="Zustand">
-            <Field label="Kilometerstand">
-              <TextInput inputMode="numeric" value={form.mileage} placeholder="z. B. 48210" onChange={(e) => update({ mileage: e.target.value })} />
+            <Field label="Kilometerstand (Dezimalkomma möglich)">
+              <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
             </Field>
             {showsFuel(fuel) && (
-              <div className="flex flex-col gap-1 text-sm font-medium text-subtle">
-                Tankstand
-                <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Tankstand">
-                  {FUEL_STEPS.map(([v, label]) => (
-                    <button key={v} type="button" aria-pressed={form.fuel_level === v} onClick={() => update({ fuel_level: v })}
-                      className={`touch-target rounded-lg border text-sm font-semibold ${form.fuel_level === v ? 'border-accent bg-accent text-white' : 'border-line-strong bg-surface text-ink'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {showsBattery(fuel) && (
-              <Field label="Akkustand in %">
-                <TextInput inputMode="numeric" value={form.soc_percent ?? ''} onChange={(e) => {
-                  const n = e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value.replace(/\D/g, ''))))
-                  update({ soc_percent: n })
-                }} />
-              </Field>
+              <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
             )}
             {!fuel && <p className="text-xs text-muted">Antriebsart unbekannt – Tankstand erfassen, bei E-Fahrzeugen in der Buchung „Elektro“ setzen.</p>}
             <div className="flex flex-col gap-1 text-sm font-medium text-subtle">
@@ -502,49 +522,43 @@ export function ProtocolPage() {
           <Section
             title="Schäden"
             aside={!isFinal && (
-              <Button onClick={() => update({ damages: [...form.damages, { id: newDamageId(), pos: '', desc: '' }] })}>
+              <Button onClick={() => setDraftDamages((list) => [...list, { id: newDamageId(), pos: '', desc: '' }])}>
                 + Schaden
               </Button>
             )}
           >
-            {form.damages.length === 0 && <p className="text-sm text-muted">Keine Schäden erfasst.</p>}
-            {form.damages.map((d, i) => {
-              const patchDamage = (patch: Partial<typeof d>) =>
-                update({ damages: form.damages.map((x) => (x.id === d.id ? { ...x, ...patch } : x)) })
-              const isNew = comparison?.newDamages.some((n) => n.id === d.id)
+            {form.damages.length + draftDamages.length === 0 && <p className="text-sm text-muted">Keine Schäden erfasst.</p>}
+            {[...form.damages.map((d) => ({ d, saved: true })), ...draftDamages.map((d) => ({ d, saved: false }))].map(({ d, saved }, i) => {
+              const markers = [...form.damages, ...draftDamages].filter((x) => x.id !== d.id && x.pos).map((x) => x.pos)
+              const isNew = !!comparison?.newDamages.some((n) => n.id === d.id)
+              const photoSlot = damageSlot(d.id)
               return (
-                <div key={d.id} className={`flex flex-col gap-2 rounded-xl border p-3 ${isNew ? 'border-danger/50' : 'border-line'}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-sm font-semibold">
-                      <span className="flex size-6 items-center justify-center rounded-full bg-danger text-xs text-white">{i + 1}</span>
-                      Schaden {i + 1}
-                      {isNew && <span className="rounded-full bg-danger-soft px-2 text-xs text-danger-ink">neu seit Annahme</span>}
-                    </span>
-                    {!isFinal && (
-                      <button type="button" className="touch-target px-2 text-sm text-danger" onClick={() => update({ damages: form.damages.filter((x) => x.id !== d.id) })}>
-                        Entfernen
-                      </button>
-                    )}
-                  </div>
-                  <CarDamageSelector
-                    value={d.pos}
-                    onChange={(pos) => patchDamage({ pos })}
-                    markers={form.damages.filter((x) => x.id !== d.id && x.pos).map((x) => x.pos)}
-                    readOnly={fieldsDisabled}
-                  />
-                  <textarea
-                    aria-label="Beschreibung"
-                    rows={2}
-                    placeholder="Beschreibung, z. B. Kratzer ca. 10 cm, oberflächlich"
-                    value={d.desc}
-                    onChange={(e) => patchDamage({ desc: e.target.value })}
-                    className="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-base md:text-sm"
-                  />
-                  <div className="flex items-center gap-3">
-                    <SlotPreview media={latest.get(damageSlot(d.id))} pending={latestPending.get(damageSlot(d.id))} />
-                    {!isFinal && <PhotoCapture owner={owner(damageSlot(d.id))} label={hasSlot(damageSlot(d.id)) ? 'Foto ersetzen' : 'Foto'} single />}
-                  </div>
-                </div>
+                <DamageCard
+                  key={d.id}
+                  damage={d}
+                  index={i}
+                  isNew={isNew}
+                  markers={markers}
+                  readOnly={fieldsDisabled}
+                  onDirtyChange={(dirty) => setDirtyDamages((m) => (m[d.id] === dirty ? m : { ...m, [d.id]: dirty }))}
+                  onSave={(entry) => {
+                    if (saved) update({ damages: form.damages.map((x) => (x.id === entry.id ? entry : x)) })
+                    else {
+                      update({ damages: [...form.damages, entry] })
+                      setDraftDamages((list) => list.filter((x) => x.id !== entry.id))
+                    }
+                  }}
+                  onRemove={() => {
+                    if (saved) update({ damages: form.damages.filter((x) => x.id !== d.id) })
+                    setDraftDamages((list) => list.filter((x) => x.id !== d.id))
+                  }}
+                  photo={
+                    <>
+                      <SlotPreview media={latest.get(photoSlot)} pending={latestPending.get(photoSlot)} />
+                      {!isFinal && <PhotoCapture owner={owner(photoSlot)} label={hasSlot(photoSlot) ? 'Foto ersetzen' : 'Foto'} single />}
+                    </>
+                  }
+                />
               )
             })}
           </Section>

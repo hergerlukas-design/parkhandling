@@ -1,5 +1,7 @@
 # Park & Fly Manager – Arbeitsanweisung für Claude Code
 
+> **Hinweis:** Geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md` (Vallet → Hol- & Bringservice, Akkustand entfällt, Kilometerstand/Tankstand, Schadensfotos, Dashboard, Stellplatz-Label). Bei Widerspruch gilt der Nachtrag.
+
 ## 0. Grundregeln (immer gültig)
 
 1. **Version bei jeder Änderung erhöhen.** Jeder Commit, der Code, Schema oder UI ändert, erhöht die Version in `package.json` nach SemVer:

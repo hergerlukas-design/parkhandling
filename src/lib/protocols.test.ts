@@ -4,6 +4,7 @@ import {
   buildPdfData,
   compareWithIntake,
   formFromRow,
+  formatMileage,
   normalizeDamage,
   parseMileage,
   pickSlotUrls,
@@ -28,7 +29,7 @@ function form(patch: Partial<ProtocolForm> = {}): ProtocolForm {
   return {
     ...formFromRow(null, { type: 'intake', booking, inspectorName: 'Mitarbeiter 1' }),
     mileage: '48.210',
-    fuel_level: 50,
+    fuel_level: 4,
     ...patch,
   }
 }
@@ -39,6 +40,21 @@ describe('parseMileage', () => {
     expect(parseMileage('48 210')).toBe(48210)
     expect(parseMileage('')).toBeNull()
     expect(parseMileage('12a')).toBeNull()
+  })
+
+  it('akzeptiert Dezimalkomma mit einer Nachkommastelle', () => {
+    expect(parseMileage('84213,5')).toBe(84213.5)
+    expect(parseMileage('84.213,5')).toBe(84213.5)
+    expect(parseMileage('84213')).toBe(84213)
+    expect(parseMileage('84213,55')).toBeNull()
+    expect(parseMileage('84213,')).toBeNull()
+  })
+})
+
+describe('Anzeige Kilometerstand', () => {
+  it('zeigt Dezimalkomma und lässt „,0“ weg', () => {
+    expect(formatMileage(84213.5)).toBe('84213,5')
+    expect(formatMileage(48210)).toBe('48210')
   })
 })
 
@@ -70,9 +86,9 @@ describe('validateForFinalize', () => {
     ])
   })
 
-  it('verlangt bei E-Fahrzeugen den Akkustand statt Tank', () => {
+  it('verlangt bei E-Fahrzeugen keinen Tankstand (Akkustand entfällt)', () => {
     const errors = validateForFinalize(form({ fuel_level: null }), 'electric', { staff: true, customer: true })
-    expect(errors).toEqual(['Akkustand fehlt'])
+    expect(errors).toEqual([])
   })
 
   it('verlangt vollständige Schadensangaben', () => {
@@ -96,23 +112,23 @@ describe('compareWithIntake', () => {
   it('berechnet Differenzen und neue Schäden', () => {
     const intake = {
       mileage: 48000,
-      fuel_level: 75,
-      soc_percent: null,
+      fuel_level: 6,
       damages: [{ id: 'x', pos: 'Dach', type: 'Kratzer', int: 'Mittel' }],
     }
     const handover = form({
-      mileage: '48120',
-      fuel_level: 50,
+      mileage: '48120,5',
+      fuel_level: 4,
       damages: [
         { id: 'y', pos: 'Dach', desc: 'Kratzer, etwas größer' },
         { id: 'z', pos: 'Tür vorne links', desc: 'Delle, tief' },
       ],
     })
     const c = compareWithIntake(intake, handover)
-    expect(c.mileageDiff).toBe(120)
-    expect(c.fuelDiff).toBe(-25)
+    expect(c.mileageDiff).toBe(120.5)
+    expect(c.fuelDiff).toBe(-2)
     expect(c.newDamages.map((d) => d.id)).toEqual(['z'])
-    expect(c.lines).toContain('KM seit Annahme: +120 km (Annahme 48000 km)')
+    expect(c.lines).toContain('KM seit Annahme: +120.5 km (Annahme 48000 km)')
+    expect(c.lines).toContain('Tank: -2 Segmente (Annahme 6/8)')
     expect(c.lines).toContain('Neue Schäden seit Annahme: Tür vorne links (Delle, tief)')
   })
 

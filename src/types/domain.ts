@@ -4,7 +4,8 @@
  */
 
 export type ParkingType = 'indoor' | 'outdoor_cover' | 'outdoor'
-export type ReturnMode = 'shuttle' | 'vallet' | 'pickup_delivery' | 'self'
+/** Vallet entfällt seit 0.14.0 (→ pickup_delivery); der DB-Trigger schreibt 'vallet' um. */
+export type ReturnMode = 'shuttle' | 'pickup_delivery' | 'self'
 export type PaymentStatus = 'open' | 'partial' | 'paid' | 'refunded'
 export type FuelType = 'combustion' | 'electric' | 'hybrid'
 export type Role = 'admin' | 'staff'
@@ -25,7 +26,7 @@ export type MediaOwnerType = 'task' | 'protocol' | 'damage'
 export type MediaKind = 'photo' | 'signature' | 'pdf'
 export type MediaProvider = 'supabase' | 'r2'
 export type ProtocolType = 'intake' | 'handover'
-export type TransportType = 'shuttle_slot' | 'premium_on_demand' | 'vallet'
+export type TransportType = 'shuttle_slot' | 'premium_on_demand'
 export type TransportDirection = 'to_airport' | 'from_airport'
 
 interface Row {
@@ -177,7 +178,6 @@ export const AREA_LABEL: Record<LocationArea, string> = {
 
 export const RETURN_MODE_LABEL: Record<ReturnMode, string> = {
   shuttle: 'Shuttle',
-  vallet: 'Vallet',
   pickup_delivery: 'Hol- & Bringservice',
   self: 'Selbst',
 }

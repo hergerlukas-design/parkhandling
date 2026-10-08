@@ -53,9 +53,12 @@ async function run(file: Blob, thumbnail: boolean, spec?: EncodeSpec): Promise<P
   return processImageBlob(file, domCanvasFactory, { thumbnail, spec })
 }
 
-/** Foto → WebP-Vollbild (≤ 1600 px, ~250 KB) + Thumbnail (320 px, ~20 KB), ohne EXIF. */
-export function processPhoto(file: Blob): Promise<ProcessedImage> {
-  return run(file, true)
+/**
+ * Foto → WebP-Vollbild + Thumbnail (320 px, ~20 KB), ohne EXIF.
+ * Standard: ≤ 1600 px, ~250 KB. Mit `fullSpec` z. B. DAMAGE_FULL_SPEC für Schadensfotos.
+ */
+export function processPhoto(file: Blob, fullSpec?: EncodeSpec): Promise<ProcessedImage> {
+  return run(file, true, fullSpec)
 }
 
 /** Unterschrift → verkleinertes PNG, ohne Thumbnail. */

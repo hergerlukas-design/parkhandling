@@ -34,7 +34,7 @@ export function SlotTile({
         <>
           <span className="truncate font-mono text-[13px] font-semibold">{slot.plate}</span>
           {!compact && <span className="truncate text-xs opacity-80">{slot.vehicle_model}</span>}
-          <span className="mt-auto text-xs font-bold">ab {formatDate(slot.end_at!).slice(0, 6)}</span>
+          <span className="mt-auto text-xs font-bold">Abholung {formatDate(slot.end_at!).slice(0, 6)}</span>
           {!compact && (
             <span className="text-[11px] opacity-80">
               {slot.open_task_count > 0 ? `${slot.open_task_count} offen` : 'fertig'}

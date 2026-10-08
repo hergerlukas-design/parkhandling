@@ -4,7 +4,35 @@ import { Icon } from '../components/Icon'
 import { formatDate, formatTime } from '../lib/format'
 import { subscribeBoard } from '../lib/siteplan'
 import { subscribeTasks } from '../lib/tasks'
-import { loadToday, type DayEvent, type EventState, type TodayData } from '../lib/today'
+import { loadToday, type DashboardPeriod, type DayEvent, type EventState, type TodayData } from '../lib/today'
+
+const DEFAULT_PERIOD: DashboardPeriod = { view: 'tag', offset: 0 }
+
+/** Umschalter Heute / Morgen / Woche mit Vor- und Zurück-Navigation über Tage bzw. Wochen */
+function PeriodBar({ period, onChange, label }: { period: DashboardPeriod; onChange: (p: DashboardPeriod) => void; label: string }) {
+  const step = period.view === 'woche' ? 'Woche' : 'Tag'
+  const chip = (active: boolean) =>
+    `touch-target rounded-full px-4 text-sm font-semibold ${active ? 'bg-ink text-white' : 'bg-chip text-subtle hover:bg-line'}`
+  const isToday = period.view === 'tag' && period.offset === 0
+  const isTomorrow = period.view === 'tag' && period.offset === 1
+  const isWeek = period.view === 'woche' && period.offset === 0
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex gap-1.5" role="group" aria-label="Zeitraum">
+        <button type="button" className={chip(isToday)} aria-pressed={isToday} onClick={() => onChange({ view: 'tag', offset: 0 })}>Heute</button>
+        <button type="button" className={chip(isTomorrow)} aria-pressed={isTomorrow} onClick={() => onChange({ view: 'tag', offset: 1 })}>Morgen</button>
+        <button type="button" className={chip(isWeek)} aria-pressed={isWeek} onClick={() => onChange({ view: 'woche', offset: 0 })}>Woche</button>
+      </div>
+      <div className="flex items-center gap-1">
+        <button type="button" className="touch-target flex size-11 items-center justify-center rounded-full bg-chip text-lg hover:bg-line"
+          aria-label={`Vorheriger ${step}`} onClick={() => onChange({ ...period, offset: period.offset - 1 })}>‹</button>
+        <span className="min-w-40 px-2 text-center text-sm font-medium tabular-nums">{label}</span>
+        <button type="button" className="touch-target flex size-11 items-center justify-center rounded-full bg-chip text-lg hover:bg-line"
+          aria-label={`Nächster ${step}`} onClick={() => onChange({ ...period, offset: period.offset + 1 })}>›</button>
+      </div>
+    </div>
+  )
+}
 
 const STATE_STYLE: Record<EventState, { badge: string; dot: string; row: string }> = {
   done: { badge: 'bg-chip text-subtle', dot: 'bg-muted', row: 'opacity-60' },
@@ -33,13 +61,16 @@ function KindBadge({ kind }: { kind: DayEvent['kind'] }) {
   )
 }
 
-function EventRow({ e }: { e: DayEvent }) {
+function EventRow({ e, multiDay }: { e: DayEvent; multiDay: boolean }) {
   const st = STATE_STYLE[e.state]
   return (
     <li>
       <Link to={`/fahrzeuge/${e.bookingId}`}
         className={`touch-target flex items-center gap-3 border-b border-line px-3 py-2.5 last:border-b-0 hover:bg-ground ${st.row}`}>
-        <span className="w-12 shrink-0 font-mono text-sm font-semibold tabular-nums">{formatTime(e.at)}</span>
+        <span className={`shrink-0 font-mono text-sm font-semibold tabular-nums ${multiDay ? 'w-24' : 'w-12'}`}>
+          {multiDay && <span className="mr-2 text-xs font-normal text-subtle">{formatDate(e.at).slice(0, 6)}</span>}
+          {formatTime(e.at)}
+        </span>
         <span className={`size-2.5 shrink-0 rounded-full md:hidden ${st.dot}`} aria-hidden="true" />
         <span className="hidden w-20 shrink-0 md:block"><KindBadge kind={e.kind} /></span>
         <span className="min-w-0 flex-1">
@@ -58,19 +89,20 @@ function EventRow({ e }: { e: DayEvent }) {
 }
 
 export function TodayPage() {
+  const [period, setPeriod] = useState<DashboardPeriod>(DEFAULT_PERIOD)
   const [data, setData] = useState<TodayData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [now, setNow] = useState(() => new Date())
 
   const reload = useCallback(() => {
     setNow(new Date())
-    loadToday()
+    loadToday(period)
       .then((d) => {
         setData(d)
         setError(null)
       })
       .catch((e: Error) => setError(e.message))
-  }, [])
+  }, [period])
 
   useEffect(() => {
     reload()
@@ -88,9 +120,12 @@ export function TodayPage() {
 
   return (
     <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 p-4 md:p-6">
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Heute</h1>
-        <span className="text-sm text-subtle">{weekday}, {formatDate(now)} · {formatTime(now)}</span>
+      <header className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <span className="text-sm text-subtle">{weekday}, {formatDate(now)} · {formatTime(now)}</span>
+        </div>
+        <PeriodBar period={period} onChange={setPeriod} label={data?.periodWord ?? ''} />
       </header>
 
       {error && <p className="rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger-ink">{error}</p>}
@@ -99,8 +134,8 @@ export function TodayPage() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Kpi label="Ankünfte heute" value={data.kpis.arrivals} sub={`davon ${data.kpis.arrivalsHall} Halle`} to="/einchecken" />
-            <Kpi label="Abholungen heute" value={data.kpis.pickups} sub={`${data.kpis.pickupsHall} aus der Halle`} to="/fahrzeuge?filter=pickup_today" />
+            <Kpi label={`Ankünfte ${data.periodWord}`} value={data.kpis.arrivals} sub={`davon ${data.kpis.arrivalsHall} Halle`} to="/einchecken" />
+            <Kpi label={`Abholungen ${data.periodWord}`} value={data.kpis.pickups} sub={`${data.kpis.pickupsHall} aus der Halle`} to="/fahrzeuge?filter=pickup_today" />
             <Kpi label="Offene Aufgaben" value={data.kpis.openTasks} sub={`${data.kpis.dueToday} fällig heute`} to="/aufgaben" />
             <Kpi label="Umsetzen nötig" value={data.kpis.relocate} sub={data.kpis.relocateText} to="/aufgaben?filter=relocate" alert={data.kpis.relocate > 0} />
           </div>
@@ -117,14 +152,14 @@ export function TodayPage() {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
               <div className="flex items-baseline justify-between gap-2 border-b border-line px-4 py-3">
-                <h2 className="font-semibold">Ablauf heute</h2>
+                <h2 className="font-semibold">Ablauf {data.periodWord}</h2>
                 <span className="hidden text-xs text-muted sm:inline">Ankünfte und Abholungen nach Uhrzeit</span>
               </div>
               {data.events.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-muted">Heute keine Ankünfte oder Abholungen.</p>
+                <p className="px-4 py-6 text-sm text-muted">Keine Ankünfte oder Abholungen {data.periodWord}.</p>
               ) : (
                 <ul>
-                  {data.events.map((e) => <EventRow key={`${e.kind}-${e.bookingId}`} e={e} />)}
+                  {data.events.map((e) => <EventRow key={`${e.kind}-${e.bookingId}`} e={e} multiDay={data.multiDay} />)}
                 </ul>
               )}
             </section>

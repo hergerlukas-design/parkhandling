@@ -1,14 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { BookingListItem } from './bookings'
 import type { BoardSlot } from './siteplan'
 import type { BoardTask } from './tasks'
-import { buildToday } from './today'
+import { buildToday, periodRange } from './today'
 
 // 06.10.2026 in Europe/Berlin (UTC+2)
 const range = {
   today: '2026-10-05T22:00:00.000Z',
   tomorrow: '2026-10-06T22:00:00.000Z',
   dayAfter: '2026-10-07T22:00:00.000Z',
+  from: '2026-10-05T22:00:00.000Z',
+  to: '2026-10-06T22:00:00.000Z',
+  periodWord: 'heute',
+  multiDay: false,
 }
 const now = new Date('2026-10-06T10:40:00Z') // 12:40 Uhr
 
@@ -102,5 +106,24 @@ describe('buildToday', () => {
       ['warn', expect.stringMatching(/Zahlung offen$/)],
     ])
     expect(data.kpis).toMatchObject({ openTasks: 1, dueToday: 1, relocate: 1, relocateText: 'Regal R5, bis 08.10.' })
+  })
+})
+
+describe('periodRange', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('wählt Tag und Woche (Montag bis Sonntag, Europe/Berlin)', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-08T10:00:00Z')) // Donnerstag 08.10.2026, 12:00 Uhr
+
+    expect(periodRange({ view: 'tag', offset: 0 })).toMatchObject({
+      from: '2026-10-07T22:00:00.000Z',
+      to: '2026-10-08T22:00:00.000Z',
+      periodWord: 'heute',
+      multiDay: false,
+    })
+    expect(periodRange({ view: 'tag', offset: 1 })).toMatchObject({ from: '2026-10-08T22:00:00.000Z', to: '2026-10-09T22:00:00.000Z', periodWord: 'morgen' })
+    expect(periodRange({ view: 'woche', offset: 0 })).toMatchObject({ from: '2026-10-04T22:00:00.000Z', to: '2026-10-11T22:00:00.000Z', multiDay: true })
+    expect(periodRange({ view: 'woche', offset: 1 })).toMatchObject({ from: '2026-10-11T22:00:00.000Z', to: '2026-10-18T22:00:00.000Z' })
   })
 })

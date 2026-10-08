@@ -6,9 +6,9 @@ export interface NavItem {
   icon: IconName
 }
 
-/** Hauptnavigation Phase 1 (Shuttle/Vallet folgt in einer späteren Phase). */
+/** Hauptnavigation Phase 1 (Shuttle/Hol- & Bringservice folgt in einer späteren Phase). */
 export const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Heute', icon: 'today' },
+  { to: '/', label: 'Dashboard', icon: 'today' },
   { to: '/lageplan', label: 'Lageplan', icon: 'map' },
   { to: '/fahrzeuge', label: 'Fahrzeuge', icon: 'car' },
   { to: '/aufgaben', label: 'Aufgaben', icon: 'tasks' },
