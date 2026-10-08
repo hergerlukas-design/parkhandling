@@ -47,7 +47,7 @@ import {
   type ProtocolRow,
   type SlotMedia,
 } from '../lib/protocols'
-import { moveVehicle } from '../lib/siteplan'
+import { getCheckinCandidate, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import type { ProtocolType } from '../types/domain'
 
@@ -156,6 +156,24 @@ export function ProtocolPage() {
   const pdfPending = pendingAll.some((p) => p.kind === 'pdf')
 
   useUpdateBlocker(!!row && !isFinal, PROTOCOL_TITLE[type])
+
+  // Nach der Annahme direkt den passenden Stellplatz vorschlagen
+  const [recommendation, setRecommendation] = useState<Suggestion | null>(null)
+  const recommendFor = type === 'intake' && isFinal && booking && (booking.status === 'booked' || booking.status === 'arrived')
+    ? booking.id
+    : null
+  useEffect(() => {
+    setRecommendation(null)
+    if (!recommendFor) return
+    let cancelled = false
+    getCheckinCandidate(recommendFor)
+      .then((c) => (c ? suggestLocations(c) : []))
+      .then((list) => !cancelled && setRecommendation(recommendedSuggestion(list)))
+      .catch(() => undefined) // Vorschlag ist optional; das Einchecken zeigt ihn erneut
+    return () => {
+      cancelled = true
+    }
+  }, [recommendFor])
 
   // Laden: Buchung, ggf. Annahme, Protokoll (Entwurf anlegen), lokalen Entwurf wiederherstellen
   const load = useCallback(async () => {
@@ -392,13 +410,20 @@ export function ProtocolPage() {
                     : 'PDF gespeichert, E-Mail wird vorbereitet …'
                   : 'PDF wird gespeichert …'}
             </p>
+            {type === 'intake' && canCheckIn && recommendation && (
+              <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
+                <span className="font-semibold">Empfohlener Stellplatz {recommendation.code}</span> – {recommendation.reason}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {row.pdf_media_id && row.mail_status !== 'sent' && (
               <Button onClick={() => void resendMail()} disabled={!!busy}>E-Mail erneut senden</Button>
             )}
             {type === 'intake' && canCheckIn && (
-              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}`)}>Weiter zum Einchecken</Button>
+              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${recommendation ? `&platz=${encodeURIComponent(recommendation.code)}` : ''}`)}>
+                {recommendation ? `Einchecken auf ${recommendation.code}` : 'Weiter zum Einchecken'}
+              </Button>
             )}
             {type === 'handover' && !handedOver && (
               <Button variant="primary" onClick={() => void handOver()} disabled={!!busy}>Fahrzeug übergeben</Button>

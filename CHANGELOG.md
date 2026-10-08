@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.12.0 – 08.10.2026
+
+### Neu
+- Passender Stellplatz direkt nach der Annahme: Das abgeschlossene Annahmeprotokoll zeigt den empfohlenen Platz mit Begründung, „Einchecken auf …“ übernimmt ihn ins Einchecken
+- Einchecken zeigt den empfohlenen Platz schon beim Schlüssel-Schritt und wählt ihn vor
+
 ## 0.11.0 – 07.10.2026
 
 ### Neu
