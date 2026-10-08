@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string
   role: Role
   active: boolean
+  must_change_password: boolean
 }
 
 interface AuthState {
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { data } = await client
         .from('profiles')
-        .select('id, display_name, role, active')
+        .select('id, display_name, role, active, must_change_password')
         .eq('id', session.user.id)
         .maybeSingle<Profile>()
       if (!cancelled) setState({ loading: false, session, profile: data ?? null })

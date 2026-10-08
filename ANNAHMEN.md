@@ -76,7 +76,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Nutzer & Geräte
 - [ANNAHME] Rollen: `staff` und `admin`
 - [ANNAHME] Login per E-Mail + Passwort (Supabase Auth), PIN-Login später
-- [ANNAHME] Keine Selbstregistrierung. Konten legt nur ein Admin per Einladung an (E-Mail + Rolle, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen).
+- [ANNAHME] Keine Selbstregistrierung. Eingeladene müssen beim ersten Login ihr Passwort festlegen (bestätigt). Konten legt nur ein Admin per Einladung an (E-Mail + Rolle, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen).
 - [ANNAHME] Profile werden nur deaktiviert, nicht gelöscht. Der letzte aktive Admin lässt sich nicht deaktivieren oder herabstufen.
 - [ANNAHME] Geräte: Android-/iOS-Tablets quer und Smartphones, Chrome/Safari aktuell
 

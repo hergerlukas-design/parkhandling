@@ -92,8 +92,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </Screen>
     )
   }
-  // Einladungslink landet auf /passwort: Passwort festlegen, dann ins Dashboard
-  if (window.location.pathname === '/passwort') {
+  // Nach Einladung: Passwort festlegen, bevor das Dashboard erscheint (auch über /passwort)
+  if (profile.must_change_password || window.location.pathname === '/passwort') {
     return (
       <Screen title="Passwort festlegen">
         <SetPassword onDone={() => window.location.assign('/')} />

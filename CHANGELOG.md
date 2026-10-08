@@ -3,7 +3,7 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
-## 0.15.0 – 09.10.2026
+## 0.15.1 – 09.10.2026
 
 ### Neu
 - Personal-Verwaltung in den Einstellungen (nur Admins): Liste mit Rolle und Status, Rolle ändern, aktivieren und deaktivieren
@@ -11,6 +11,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Der letzte aktive Admin kann nicht deaktiviert oder herabgestuft werden (Datenbank-Trigger `guard_last_admin`)
 
 ### Geändert
+- Eingeladene Personen müssen beim ersten Login ein eigenes Passwort festlegen, bevor sie die App nutzen
 - Profile speichern die E-Mail-Adresse; Profile werden nicht mehr gelöscht, nur deaktiviert
 
 ## 0.14.0 – 08.10.2026

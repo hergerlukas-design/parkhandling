@@ -53,7 +53,9 @@ export async function setPassword(password: string): Promise<string | null> {
   if (!supabase) return 'Supabase ist nicht konfiguriert'
   if (password.length < MIN_PASSWORD_LENGTH) return `Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`
   const { error } = await supabase.auth.updateUser({ password })
-  return error ? 'Passwort konnte nicht gespeichert werden' : null
+  if (error) return 'Passwort konnte nicht gespeichert werden'
+  const { error: flagError } = await supabase.rpc('complete_password_change')
+  return flagError ? 'Passwort gespeichert, Profil konnte nicht aktualisiert werden' : null
 }
 
 /** Clientseitige Vorprüfung; die verbindliche Prüfung liegt in der Datenbank (Trigger guard_last_admin). */

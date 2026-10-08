@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
       display_name: displayName || email,
       role,
       active: true,
+      must_change_password: true,
       invited_at: now,
       updated_at: now,
     },
