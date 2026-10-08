@@ -34,7 +34,7 @@ describe('Excel-Vorlage mit 5 Testzeilen', async () => {
     expect(ok[0]).toMatchObject({ plate: 'M-TE 1001E', vehicle_model: 'Tesla Model 3', parking_type: 'indoor', price_total: 249, payment_status: 'paid' })
     expect(ok[1]).toMatchObject({ plate: 'M-TE 1002', company: 'Muster Logistik GmbH', parking_type: 'outdoor_cover', price_total: 119.5 })
     expect(ok[2]).toMatchObject({ plate: 'M-TE 1003', vehicle_model: 'BMW 320d', return_mode: 'pickup_delivery', payment_status: 'partial', price_total: 89 })
-    expect(ok[3]).toMatchObject({ return_mode: 'vallet', services: ['AUF_INNEN', 'AUF_AUSSEN', 'POLITUR'] })
+    expect(ok[3]).toMatchObject({ return_mode: 'pickup_delivery', services: ['AUF_INNEN', 'AUF_AUSSEN', 'POLITUR'] })
     expect(ok[3].notes).toContain(PLATE_CHECK_NOTE)
     expect(ok[4]).toMatchObject({ cancelled: true, payment_status: 'refunded' })
   })

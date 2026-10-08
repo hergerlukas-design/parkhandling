@@ -41,7 +41,7 @@ exception when raise_exception then
 end;
 $$;
 
-update public.protocols set mileage = 12345, fuel_level = 80, conditions = '{Regen}',
+update public.protocols set mileage = 12345.5, fuel_level = 6, conditions = '{Regen}',
   checklist = '{"floor": true, "aid_kit": true}', damages = '[{"pos": "Tür vorne links", "type": "Kratzer", "int": "Mittel"}]'
 where id = :'pid';
 update public.protocols set status = 'final' where id = :'pid';
@@ -61,6 +61,20 @@ insert into public.media (booking_id, owner_type, owner_id, kind, bucket, path, 
 values (:'bid', 'protocol', :'pid', 'pdf', 'media', 'p/1.pdf', 'pdf', now()) returning id as mid \gset
 update public.protocols set pdf_media_id = :'mid', mail_status = 'not_configured' where id = :'pid';
 select pg_temp.assert_eq((select mail_status from public.protocols where id = :'pid'), 'not_configured', 'Versandstatus nachgetragen');
+
+-- Vallet wird beim Schreiben (auch von Tablets < 0.14.0) auf Hol- & Bringservice umgeschrieben
+update public.bookings set return_mode = 'vallet' where id = :'bid';
+select pg_temp.assert_eq((select return_mode from public.bookings where id = :'bid'), 'pickup_delivery', 'vallet → pickup_delivery');
+
+-- Fuel-Level nur 0–8, Kilometerstand mit einer Nachkommastelle
+do $$
+begin
+  insert into public.protocols (booking_id, type, fuel_level) select booking_id, 'handover', 9 from public.protocols where location_text = 'Park & Fly Flughafen München' limit 1;
+  raise exception 'FEHLER: fuel_level 9 akzeptiert';
+exception when check_violation then null;
+end;
+$$;
+select pg_temp.assert_eq((select mileage from public.protocols where id = :'pid'), 12345.5::numeric, 'Kilometerstand mit Dezimalstelle');
 
 reset role;
 reset request.jwt.claim.sub;

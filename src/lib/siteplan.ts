@@ -204,6 +204,6 @@ export const MOVE_TARGETS: { code: string | null; label: string; reason: string 
   { code: 'W-LAD1', label: 'Ladeplatz 1', reason: 'Laden' },
   { code: 'W-LAD2', label: 'Ladeplatz 2', reason: 'Laden' },
   { code: 'W-UEB', label: 'Übergabezone', reason: 'Übergabe vorbereiten' },
-  { code: 'T-VAL', label: 'Vallet unterwegs', reason: 'Vallet' },
+  { code: 'T-VAL', label: 'Hol- & Bringservice unterwegs', reason: 'Hol- & Bringservice' },
   { code: null, label: 'Übergeben (verlässt das Gelände)', reason: 'Übergeben' },
 ]

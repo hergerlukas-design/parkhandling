@@ -15,6 +15,16 @@ import { PDFDocument, rgb, StandardFonts, degrees, type PDFPage, type PDFFont, t
 // Datentypen (aus protocols.ts)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Tankstand als Segmente („6/8“), nicht erfasst als „–“ */
+function fuelText(level: number | null): string {
+  return level == null ? '–' : `${level}/8`
+}
+
+/** Kilometerstand deutsch formatiert: „84.213,5 km“ */
+function kmText(km: number): string {
+  return `${km.toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`
+}
+
 export interface DamageItem {
   /** Position, z.B. "Tür vorne links" (deutsche Schlüssel, werden für EN übersetzt) */
   pos: string
@@ -246,9 +256,10 @@ export interface PdfData {
   inspector_name: string
   /** For annahme: Standort. For transfer: "Von → Nach". */
   location: string
+  /** Kilometerstand mit optionaler Nachkommastelle */
   odometer: number
-  fuel_level: number
-  battery: number
+  /** Tankstand in Segmenten 0–8, null = nicht erfasst */
+  fuel_level: number | null
   remarks: string
   inspection_date: string
   license_plate: string
@@ -537,7 +548,7 @@ function drawSection1Basisdaten(
     const rows: [string, string, string, string][] = [
       [_L.plate, data.license_plate,  _L.brand_model, data.brand_model],
       [_L.vin,   data.vin,            _L.creator,     data.inspector_name],
-      [_L.odometer, `${data.odometer} km`, _L.location, data.location],
+      [_L.odometer, kmText(data.odometer), _L.location, data.location],
     ]
     for (const [l1, v1, l2, v2] of rows) {
       drawCell(page, fonts, ML,        cursorY, C2, ROW8, l1, v1)
@@ -548,7 +559,7 @@ function drawSection1Basisdaten(
     // 2×2 + extra rows
     const rows: [string, string, string, string][] = [
       [_L.plate,       data.license_plate,    _L.vin,      data.vin],
-      [_L.brand_model, data.brand_model,      _L.odometer, `${data.odometer} km`],
+      [_L.brand_model, data.brand_model,      _L.odometer, kmText(data.odometer)],
       [_L.creator,     data.inspector_name,   _L.receiver, data.receiver_name ?? ''],
       [_L.from,        von,                   _L.to,       nach],
     ]
@@ -578,13 +589,11 @@ function drawSection2Technik(
   cursorY = drawHeading(page, fonts.bold, cursorY, _L.section2)
 
   if (data.protocol_type === 'annahme') {
-    drawCell(page, fonts, ML,        cursorY, C2, ROW8, _L.fuel,    `${data.fuel_level} %`)
-    drawCell(page, fonts, ML + C2,   cursorY, C2, ROW8, _L.battery, `${data.battery} %`)
+    drawCell(page, fonts, ML, cursorY, C2 * 2, ROW8, _L.fuel, fuelText(data.fuel_level))
     cursorY -= ROW8
   } else {
-    drawCell(page, fonts, ML,              cursorY, C3A, ROW8, _L.fuel,       `${data.fuel_level} %`)
-    drawCell(page, fonts, ML + C3A,        cursorY, C3B, ROW8, _L.battery,    `${data.battery} %`)
-    drawCell(page, fonts, ML + C3A + C3B,  cursorY, C3C, ROW8, _L.conditions, data.conditions.join(', '))
+    drawCell(page, fonts, ML,              cursorY, C3A, ROW8, _L.fuel,       fuelText(data.fuel_level))
+    drawCell(page, fonts, ML + C3A,        cursorY, C3B + C3C, ROW8, _L.conditions, data.conditions.join(', '))
     cursorY -= ROW8
   }
 

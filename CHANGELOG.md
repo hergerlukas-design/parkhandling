@@ -3,6 +3,24 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.14.0 – 08.10.2026
+
+### Neu
+- Dashboard (vormals „Heute“) mit Datumsauswahl: Heute, Morgen und Woche, Vor- und Zurück-Navigation über Tage bzw. Wochen. Warnungen für heute und morgen bleiben immer sichtbar
+- Schadensfotos in hoher Auflösung (längste Kante 2400 px, WebP 0,85); Lightbox mit Pinch-to-Zoom und Doppeltippen für alle Fotos
+- Tankstand als Slider mit 8 Segmenten (Verbrenner und Hybrid)
+
+### Geändert
+- Vallet entfällt, Leistung heißt „Hol- & Bringservice“ (`return_mode` `pickup_delivery`). Bestehende Buchungen werden umgeschrieben; Vallet-Fahrten aus dem Shuttle-Bereich entfernt
+- Kilometerstand mit einer Nachkommastelle: Eingabe mit Dezimalkomma (z. B. 84213,5), Speicherung mit Punkt
+- Akkustand entfällt im Protokoll und im PDF
+- Schadenskarte mit Speichern-Button pro Eintrag. Ungespeicherte Schäden blockieren das Abschließen; bereits hochgeladene Fotos bleiben erhalten
+- Stellplatz-Label im Lageplan zeigt das Abholdatum („Abholung dd.mm.“)
+- Im PDF erscheint der Tankstand als „x/8“, der Kilometerstand mit Tausendertrennzeichen (z. B. „84.213,5 km“)
+
+### Behoben
+- Bestehende Tankstände (10/25/50/75/100 %) wurden beim Migrieren auf Segmente umgerechnet (1/2/4/6/8)
+
 ## 0.13.2 – 08.10.2026
 
 ### Behoben

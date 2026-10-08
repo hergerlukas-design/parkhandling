@@ -129,7 +129,8 @@ export function parseReturnMode(value: CellValue): ReturnMode | null {
   if (!v) return null
   if (/(self|selbst|eigen)/.test(v)) return 'self'
   if (/(hol.*bring|bring.*hol|bringservice|holservice)/.test(v)) return 'pickup_delivery'
-  if (/(vallet|valet|premium)/.test(v)) return 'vallet'
+  // Vallet entfällt seit 0.14.0: wird als Hol- & Bringservice übernommen
+  if (/(vallet|valet|premium)/.test(v)) return 'pickup_delivery'
   if (/(shuttle|bus|transfer)/.test(v)) return 'shuttle'
   return null
 }
@@ -259,7 +260,8 @@ export function parseServiceKind(value: CellValue): ServiceKind | null {
 export function parseTransfer(value: CellValue): ReturnMode | null {
   const v = norm(value)
   if (!v || v === '-') return null
-  if (/(vallet|valet|premium|terminal)/.test(v)) return 'vallet'
+  // Vallet entfällt seit 0.14.0: wird als Hol- & Bringservice übernommen (Transfer zum Terminal: [OFFEN], siehe ANNAHMEN.md)
+  if (/(vallet|valet|premium|terminal)/.test(v)) return 'pickup_delivery'
   if (/^(nein|no|selbst|keiner?|0)$/.test(v)) return 'self'
   return 'shuttle'
 }

@@ -23,6 +23,15 @@ export const FULL_SPEC: EncodeSpec = {
   minQuality: 0.5,
 }
 
+/** Schadensfotos (owner_type damage): hohe Auflösung, damit ein Kratzer im Vollbild erkennbar bleibt */
+export const DAMAGE_FULL_SPEC: EncodeSpec = {
+  maxEdge: 2400,
+  format: 'webp',
+  quality: 0.85,
+  targetBytes: 500_000,
+  minQuality: 0.7,
+}
+
 export const THUMB_SPEC: EncodeSpec = {
   maxEdge: 320,
   format: 'webp',

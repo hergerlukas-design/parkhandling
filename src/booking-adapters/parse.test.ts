@@ -64,7 +64,7 @@ describe('Aufzählungen', () => {
     expect(parseParkingType('???')).toBeNull()
   })
   it('erkennt Rückgabeart', () => {
-    expect(parseReturnMode('Valet Premium')).toBe('vallet')
+    expect(parseReturnMode('Valet Premium')).toBe('pickup_delivery')
     expect(parseReturnMode('Shuttle')).toBe('shuttle')
     expect(parseReturnMode('Selbstabholer')).toBe('self')
     expect(parseReturnMode('Hol- & Bringservice')).toBe('pickup_delivery')

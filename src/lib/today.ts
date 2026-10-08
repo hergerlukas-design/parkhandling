@@ -38,10 +38,64 @@ export interface Capacity {
 }
 
 export interface TodayData {
-  kpis: { arrivals: number; arrivalsHall: number; pickups: number; pickupsHall: number; openTasks: number; dueToday: number; relocate: number; relocateText: string }
+  kpis: {
+    arrivals: number
+    arrivalsHall: number
+    pickups: number
+    pickupsHall: number
+    openTasks: number
+    dueToday: number
+    relocate: number
+    relocateText: string
+  }
   events: DayEvent[]
   alerts: Alert[]
   capacity: Capacity[]
+  /** Zeitraum-Angabe für Überschriften, z. B. „heute“, „morgen“, „am 12.10.2026“, „diese Woche“ */
+  periodWord: string
+  /** Woche: Ereignisse über mehrere Tage, daher mit Datum anzeigen */
+  multiDay: boolean
+}
+
+/** Ansicht des Dashboards: ein Tag (offset in Tagen ab heute) oder eine Woche (offset in Wochen ab heute) */
+export type DashboardPeriod = { view: 'tag' | 'woche'; offset: number }
+
+export interface PeriodRange {
+  /** Heute, morgen, übermorgen (Mitternacht Europe/Berlin) – für Warnungen unabhängig von der Auswahl */
+  today: string
+  tomorrow: string
+  dayAfter: string
+  /** Gewählter Zeitraum [from, to) */
+  from: string
+  to: string
+  periodWord: string
+  multiDay: boolean
+}
+
+const WEEKDAYS: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
+
+/** Berlin-Wochentag, 0 = Montag */
+function berlinWeekdayIndex(now: Date): number {
+  const short = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', weekday: 'short' }).format(now)
+  return WEEKDAYS[short] ?? 0
+}
+
+export function periodRange(period: DashboardPeriod, now: Date = new Date()): PeriodRange {
+  const today = berlinDayStart(0)
+  const tomorrow = berlinDayStart(1)
+  const dayAfter = berlinDayStart(2)
+  if (period.view === 'tag') {
+    const n = period.offset
+    const word = n === 0 ? 'heute' : n === 1 ? 'morgen' : `am ${formatDate(berlinDayStart(n))}`
+    return { today, tomorrow, dayAfter, from: berlinDayStart(n), to: berlinDayStart(n + 1), periodWord: word, multiDay: false }
+  }
+  // Woche: Montag bis Sonntag
+  const monday = -berlinWeekdayIndex(now)
+  const from = berlinDayStart(monday + 7 * period.offset)
+  const to = berlinDayStart(monday + 7 * (period.offset + 1))
+  const sunday = berlinDayStart(monday + 7 * (period.offset + 1) - 1)
+  const word = period.offset === 0 ? 'diese Woche' : `vom ${formatDate(from)} bis ${formatDate(sunday)}`
+  return { today, tomorrow, dayAfter, from, to, periodWord: word, multiDay: true }
 }
 
 const ACTIVE = ['booked', 'arrived', 'stored', 'in_service', 'ready', 'in_transit']
@@ -51,18 +105,18 @@ function openTitles(b: BookingListItem): string[] {
   return b.task_chips.filter((c) => c.status !== 'done').map((c) => c.title ?? 'Leistung')
 }
 
-/** Tagesansicht aus Buchungen (heute an/ab, morgen ab, überfällig), Aufgaben und Lageplan. */
+/** Dashboard aus Buchungen des gewählten Zeitraums, Warnungen für heute/morgen, Aufgaben und Lageplan. */
 export function buildToday(
   bookings: BookingListItem[],
   tasks: BoardTask[],
   slots: BoardSlot[],
-  range: { today: string; tomorrow: string; dayAfter: string },
+  range: PeriodRange,
   now: Date = new Date(),
 ): TodayData {
   const inDay = (iso: string, from: string, to: string) => iso >= from && iso < to
   const live = bookings.filter((b) => b.status !== 'cancelled')
-  const arrivals = live.filter((b) => inDay(b.start_at, range.today, range.tomorrow))
-  const pickups = live.filter((b) => inDay(b.end_at, range.today, range.tomorrow))
+  const arrivals = live.filter((b) => inDay(b.start_at, range.from, range.to))
+  const pickups = live.filter((b) => inDay(b.end_at, range.from, range.to))
   const nowIso = now.toISOString()
 
   const events: DayEvent[] = []
@@ -154,6 +208,8 @@ export function buildToday(
 
   const firstRelocate = relocate[0]
   return {
+    periodWord: range.periodWord,
+    multiDay: range.multiDay,
     kpis: {
       arrivals: arrivals.length,
       arrivalsHall: arrivals.filter((b) => b.parking_type === 'indoor').length,
@@ -172,15 +228,16 @@ export function buildToday(
   }
 }
 
-export async function loadToday(): Promise<TodayData> {
-  const range = { today: berlinDayStart(0), tomorrow: berlinDayStart(1), dayAfter: berlinDayStart(2) }
+export async function loadToday(period: DashboardPeriod = { view: 'tag', offset: 0 }): Promise<TodayData> {
+  const range = periodRange(period)
   const weekAgo = berlinDayStart(-7)
   const [day, overdue, tasks, slots] = await Promise.all([
     db()
       .from('booking_list')
       .select('*')
       .or(
-        `and(start_at.gte.${range.today},start_at.lt.${range.tomorrow}),and(end_at.gte.${range.today},end_at.lt.${range.dayAfter})`,
+        // Gewählter Zeitraum, dazu heute/morgen für die Warnungen
+        `and(start_at.gte.${range.from},start_at.lt.${range.to}),and(end_at.gte.${range.from},end_at.lt.${range.to}),and(end_at.gte.${range.today},end_at.lt.${range.dayAfter})`,
       )
       .neq('status', 'cancelled')
       .limit(500),
@@ -196,6 +253,7 @@ export async function loadToday(): Promise<TodayData> {
   ])
   const failed = [day, overdue].find((r) => r.error)
   if (failed?.error) throw new Error(failed.error.message)
-  const bookings = [...(day.data ?? []), ...(overdue.data ?? [])] as BookingListItem[]
-  return buildToday(bookings, tasks, slots, range)
+  const unique = new Map<string, BookingListItem>()
+  for (const b of [...(day.data ?? []), ...(overdue.data ?? [])] as BookingListItem[]) unique.set(b.id, b)
+  return buildToday([...unique.values()], tasks, slots, range)
 }

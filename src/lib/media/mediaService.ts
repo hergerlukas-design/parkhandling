@@ -5,6 +5,7 @@ import { getDeviceId } from '../deviceId'
 import { supabase } from '../supabase'
 import { getMediaStore } from './index'
 import { processPhoto, processSignature } from './imagePipeline'
+import { DAMAGE_FULL_SPEC } from './imageProcessing'
 import type { MediaRef, UploadTarget } from './types'
 import { createUploadQueue, UploadHttpError, type QueueItem } from './uploadQueue'
 
@@ -70,8 +71,10 @@ export interface MediaOwner {
 /** Fotos komprimieren (Worker) und zum Upload einreihen. Originale verlassen das Gerät nie. */
 export async function addPhotos(files: Iterable<File>, owner: MediaOwner): Promise<QueueItem[]> {
   const queued: QueueItem[] = []
+  // Schadensfotos in höherer Auflösung (2400 px, WebP 0,85); alle übrigen Fotos unverändert
+  const fullSpec = owner.ownerType === 'damage' ? DAMAGE_FULL_SPEC : undefined
   for (const file of files) {
-    const { full, thumb } = await processPhoto(file)
+    const { full, thumb } = await processPhoto(file, fullSpec)
     queued.push(
       await uploadQueue.enqueue({
         ...owner,

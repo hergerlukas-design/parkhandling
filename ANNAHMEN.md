@@ -1,8 +1,10 @@
 # ANNAHMEN – Park & Fly Prototyp
 
-Stand: 05.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
+Stand: 08.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
-Legende: **[BELEGT]** = aus Gespräch oder Excel-Vorlage bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt
+Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
+
+Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md` (Nachtrag hat bei Widersprüchen Vorrang).
 
 Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne Code-Änderung anpassbar.
 
@@ -16,7 +18,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone
 - [ANNAHME] Schlüssel: Tresor mit Fächern K-001 bis K-150 (ein Datensatz je Fach in `keys`, `booking_id` leer = frei)
 - [ANNAHME] Platz-Codes: Halle `R<Spalte>-E<Ebene>`, Außen `A1-07`, Arbeitsorte `W-AUF1`, `W-LAD1`, `W-UEB`, Puffer `P-01`; QR-Inhalt `PF-LOC:<Code>` bzw. `PF-KEY:<Fach>`
-- [ANNAHME] Kapazität: Aufbereitung/Ladeplatz/Puffer je 1 Fahrzeug, Übergabezone 6, „Vallet unterwegs“ 50
+- [ANNAHME] Kapazität: Aufbereitung/Ladeplatz/Puffer je 1 Fahrzeug, Übergabezone 6, „Hol- & Bringservice unterwegs“ 50 (Code `T-VAL` unverändert; Bezeichnung seit 0.14.0 ohne „Vallet“)
 - [ANNAHME] Spalte `column` aus der Arbeitsanweisung heißt in der DB `rack_column` (SQL-Schlüsselwort)
 
 ## Leistungen
@@ -28,7 +30,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Preise im Katalog leer (`null`); Gesamtpreis pro Buchung manuell eintragbar
 
 ## Buchungen
-- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- vs. Akkustand im Protokoll
+- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert den Tankstand im Protokoll: Verbrenner und Hybrid erfassen ihn, Elektro nicht
+- [BELEGT] Akkustand entfällt (Nachtrag 08.10.2026, umgesetzt in 0.14.0: Spalte `protocols.soc_percent` entfernt)
 - [ANNAHME] „Kunde / Firma“ landet in `customer_name`; `company` ist optional zusätzlich
 - [ANNAHME] Leistungsaufgaben sind 120 min vor Abholung fällig (`settings.task_due_before_pickup_minutes`)
 - [BELEGT] Zeitraum von Datum/Uhrzeit bis Datum/Uhrzeit, Umbuchungen möglich
@@ -48,7 +51,9 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Shuttle & Transfer
 - [BELEGT] Shuttle stündlich innerhalb von Betriebszeiten, Premium auf Abruf
 - [ANNAHME] Betriebszeiten 05:00–23:00, Takt 60 min, 1 Bus mit 8 Plätzen
-- [ANNAHME] „Hol- & Bringservice" (Excel) = Fahrzeug wird beim Kunden abgeholt/zurückgebracht → eigener `return_mode` `pickup_delivery`, getrennt vom Vallet am Terminal
+- [BELEGT] Nachtrag 08.10.2026: „Hol- & Bringservice“ (`return_mode` `pickup_delivery`) ersetzt den Vallet-Service; umgesetzt in 0.14.0. Bestehende Buchungen mit `vallet` werden umgeschrieben, ein Trigger schreibt auch Eingaben älterer Tablets um
+- [OFFEN] Hol- & Bringservice nur Kundenabholung/Rückbringen oder auch Transfer zum Terminal? Umgesetzt (0.14.0): nur Kundenabholung/Rückbringen. Die Transfer-Spalte „Vallet/Terminal“ aus der Excel-Vorlage wird ebenfalls als Hol- & Bringservice übernommen, bis die Frage geklärt ist
+- [ENTFALLEN] Vallet als eigene Leistung und als Shuttle-Fahrtart (`transport_jobs.type = vallet`, entfernt in 0.14.0)
 - [OFFEN] Flugstatus-Abfrage
 
 ## Protokolle & Mails
@@ -58,7 +63,11 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Das PDF wird im Browser erzeugt (pdf-lib, wie in der Vorlage) und über den Media-Service gespeichert, nicht serverseitig. Grund: Vorlage ist Browser-Code, funktioniert offline; die Edge Function verschickt nur das gespeicherte PDF
 - [ANNAHME] Die Standardschrift der Vorlage (Helvetica) kann nicht alle Sonderzeichen; feste Beschriftungen sind daher ohne Umlaute („Uebergabe“), eingegebene Texte mit Umlauten funktionieren
 - [ANNAHME] Übergabeprotokoll nutzt das Überführungs-Layout der Vorlage mit Titel „Fahrzeug-Uebergabeprotokoll“, Empfänger = Kunde; der Vergleich zur Annahme (KM, Tank/Akku, neue Schäden) steht in den Bemerkungen
-- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tank- bzw. Akkustand (nach Antriebsart), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
+- [BELEGT] Kilometerstand mit einer Nachkommastelle: Eingabe mit Dezimalkomma („84213,5“), Speicherung mit Punkt (`numeric(10,1)`), 0.14.0
+- [BELEGT] Tankstand als Slider mit 8 Segmenten (`smallint` 0–8), 0.14.0. Bestehende Prozentwerte (10/25/50/75/100 %) wurden auf Segmente umgerechnet (1/2/4/6/8)
+- [BELEGT] Schadenseinträge haben einen eigenen Speichern-Button; ungespeicherte Änderungen blockieren das Abschließen, bereits hochgeladene Schadensfotos bleiben erhalten (0.14.0)
+- [BELEGT] Schadensfotos (`owner_type` damage): längste Kante 2400 px, WebP 0,85, Ziel ca. 500 KB. Alle übrigen Fotos bleiben 1600 px / 0,75; Thumbnails 320 px. Lightbox mit Pinch-to-Zoom und Doppeltippen (0.14.0)
+- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tankstand (bei Verbrenner und Hybrid), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
 - [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
 - [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
@@ -71,6 +80,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 
 ## Technik
 - [ANNAHME] Schrift IBM Plex Sans/Mono wie im Klick-Prototyp, per Google Fonts geladen und vom Service Worker zwischengespeichert (offline nach erstem Laden)
-- [ANNAHME] Shuttle/Vallet ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
+- [ANNAHME] Shuttle/Hol- & Bringservice ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
 - [ANNAHME] Supabase-Region EU (Frankfurt) – das bestehende Projekt `parkhandling` liegt laut Supabase in `eu-west-1` (Irland); Region nur bei Neuanlage wählbar
 - [ANNAHME] Nur Testdaten bis Datenschutz und Hosting geklärt sind
