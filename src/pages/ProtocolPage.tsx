@@ -416,7 +416,7 @@ export function ProtocolPage() {
           <p className="mb-1 font-semibold">Vergleich zur Annahme</p>
           <ul className="list-disc pl-5">
             {comparison.lines.map((l) => (
-              <li key={l}>{l.replace('Schaeden', 'Schäden')}</li>
+              <li key={l}>{l}</li>
             ))}
           </ul>
         </div>

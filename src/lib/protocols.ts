@@ -216,8 +216,8 @@ export function compareWithIntake(
     if (socDiff != null) lines.push(`Akku: ${sign(socDiff)} % (Annahme ${intake.soc_percent} %)`)
     lines.push(
       newDamages.length
-        ? `Neue Schaeden seit Annahme: ${newDamages.map((d) => (d.desc.trim() ? `${d.pos} (${d.desc.trim()})` : d.pos)).join(', ')}`
-        : 'Keine neuen Schaeden seit Annahme',
+        ? `Neue Schäden seit Annahme: ${newDamages.map((d) => (d.desc.trim() ? `${d.pos} (${d.desc.trim()})` : d.pos)).join(', ')}`
+        : 'Keine neuen Schäden seit Annahme',
     )
   }
   return { mileageDiff, fuelDiff, socDiff, newDamages, lines }
@@ -231,17 +231,17 @@ export function compareWithIntake(
 const SECTION_LABELS: Partial<PdfLabels> = {
   section4: '3. Bemerkungen',
   section5: '4. Fotodokumentation',
-  section6: '5. Erfasste Schaeden',
+  section6: '5. Erfasste Schäden',
   section7: '6. Weitere Fotos',
 }
 
-/** Beschriftungen der Vorlage für Park & Fly (Helvetica: ohne Umlaute) */
+/** Beschriftungen der Vorlage für Park & Fly */
 export function pdfLabels(type: ProtocolType): Partial<PdfLabels> {
   return type === 'intake'
-    ? { ...SECTION_LABELS, carrier_sig: 'Uebergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
+    ? { ...SECTION_LABELS, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
     : {
         ...SECTION_LABELS,
-        title_transfer: 'Fahrzeug-Uebergabeprotokoll',
+        title_transfer: 'Fahrzeug-Übergabeprotokoll',
         creator: 'Mitarbeiter',
         receiver: 'Kunde',
         sig_creator: 'Mitarbeiter',
@@ -287,7 +287,7 @@ export function buildPdfData(input: {
   }
 
   const remarks = [
-    type === 'intake' && form.customer_signer_name ? `Fahrzeug uebergeben von: ${form.customer_signer_name}` : '',
+    type === 'intake' && form.customer_signer_name ? `Fahrzeug übergeben von: ${form.customer_signer_name}` : '',
     ...(input.comparison?.lines ?? []),
     form.remarks.trim(),
   ]
@@ -313,7 +313,7 @@ export function buildPdfData(input: {
     conditions: form.conditions,
     damage_records: form.damages.map(({ pos, desc }) => ({ pos, desc: desc.trim() })),
     receiver_name: type === 'handover' ? form.customer_signer_name : undefined,
-    transfer_type: type === 'handover' ? 'Rueckgabe an Kunde' : undefined,
+    transfer_type: type === 'handover' ? 'Rückgabe an Kunde' : undefined,
   }
 }
 

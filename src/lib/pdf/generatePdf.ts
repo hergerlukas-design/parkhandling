@@ -78,28 +78,28 @@ export interface PdfLabels {
 
 const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
   de: {
-    title_annahme: 'Fahrzeug-Annahmeprotokoll', title_transfer: 'Fahrzeug-Ueberfuehrungsprotokoll',
-    watermark: 'VORLAEUFIGER ENTWURF',
+    title_annahme: 'Fahrzeug-Annahmeprotokoll', title_transfer: 'Fahrzeug-Überführungsprotokoll',
+    watermark: 'VORLÄUFIGER ENTWURF',
     section1: '1. Basisdaten', section2: '2. Technik & Betriebsstoffe',
     section3: '3. Checkliste', section4: '4. Bemerkungen',
-    section5: '5. Fotodokumentation', section6: '6. Erfasste Schaeden',
+    section5: '5. Fotodokumentation', section6: '6. Erfasste Schäden',
     section7: '7. Weitere Fotos', extra_photo: 'Foto',
     plate: 'Kennzeichen', brand_model: 'Marke / Modell', vin: 'VIN',
     creator: 'Ersteller', odometer: 'KM-Stand', location: 'Standort',
-    receiver: 'Empfaenger', from: 'Von', to: 'Nach',
-    transfer_type_label: 'Art der Ueberfuehrung', conditions: 'Bedingungen',
+    receiver: 'Empfänger', from: 'Von', to: 'Nach',
+    transfer_type_label: 'Art der Überführung', conditions: 'Bedingungen',
     fuel: 'Kraftstoff', battery: 'Batterie',
-    condition_header: 'Zustand', equipment_header: 'Zubehoer',
+    condition_header: 'Zustand', equipment_header: 'Zubehör',
     clean: 'Sauber', dirty: 'Schmutzig', yes: 'Ja', no: 'Nein',
-    carrier_sig: 'Uebergabe durch Spediteur', creator_sig_label: 'Annahme durch (Ersteller)',
-    sig_creator: 'Ersteller', sig_receiver: 'Empfaenger',
+    carrier_sig: 'Übergabe durch Spediteur', creator_sig_label: 'Annahme durch (Ersteller)',
+    sig_creator: 'Ersteller', sig_receiver: 'Empfänger',
     no_photo: 'Kein Foto', damage_label: 'Schaden',
     photo: { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', schein: 'Schein' },
     checklist: { floor: 'Boden', seats: 'Sitze', entry: 'Einstiege', instruments: 'Armaturen',
                  trunk: 'Kofferraum', engine: 'Motorraum', aid_kit: 'Verbandskasten',
                  triangle: 'Warndreieck', vest: 'Warnweste', cable: 'Ladekabel',
                  registration: 'Fahrzeugschein', card: 'Ladekarte' },
-    damage_pos: 'Position', damage_type: 'Art', damage_intensity: 'Intensitaet', damage_desc: 'Beschreibung',
+    damage_pos: 'Position', damage_type: 'Art', damage_intensity: 'Intensität', damage_desc: 'Beschreibung',
   },
   en: {
     title_annahme: 'Vehicle Intake Protocol', title_transfer: 'Vehicle Transfer Protocol',
@@ -393,9 +393,37 @@ export function wrapText(text: string, font: PDFFont, size: number, maxWidth: nu
   return lines.length ? lines : ['']
 }
 
-function safe(s: string | number | null | undefined): string {
+// Helvetica (WinAnsi) kann Latin-1 plus diese Sonderzeichen darstellen
+const WIN_ANSI_EXTRA = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ')
+
+// Häufige Zeichen außerhalb von WinAnsi mit lesbarem Ersatz
+const REPLACEMENTS: Record<string, string> = {
+  '→': '->', '←': '<-', '↔': '<->', '⇒': '=>', '✓': 'x', '✔': 'x', '✗': 'x', '≈': '~', '≤': '<=', '≥': '>=',
+  '\u00a0': ' ', '\u2009': ' ', '\u202f': ' ', '−': '-', '‐': '-', '‑': '-', '‒': '-', '′': "'", '″': '"',
+}
+
+function encodable(ch: string): boolean {
+  const cp = ch.codePointAt(0)!
+  if (cp === 10) return true // Zeilenumbruch wird beim Umbrechen ausgewertet
+  if (cp < 0x20 || (cp >= 0x7f && cp < 0xa0)) return false // Steuerzeichen
+  return cp < 0x100 || WIN_ANSI_EXTRA.has(ch)
+}
+
+/** Text auf die Zeichen beschränken, die Helvetica darstellen kann */
+export function safe(s: string | number | null | undefined): string {
   if (s == null) return ''
-  return String(s).replace(/[\u0100-\uFFFF]/g, '?')
+  let out = ''
+  for (const ch of String(s).replace(/\r\n?/g, '\n')) {
+    if (encodable(ch)) out += ch
+    else if (REPLACEMENTS[ch] !== undefined) out += REPLACEMENTS[ch]
+    else if (/\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indicator}|[\u200b-\u200d\ufe0e\ufe0f\u20e3]/u.test(ch)) continue // Emoji & Co. entfallen
+    else {
+      // Akzente abtrennen (č → c, ł bleibt ?) – sonst Platzhalter
+      const base = ch.normalize('NFD').replace(/\p{M}/gu, '')
+      out += base && [...base].every(encodable) ? base : '?'
+    }
+  }
+  return out
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

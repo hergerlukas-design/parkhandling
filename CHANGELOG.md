@@ -3,6 +3,13 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.13.1 – 08.10.2026
+
+### Behoben
+- PDF: Fehlender Tank- oder Akkustand erscheint als „– %“ statt „? %“
+- PDF: Anführungszeichen („ “ ’), Gedankenstriche, € und … in Bemerkungen und Schadensbeschreibungen werden nicht mehr zu „?“; nicht darstellbare Zeichen werden lesbar ersetzt (→ wird ->, č wird c), Emojis entfallen
+- PDF: Beschriftungen mit echten Umlauten („Erfasste Schäden“, „Fahrzeug-Übergabeprotokoll“, „Vorläufiger Entwurf“)
+
 ## 0.13.0 – 08.10.2026
 
 ### Geändert

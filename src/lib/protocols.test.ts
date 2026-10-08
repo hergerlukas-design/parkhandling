@@ -113,7 +113,7 @@ describe('compareWithIntake', () => {
     expect(c.fuelDiff).toBe(-25)
     expect(c.newDamages.map((d) => d.id)).toEqual(['z'])
     expect(c.lines).toContain('KM seit Annahme: +120 km (Annahme 48000 km)')
-    expect(c.lines).toContain('Neue Schaeden seit Annahme: Tür vorne links (Delle, tief)')
+    expect(c.lines).toContain('Neue Schäden seit Annahme: Tür vorne links (Delle, tief)')
   })
 
   it('meldet fehlende Annahme', () => {
@@ -145,7 +145,7 @@ describe('pickSlotUrls / buildPdfData', () => {
     expect(intake.protocol_type).toBe('annahme')
     expect(intake.photos).toEqual({ schaden_1: 'u-bb', signature: 'sig', signature_carrier: 'kunde', vorne: 'v' })
     expect(intake.odometer).toBe(48210)
-    expect(intake.remarks).toContain('Fahrzeug uebergeben von: Erika Test')
+    expect(intake.remarks).toContain('Fahrzeug übergeben von: Erika Test')
     expect(intake.damage_records[1]).toEqual({ pos: 'Motorhaube', desc: 'Delle, tief' })
     expect(intake.checkliste).toBeUndefined()
 
