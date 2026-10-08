@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.14.1 – 08.10.2026
+
+### Behoben
+- Speichern im Protokoll zeigt den Grund, wenn die Datenbank den Entwurf nicht bestätigt (z. B. fehlende Migration, keine Verbindung). Die Statuszeile „Entwurf gespeichert“ erscheint nur nach Bestätigung durch die Datenbank
+- Schadenskarte: Nach „Speichern“ erscheint kurz die Bestätigung „Schaden gespeichert“
+- Kilometerstand mit Dezimalkomma („12345,6“) wird als Zahl mit Punkt übergeben und beim Wiederöffnen wieder mit Komma angezeigt (durch Tests abgesichert)
+- Hinweis: Für 0.14.0 und 0.14.1 muss die Migration `20261008000100_protokoll_hol_bring_0_14.sql` in der Datenbank eingespielt sein, sonst schlägt das Speichern des Kilometerstands fehl
+
 ## 0.14.0 – 08.10.2026
 
 ### Neu

@@ -150,7 +150,7 @@ export function formFromRow(
     inspector_name: row?.inspector_name ?? ctx.inspectorName,
     location_text: row?.location_text ?? defaultLocation(ctx.type, ctx.booking.customer_name),
     vin: row?.vin ?? base?.vin ?? '',
-    mileage: row?.mileage != null ? formatMileage(row.mileage) : '',
+    mileage: row?.mileage != null ? formatMileage(Number(row.mileage)) : '',
     fuel_level: row?.fuel_level ?? null,
     conditions: row?.conditions ?? [],
     damages: (row?.damages ?? []).map(normalizeDamage),
@@ -395,9 +395,34 @@ function formToColumns(form: ProtocolForm) {
   }
 }
 
+/**
+ * Entwurf in der Datenbank speichern. Erfolg gilt nur, wenn die Datenbank die Zeile
+ * tatsächlich aktualisiert hat (sonst z. B. bereits abgeschlossen auf einem anderen Gerät).
+ */
 export async function saveDraft(protocolId: string, form: ProtocolForm): Promise<void> {
-  const { error } = await db().from('protocols').update(formToColumns(form)).eq('id', protocolId).eq('status', 'draft')
+  const { data, error } = await db()
+    .from('protocols')
+    .update(formToColumns(form))
+    .eq('id', protocolId)
+    .eq('status', 'draft')
+    .select('id')
   if (error) throw new Error(error.message)
+  if (!data?.length) throw new Error('Entwurf nicht gespeichert: Protokoll ist nicht mehr im Entwurfsstatus')
+}
+
+/**
+ * Lesbare Meldung für Speicherfehler. Der bekannte Fall „integer“ bei Kilometerständen
+ * tritt auf, wenn die Datenbank-Migration 20261008000100 (0.14.0) noch nicht eingespielt ist.
+ */
+export function saveErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err)
+  if (/invalid input syntax for type integer/i.test(raw)) {
+    return 'Speichern fehlgeschlagen: Die Datenbank ist nicht auf dem Stand dieser Version (Kilometerstand erwartet eine ganze Zahl). Bitte die Migration 20261008000100 einspielen. Technisch: ' + raw
+  }
+  if (/Failed to fetch|NetworkError|network/i.test(raw)) {
+    return 'Speichern fehlgeschlagen: Keine Verbindung zur Datenbank. Der Entwurf ist nur auf diesem Gerät gesichert.'
+  }
+  return 'Speichern fehlgeschlagen: ' + raw
 }
 
 export async function finalizeProtocol(protocolId: string, form: ProtocolForm): Promise<ProtocolRow> {

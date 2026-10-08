@@ -35,6 +35,7 @@ import {
   PHOTO_SLOTS,
   PROTOCOL_TITLE,
   saveDraft,
+  saveErrorMessage,
   sendProtocolMail,
   showsFuel,
   SIGNATURE_CUSTOMER,
@@ -149,6 +150,8 @@ export function ProtocolPage() {
   const [pdf, setPdf] = useState<{ blob: Blob; filename: string } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<'saved' | 'local' | 'saving' | null>(null)
+  // Grund, warum die Datenbank den Entwurf nicht bestätigt hat (sichtbar, nicht nur in der Statuszeile)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const dirty = useRef(false)
 
   // Neue Schadenseinträge, die noch nicht gespeichert sind (erscheinen erst nach „Speichern“ im Formular)
@@ -234,8 +237,14 @@ export function ProtocolPage() {
       if (!navigator.onLine) return
       setSaveState('saving')
       saveDraft(row.id, form)
-        .then(() => setSaveState('saved'))
-        .catch(() => setSaveState('local'))
+        .then(() => {
+          setSaveError(null)
+          setSaveState('saved')
+        })
+        .catch((e) => {
+          setSaveError(saveErrorMessage(e))
+          setSaveState('local')
+        })
     }, 1200)
     return () => clearTimeout(t)
   }, [form, row, isFinal])
@@ -401,7 +410,7 @@ export function ProtocolPage() {
         <div className="flex items-center gap-3 text-xs text-muted">
           {!isFinal && saveState === 'saving' && 'Speichert …'}
           {!isFinal && saveState === 'saved' && 'Entwurf gespeichert'}
-          {!isFinal && saveState === 'local' && 'Entwurf auf dem Gerät gesichert'}
+          {!isFinal && saveState === 'local' && 'Nur auf dem Gerät gesichert (nicht in der Datenbank)'}
           <Button onClick={() => void sharePdf()} disabled={!!busy}>
             {isFinal ? 'PDF teilen / herunterladen' : 'PDF-Vorschau'}
           </Button>
@@ -409,6 +418,9 @@ export function ProtocolPage() {
       </header>
 
       {notice && <p className="rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok-ink" role="status">{notice}</p>}
+      {saveError && !isFinal && (
+        <p className="rounded-xl bg-danger-soft px-4 py-2 text-sm text-danger-ink" role="alert">{saveError}</p>
+      )}
       <ErrorList errors={errors} />
 
       {isFinal && (

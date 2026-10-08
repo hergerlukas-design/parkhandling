@@ -8,6 +8,7 @@ import {
   normalizeDamage,
   parseMileage,
   pickSlotUrls,
+  saveErrorMessage,
   validateForFinalize,
   type ProtocolBooking,
   type ProtocolForm,
@@ -51,10 +52,47 @@ describe('parseMileage', () => {
   })
 })
 
+describe('Kilometerstand 0.14.1: Dezimalkomma wird zum Punkt-Wert', () => {
+  it('wandelt „12345,6“ in 12345.6 um (Wert für numeric(10,1))', () => {
+    expect(parseMileage('12345,6')).toBe(12345.6)
+    expect(parseMileage('12345,6')).not.toBe(12345)
+  })
+
+  it('liest den gespeicherten Wert wieder mit Dezimalkomma ein', () => {
+    const f = formFromRow(
+      { mileage: 12345.6, status: 'draft', type: 'intake', conditions: [], damages: [], fuel_level: null } as never,
+      { type: 'intake', booking, inspectorName: 'Mitarbeiter 1' },
+    )
+    expect(f.mileage).toBe('12345,6')
+  })
+
+  it('erkennt einen Kilometerstand mit Dezimalkomma als gültige Eingabe bei der Abschlussprüfung', () => {
+    const errors = validateForFinalize(form({ mileage: '12345,6' }), 'combustion', { staff: true, customer: true })
+    expect(errors.some((e) => e.includes('Kilometerstand'))).toBe(false)
+  })
+})
+
 describe('Anzeige Kilometerstand', () => {
   it('zeigt Dezimalkomma und lässt „,0“ weg', () => {
     expect(formatMileage(84213.5)).toBe('84213,5')
     expect(formatMileage(48210)).toBe('48210')
+  })
+})
+
+describe('saveErrorMessage', () => {
+  it('nennt bei veraltetem Schema die fehlende Migration', () => {
+    const msg = saveErrorMessage(new Error('invalid input syntax for type integer: "12345.6"'))
+    expect(msg).toContain('20261008000100')
+    expect(msg).toContain('invalid input syntax for type integer')
+  })
+
+  it('erklärt Verbindungsfehler als nur lokal gesichert', () => {
+    expect(saveErrorMessage(new Error('Failed to fetch'))).toContain('nur auf diesem Gerät')
+  })
+
+  it('zeigt unbekannte Fehler mit ihrem Grund', () => {
+    expect(saveErrorMessage(new Error('permission denied'))).toBe('Speichern fehlgeschlagen: permission denied')
+    expect(saveErrorMessage('plain')).toBe('Speichern fehlgeschlagen: plain')
   })
 })
 

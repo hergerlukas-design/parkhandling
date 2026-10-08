@@ -25,6 +25,8 @@ interface Props {
  */
 export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onSave, onRemove, onDirtyChange }: Props) {
   const [draft, setDraft] = useState({ pos: damage.pos, desc: damage.desc })
+  // Sichtbare Bestätigung nach „Speichern“, klingt nach wenigen Sekunden wieder ab
+  const [justSaved, setJustSaved] = useState(false)
 
   const dirty = draft.pos !== damage.pos || draft.desc !== damage.desc
   const complete = !!draft.pos && draft.desc.trim() !== ''
@@ -42,6 +44,17 @@ export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onS
   useEffect(() => {
     setDraft((d) => (dirty ? d : { pos: damage.pos, desc: damage.desc }))
   }, [damage.pos, damage.desc])
+
+  useEffect(() => {
+    if (!justSaved) return
+    const t = setTimeout(() => setJustSaved(false), 3000)
+    return () => clearTimeout(t)
+  }, [justSaved])
+
+  function save() {
+    onSave({ id: damage.id, pos: draft.pos, desc: draft.desc })
+    setJustSaved(true)
+  }
 
   return (
     <div className={`flex flex-col gap-2 rounded-xl border p-3 ${isNew ? 'border-danger/50' : 'border-line'} ${dirty ? 'ring-2 ring-warn/40' : ''}`}>
@@ -76,11 +89,12 @@ export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onS
       {!readOnly && (
         <div className="flex items-center justify-end gap-3">
           {dirty && !complete && <span className="text-xs text-muted">Position und Beschreibung angeben</span>}
-          <Button
-            variant="primary"
-            disabled={!dirty || !complete}
-            onClick={() => onSave({ id: damage.id, pos: draft.pos, desc: draft.desc })}
-          >
+          {justSaved && !dirty && (
+            <span role="status" className="rounded-full bg-ok-soft px-2 py-0.5 text-xs font-semibold text-ok-ink">
+              Schaden gespeichert
+            </span>
+          )}
+          <Button variant="primary" disabled={!dirty || !complete} onClick={save}>
             {dirty ? 'Speichern' : 'Gespeichert'}
           </Button>
         </div>
