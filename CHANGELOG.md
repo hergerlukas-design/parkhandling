@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.13.0 – 08.10.2026
+
+### Geändert
+- Protokolle ohne Checkliste (Sauberkeit/Zubehör): Die Karte entfällt im Formular, der Abschnitt entfällt im PDF; die folgenden Abschnitte rücken nach
+- Schäden werden mit einem Freitext beschrieben statt mit Art und Intensität; das PDF zeigt eine Spalte „Beschreibung“. Ältere Einträge werden automatisch übernommen („Kratzer, Mittel“)
+- Vergleich zur Annahme: Als neu gilt ein Schaden an einer Position, an der bei der Annahme keiner erfasst war
+
+### Behoben
+- PDF: Mehrzeilige Bemerkungen ragen nicht mehr aus ihrem Rahmen
+
 ## 0.12.0 – 08.10.2026
 
 ### Neu
