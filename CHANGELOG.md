@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.15.0 – 09.10.2026
+
+### Neu
+- Personal-Verwaltung in den Einstellungen (nur Admins): Liste mit Rolle und Status, Rolle ändern, aktivieren und deaktivieren
+- Konten nur per Admin-Einladung: Edge Function `user-invite` versendet den Einladungslink, der Eingeladene vergibt sein Passwort auf `/passwort` (mindestens 12 Zeichen)
+- Der letzte aktive Admin kann nicht deaktiviert oder herabgestuft werden (Datenbank-Trigger `guard_last_admin`)
+
+### Geändert
+- Profile speichern die E-Mail-Adresse; Profile werden nicht mehr gelöscht, nur deaktiviert
+
 ## 0.14.0 – 08.10.2026
 
 ### Neu

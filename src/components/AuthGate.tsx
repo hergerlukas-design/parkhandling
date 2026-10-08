@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { signIn, signOut, useAuth } from '../lib/auth'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { SetPassword } from './users/SetPassword'
 import { APP_VERSION } from '../lib/version'
 
 function Screen({ title, children }: { title: string; children: ReactNode }) {
@@ -88,6 +89,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
           className="touch-target mt-4 w-full rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">
           Abmelden
         </button>
+      </Screen>
+    )
+  }
+  // Einladungslink landet auf /passwort: Passwort festlegen, dann ins Dashboard
+  if (window.location.pathname === '/passwort') {
+    return (
+      <Screen title="Passwort festlegen">
+        <SetPassword onDone={() => window.location.assign('/')} />
       </Screen>
     )
   }
