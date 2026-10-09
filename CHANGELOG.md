@@ -3,6 +3,13 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.17.1 – 09.10.2026
+
+### Behoben
+- Protokoll: Schlägt das Speichern in der Datenbank fehl, erscheint eine Meldung mit dem Grund und „Erneut versuchen“. Bisher blieb nur der Hinweis „Entwurf auf dem Gerät gesichert“ stehen (Issue #9, Befund 2)
+- „Entwurf gespeichert“ erscheint nur, wenn die Datenbank den Stand bestätigt hat. Offline zeigt die Kopfzeile „Offline: Entwurf auf dem Gerät gesichert“
+- Schadenskarte: Nach „Speichern“ zeigt die Karte „✓ Schaden gespeichert“, sobald die Datenbank den Stand bestätigt hat (bzw. „Offline“ oder „Nicht gespeichert“)
+
 ## 0.17.0 – 09.10.2026
 
 ### Geändert

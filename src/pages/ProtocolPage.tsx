@@ -175,8 +175,13 @@ export function ProtocolPage() {
   const [signing, setSigning] = useState<typeof SIGNATURE_STAFF | typeof SIGNATURE_CUSTOMER | null>(null)
   const [pdf, setPdf] = useState<{ blob: Blob; filename: string } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [saveState, setSaveState] = useState<'saved' | 'local' | 'saving' | null>(null)
+  const [saveState, setSaveState] = useState<'saved' | 'local' | 'offline' | 'saving' | 'error' | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const dirty = useRef(false)
+  // Rückmeldung an die zuletzt gespeicherte Schadenskarte, sobald die Datenbank den Stand bestätigt
+  const [damageConfirm, setDamageConfirm] = useState<{ id: string; state: 'saving' | 'saved' | 'local' | 'error' } | null>(null)
+  const damagePending = useRef<string | null>(null)
+  const [retry, setRetry] = useState(0)
 
   // Neue Schadenseinträge, die noch nicht gespeichert sind (erscheinen erst nach „Speichern“ im Formular)
   const [draftDamages, setDraftDamages] = useState<DamageEntry[]>([])
@@ -258,14 +263,37 @@ export function ProtocolPage() {
     void set(key, { form, savedAt: new Date().toISOString() } satisfies LocalDraft).catch(() => undefined)
     setSaveState('local')
     const t = setTimeout(() => {
-      if (!navigator.onLine) return
+      const damageId = damagePending.current
+      if (!navigator.onLine) {
+        setSaveState('offline')
+        if (damageId) setDamageConfirm({ id: damageId, state: 'local' })
+        return
+      }
       setSaveState('saving')
       saveDraft(row.id, form)
-        .then(() => setSaveState('saved'))
-        .catch(() => setSaveState('local'))
+        .then(() => {
+          setSaveState('saved')
+          setSaveError(null)
+          if (damageId && damagePending.current === damageId) {
+            damagePending.current = null
+            setDamageConfirm({ id: damageId, state: 'saved' })
+          }
+        })
+        .catch((e: Error) => {
+          setSaveState('error')
+          setSaveError(e.message)
+          if (damageId) setDamageConfirm({ id: damageId, state: 'error' })
+        })
     }, 1200)
     return () => clearTimeout(t)
-  }, [form, row, isFinal])
+  }, [form, row, isFinal, retry])
+
+  // Bestätigung an der Schadenskarte nach einigen Sekunden ausblenden
+  useEffect(() => {
+    if (damageConfirm?.state !== 'saved') return
+    const t = setTimeout(() => setDamageConfirm(null), 4000)
+    return () => clearTimeout(t)
+  }, [damageConfirm])
 
   function update(patch: Partial<ProtocolForm>) {
     dirty.current = true
@@ -428,13 +456,23 @@ export function ProtocolPage() {
         <div className="flex items-center gap-3 text-xs text-muted">
           {!isFinal && saveState === 'saving' && 'Speichert …'}
           {!isFinal && saveState === 'saved' && 'Entwurf gespeichert'}
-          {!isFinal && saveState === 'local' && 'Entwurf auf dem Gerät gesichert'}
+          {!isFinal && saveState === 'local' && 'Änderung wird gespeichert …'}
+          {!isFinal && saveState === 'offline' && 'Offline: Entwurf auf dem Gerät gesichert'}
+          {!isFinal && saveState === 'error' && <span className="font-semibold text-danger">Nicht gespeichert</span>}
           <Button onClick={() => void sharePdf()} disabled={!!busy}>
             {isFinal ? 'PDF teilen / herunterladen' : 'PDF-Vorschau'}
           </Button>
         </div>
       </header>
 
+      {!isFinal && saveState === 'error' && saveError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+          <span>
+            <strong>Speichern in der Datenbank fehlgeschlagen:</strong> {saveError}. Der Entwurf ist auf diesem Gerät gesichert.
+          </span>
+          <Button onClick={() => setRetry((n) => n + 1)}>Erneut versuchen</Button>
+        </div>
+      )}
       {notice && <p className="rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok-ink" role="status">{notice}</p>}
       <ErrorList errors={errors} />
 
@@ -571,7 +609,10 @@ export function ProtocolPage() {
                   markers={markers}
                   readOnly={fieldsDisabled}
                   onDirtyChange={(dirty) => setDirtyDamages((m) => (m[d.id] === dirty ? m : { ...m, [d.id]: dirty }))}
+                  confirmation={damageConfirm?.id === d.id ? damageConfirm.state : null}
                   onSave={(entry) => {
+                    damagePending.current = entry.id
+                    setDamageConfirm({ id: entry.id, state: 'saving' })
                     if (saved) update({ damages: form.damages.map((x) => (x.id === entry.id ? entry : x)) })
                     else {
                       update({ damages: [...form.damages, entry] })

@@ -417,9 +417,16 @@ function formToColumns(form: ProtocolForm) {
   }
 }
 
+/** Entwurf in der Datenbank speichern; gilt erst als gespeichert, wenn die Datenbank die Zeile bestätigt */
 export async function saveDraft(protocolId: string, form: ProtocolForm): Promise<void> {
-  const { error } = await db().from('protocols').update(formToColumns(form)).eq('id', protocolId).eq('status', 'draft')
+  const { data, error } = await db()
+    .from('protocols')
+    .update(formToColumns(form))
+    .eq('id', protocolId)
+    .eq('status', 'draft')
+    .select('id')
   if (error) throw new Error(error.message)
+  if (!data?.length) throw new Error('Protokoll nicht gefunden oder bereits abgeschlossen')
 }
 
 export async function finalizeProtocol(protocolId: string, form: ProtocolForm): Promise<ProtocolRow> {
