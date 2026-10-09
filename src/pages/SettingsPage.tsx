@@ -5,6 +5,7 @@ import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
+import { UserManagement } from '../components/users/UserManagement'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -63,6 +64,11 @@ export function SettingsPage() {
             Abmelden
           </button>
         </Card>
+        {profile?.role === 'admin' && (
+          <Card title="Personal">
+            <UserManagement />
+          </Card>
+        )}
         <Card title="Betrieb">
           <p className="text-sm text-subtle">
             Leistungskatalog, Stellplätze/QR-Codes, Schlüsselfächer und Mail-Testadresse folgen in
