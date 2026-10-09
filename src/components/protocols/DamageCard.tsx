@@ -17,13 +17,22 @@ interface Props {
   onSave: (entry: DamageEntry) => void
   onRemove: () => void
   onDirtyChange: (dirty: boolean) => void
+  /** Rückmeldung nach „Speichern“: Datenbank bestätigt, läuft noch, nur auf dem Gerät oder fehlgeschlagen */
+  confirmation?: 'saving' | 'saved' | 'local' | 'error' | null
+}
+
+const CONFIRMATION: Record<NonNullable<Props['confirmation']>, { text: string; className: string }> = {
+  saving: { text: 'Wird gespeichert …', className: 'text-muted' },
+  saved: { text: '✓ Schaden gespeichert', className: 'font-semibold text-ok-ink' },
+  local: { text: 'Offline: auf dem Gerät gesichert', className: 'text-warn-ink' },
+  error: { text: 'Nicht gespeichert, siehe Meldung oben', className: 'font-semibold text-danger' },
 }
 
 /**
  * Schadenseintrag mit eigenem Speichern-Button. Änderungen gelten erst nach „Speichern“;
  * bereits hochgeladene Fotos hängen an der stabilen Schaden-ID und bleiben erhalten.
  */
-export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onSave, onRemove, onDirtyChange }: Props) {
+export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onSave, onRemove, onDirtyChange, confirmation }: Props) {
   const [draft, setDraft] = useState({ pos: damage.pos, desc: damage.desc })
 
   const dirty = draft.pos !== damage.pos || draft.desc !== damage.desc
@@ -76,6 +85,9 @@ export function DamageCard({ damage, index, isNew, markers, readOnly, photo, onS
       {!readOnly && (
         <div className="flex items-center justify-end gap-3">
           {dirty && !complete && <span className="text-xs text-muted">Position und Beschreibung angeben</span>}
+          {!dirty && confirmation && (
+            <span role="status" className={`text-sm ${CONFIRMATION[confirmation].className}`}>{CONFIRMATION[confirmation].text}</span>
+          )}
           <Button
             variant="primary"
             disabled={!dirty || !complete}
