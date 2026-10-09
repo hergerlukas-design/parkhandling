@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { keyHint, MOVE_TARGETS, moveVehicle, type MoveResult } from '../../lib/siteplan'
 import { Button, Dialog, ErrorList, Field, TextInput } from '../ui'
 
@@ -38,6 +38,11 @@ export function MoveDialog({
 
   async function submit() {
     if (toCode === undefined) return
+    // Übergeben läuft über das Übergabeprotokoll: Unterschrift, dann Auschecken
+    if (toCode === null) {
+      navigate(`${protocolPath}?unterschrift=1`)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -82,7 +87,7 @@ export function MoveDialog({
         <>
           <Button onClick={onClose}>Abbrechen</Button>
           <Button variant="primary" disabled={busy || toCode === undefined} onClick={() => void submit()}>
-            {busy ? 'Speichert …' : toCode === null ? 'Übergeben' : toCode ? `Nach ${toCode}` : 'Ziel wählen'}
+            {busy ? 'Speichert …' : toCode === null ? 'Zum Übergabeprotokoll' : toCode ? `Nach ${toCode}` : 'Ziel wählen'}
           </Button>
         </>
       }
@@ -111,14 +116,15 @@ export function MoveDialog({
       )}
       {target === null && (
         <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
-          Das Fahrzeug verlässt das Gelände, die Buchung wird abgeschlossen. Der Schlüssel geht mit.
-          Ohne Übergabeprotokoll – mit Unterschrift des Kunden übergeben:{' '}
-          <Link to={protocolPath} className="font-semibold underline">Übergabeprotokoll erstellen</Link>
+          Übergeben wird im Übergabeprotokoll: Kunde unterschreibt, danach wird das Fahrzeug ausgecheckt
+          und die Buchung abgeschlossen. Der Schlüssel geht mit.
         </p>
       )}
-      <Field label="Grund (optional)" className="mt-3">
-        <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umsetzen' : '')} onChange={(e) => setReason(e.target.value)} />
-      </Field>
+      {target !== null && (
+        <Field label="Grund (optional)" className="mt-3">
+          <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umsetzen' : '')} onChange={(e) => setReason(e.target.value)} />
+        </Field>
+      )}
       {error && <div className="mt-3"><ErrorList errors={[error]} /></div>}
     </Dialog>
   )

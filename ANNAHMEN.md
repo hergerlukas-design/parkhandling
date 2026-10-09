@@ -50,7 +50,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
 - [ANNAHME] QR-Inhalte: Stellplatz und Fach `PF-LOC:<Code>`; reine Codes werden als Stellplatz erkannt, `PF-KEY:<Code>` aus 0.17.0 ebenfalls
 - [ANNAHME] Außenplatz-Vorschlag: „Außen mit Plane“ → Außen A, „Außen“ → Außen B, sonst Pufferzone
-- [ANNAHME] Übergabe ohne Übergabeprotokoll bleibt im Auschecken-Dialog möglich (mit Hinweis und Link zum Protokoll); regulärer Weg: Übergabezone → Übergabeprotokoll mit Unterschrift → „Fahrzeug übergeben“
+- [ANNAHME] Übergabe nur über das Übergabeprotokoll: in der Übergabezone vorbereiten (Entwurf), bei der Übergabe unterschreiben; der Abschluss checkt das Fahrzeug aus
 - [ANNAHME] Umsetzen eines Blockierers kostet 2 Bewegungen (raus und wieder rein)
 
 ## Shuttle & Transfer

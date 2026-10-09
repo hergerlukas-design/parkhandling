@@ -1,6 +1,6 @@
 import { del, get, set } from 'idb-keyval'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
@@ -47,7 +47,7 @@ import {
   type ProtocolRow,
   type SlotMedia,
 } from '../lib/protocols'
-import { getCheckinCandidate, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
+import { getCheckinCandidate, keyHint, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import type { ProtocolType } from '../types/domain'
 
@@ -65,9 +65,9 @@ interface LocalDraft {
 
 const draftKey = (bookingId: string, type: ProtocolType) => `protocol-draft:${bookingId}:${type}`
 
-function Section({ title, children, aside }: { title: string; children: ReactNode; aside?: ReactNode }) {
+function Section({ id, title, children, aside }: { id?: string; title: string; children: ReactNode; aside?: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+    <section id={id} className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{title}</h2>
         {aside}
@@ -164,6 +164,9 @@ export function ProtocolPage() {
   const type: ProtocolType = typeParam === 'uebergabe' ? 'handover' : 'intake'
   const navigate = useNavigate()
   const { profile } = useAuth()
+  // Aus „Übergeben“ im Auschecken-Dialog: direkt zu den Unterschriften springen
+  const [searchParams] = useSearchParams()
+  const jumpToSignature = searchParams.get('unterschrift') === '1'
 
   const [booking, setBooking] = useState<ProtocolBooking | null>(null)
   const [row, setRow] = useState<ProtocolRow | null>(null)
@@ -244,6 +247,11 @@ export function ProtocolPage() {
   }, [bookingId, type, profile])
 
   useEffect(() => void load(), [load])
+
+  const loaded = !!form
+  useEffect(() => {
+    if (loaded && jumpToSignature) document.getElementById('bestaetigung')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [loaded, jumpToSignature])
 
   // Fotoliste nach abgeschlossenen Uploads aktualisieren; PDF-Verknüpfung nachladen
   useEffect(() => {
@@ -368,6 +376,8 @@ export function ProtocolPage() {
       setPdf(file)
       await addPdf(file.blob, owner(PDF_SLOT))
       setNotice(navigator.onLine ? 'Protokoll abgeschlossen. PDF wird gespeichert und versendet.' : 'Protokoll abgeschlossen. PDF wird hochgeladen, sobald wieder Netz da ist.')
+      // Übergabe: mit der Unterschrift ist das Fahrzeug übergeben, Buchung abschließen
+      if (type === 'handover' && booking?.status !== 'completed') await handOver()
     } catch (e) {
       setErrors([(e as Error).message])
     } finally {
@@ -408,10 +418,25 @@ export function ProtocolPage() {
   }
 
   async function handOver() {
-    if (!row) return
+    if (!row || !booking) return
     setBusy('Fahrzeug wird übergeben …')
     try {
-      await moveVehicle(row.booking_id, null, 'Übergabe an Kunde')
+      const res = await moveVehicle(row.booking_id, null, 'Übergabe an Kunde')
+      setBooking({ ...booking, status: 'completed' })
+      setNotice(['Protokoll abgeschlossen, Fahrzeug übergeben.', keyHint(res.from, res.to), ...res.warnings].filter(Boolean).join(' '))
+    } catch (e) {
+      setErrors([(e as Error).message])
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  // Übergabezone: Protokoll vorbereiten, unterschrieben wird erst bei der Übergabe
+  async function saveForLater() {
+    if (!row || !form) return
+    setBusy('Entwurf wird gespeichert …')
+    try {
+      if (navigator.onLine) await saveDraft(row.id, form)
       navigate(`/fahrzeuge/${row.booking_id}`)
     } catch (e) {
       setErrors([(e as Error).message])
@@ -648,7 +673,7 @@ export function ProtocolPage() {
 
         {/* Spalte 3: Bestätigung */}
         <div className="flex min-w-0 flex-col gap-4">
-          <Section title="Bestätigung">
+          <Section id="bestaetigung" title="Bestätigung">
             <Field label="Bemerkung">
               <textarea rows={3} value={form.remarks} onChange={(e) => update({ remarks: e.target.value })}
                 className="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-base md:text-sm" />
@@ -682,8 +707,13 @@ export function ProtocolPage() {
             {!isFinal && (
               <>
                 <Button variant="primary" className="w-full" onClick={() => void finalize()} disabled={!!busy}>
-                  Abschließen &amp; PDF senden
+                  {type === 'handover' && !handedOver ? 'Abschließen & Fahrzeug übergeben' : 'Abschließen & PDF senden'}
                 </Button>
+                {type === 'handover' && !handedOver && (
+                  <Button className="w-full" onClick={() => void saveForLater()} disabled={!!busy}>
+                    Entwurf speichern – Unterschrift bei Übergabe
+                  </Button>
+                )}
                 <p className="text-xs text-muted">
                   PDF im Layout Vehicle Protocol Pro V2. Im Prototyp nur an die Testadresse, nicht an {booking.customer_email ?? 'den Kunden'}.
                 </p>
