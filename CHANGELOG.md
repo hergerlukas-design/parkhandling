@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.17.0 – 09.10.2026
+
+### Geändert
+- Schlüsselanhänger tragen den Stellplatz-Code: Jeder Platz in Halle und Außenfläche hat einen fest gedruckten Anhänger (z. B. R1-E1) mit QR-Code `PF-KEY:R1-E1`. Die Schlüsselfächer K-001 bis K-150 entfallen
+- Einchecken ohne eigenen Schlüssel-Schritt. Nach dem Einlagern zeigt die App „Schlüssel an den Anhänger R1-E1 hängen“
+- Umsetzen und Auschecken zeigen, was mit dem Schlüssel zu tun ist (umhängen, abnehmen, übergeben)
+- Fahrzeugdetail zeigt als Schlüssel den Anhänger des aktuellen Platzes bzw. „beim Fahrzeug“
+- Scan eines Schlüsselanhängers öffnet das Fahrzeug auf diesem Platz, bei freiem Platz den Lageplan
+
+### Neu
+- Druckbogen „Schlüsselanhänger drucken“ (Einstellungen → Betrieb): ein Etikett je Stellplatz mit Code und QR-Code, 3 × 7 Etiketten (63,5 × 38,1 mm) je A4-Bogen, filterbar nach Bereich
+
 ## 0.16.0 – 09.10.2026
 
 ### Neu

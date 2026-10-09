@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MOVE_TARGETS, moveVehicle, type MoveResult } from '../../lib/siteplan'
+import { keyHint, MOVE_TARGETS, moveVehicle, type MoveResult } from '../../lib/siteplan'
 import { Button, Dialog, ErrorList, Field, TextInput } from '../ui'
 
 /**
@@ -37,7 +37,7 @@ export function MoveDialog({
     setError(null)
     try {
       const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umsetzen' : undefined))
-      if (res.warnings.length) setResult(res)
+      if (res.warnings.length || keyHint(res.from, res.to)) setResult(res)
       else onDone(res)
     } catch (e) {
       setError((e as Error).message)
@@ -47,13 +47,17 @@ export function MoveDialog({
   }
 
   if (result) {
+    const hint = keyHint(result.from, result.to)
     return (
       <Dialog title="Bewegung gespeichert" onClose={() => onDone(result)}
         footer={<Button variant="primary" onClick={() => onDone(result)}>OK</Button>}>
         <p className="mb-2 text-sm">{plate}: {result.from ?? '–'} → {result.to ?? 'übergeben'}</p>
-        <ul className="rounded-lg bg-warn-soft px-4 py-2 text-sm text-warn-ink">
-          {result.warnings.map((w) => <li key={w}>{w}</li>)}
-        </ul>
+        {hint && <p className="mb-2 rounded-lg bg-accent-soft px-4 py-2 font-semibold text-accent-dark">{hint}</p>}
+        {result.warnings.length > 0 && (
+          <ul className="rounded-lg bg-warn-soft px-4 py-2 text-sm text-warn-ink">
+            {result.warnings.map((w) => <li key={w}>{w}</li>)}
+          </ul>
+        )}
       </Dialog>
     )
   }
@@ -95,7 +99,7 @@ export function MoveDialog({
       )}
       {target === null && (
         <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
-          Das Fahrzeug verlässt das Gelände, die Buchung wird abgeschlossen und das Schlüsselfach frei.
+          Das Fahrzeug verlässt das Gelände, die Buchung wird abgeschlossen. Der Schlüssel geht mit.
           Das Übergabeprotokoll mit Unterschrift folgt in Schritt 10.
         </p>
       )}

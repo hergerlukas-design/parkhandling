@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { QrScanner } from '../components/QrScanner'
 import { ErrorList } from '../components/ui'
-import { findBookingByKey, parseScan } from '../lib/siteplan'
+import { findBookingAtKeyTag, parseScan } from '../lib/siteplan'
 
 /**
  * Zentraler Scan (Bottom-Bar / Kopfzeile):
- *  Schlüssel frei      → Einchecken mit diesem Schlüssel
- *  Schlüssel belegt    → Fahrzeug (Auschecken, Umsetzen)
- *  Stellplatz          → Lageplan mit ausgewähltem Platz
+ *  Schlüsselanhänger, Platz belegt → Fahrzeug (Auschecken, Umsetzen)
+ *  Schlüsselanhänger, Platz frei   → Lageplan mit ausgewähltem Platz
+ *  Stellplatz                      → Lageplan mit ausgewähltem Platz
  */
 export function ScanPage() {
   const navigate = useNavigate()
@@ -26,10 +26,10 @@ export function ScanPage() {
     if (scan.kind === 'key') {
       setBusy(true)
       try {
-        const key = await findBookingByKey(scan.code)
-        if (!key) setError(`Schlüsselfach ${scan.code} ist unbekannt.`)
-        else if (key.booking_id) navigate(`/fahrzeuge/${key.booking_id}`)
-        else navigate(`/einchecken?key=${encodeURIComponent(scan.code)}`)
+        const slot = await findBookingAtKeyTag(scan.code)
+        if (!slot) setError(`Stellplatz ${scan.code} ist unbekannt.`)
+        else if (slot.booking_id) navigate(`/fahrzeuge/${slot.booking_id}`)
+        else navigate(`/lageplan?platz=${encodeURIComponent(scan.code)}`)
       } catch (e) {
         setError((e as Error).message)
       } finally {
@@ -46,8 +46,8 @@ export function ScanPage() {
       <QrScanner onResult={(t) => void onResult(t)} label="Schlüssel- oder Stellplatz-QR scannen" paused={busy} />
       <ErrorList errors={error ? [error] : []} />
       <p className="text-sm text-subtle">
-        Schlüssel ohne Fahrzeug startet das Einchecken. Schlüssel mit Fahrzeug öffnet das Fahrzeug zum Auschecken oder
-        Umsetzen. Stellplatz-Codes öffnen den Lageplan.
+        Ein Schlüsselanhänger öffnet das Fahrzeug auf diesem Stellplatz zum Auschecken oder Umsetzen. Ist der Platz frei,
+        oder wird ein Stellplatz-Code gescannt, öffnet sich der Lageplan.
       </p>
     </div>
   )

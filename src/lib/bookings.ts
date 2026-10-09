@@ -1,5 +1,5 @@
 import type { BookingInput } from '../booking-adapters'
-import type { Booking, BookingService, BookingStatus, KeySlot, PaymentStatus, Service, Task } from '../types/domain'
+import type { Booking, BookingService, BookingStatus, PaymentStatus, Service, Task } from '../types/domain'
 import { supabase } from './supabase'
 
 function db() {
@@ -159,7 +159,6 @@ export async function countByChip(search?: string): Promise<Record<ListChip, num
 export interface BookingDetail {
   booking: Booking & { location: { code: string; area: string } | null }
   services: (BookingService & { service: Pick<Service, 'code' | 'name' | 'category' | 'is_default'> })[]
-  key: KeySlot | null
   tasks: Task[]
   history: { id: string; changed_fields: Record<string, unknown>; source: string; changed_at: string }[]
   movements: {
@@ -173,7 +172,7 @@ export interface BookingDetail {
 
 export async function getBookingDetail(id: string): Promise<BookingDetail> {
   const client = db()
-  const [booking, services, tasks, history, movements, key] = await Promise.all([
+  const [booking, services, tasks, history, movements] = await Promise.all([
     client
       .from('bookings')
       .select('*, location:locations!bookings_current_location_id_fkey(code, area)')
@@ -199,9 +198,8 @@ export async function getBookingDetail(id: string): Promise<BookingDetail> {
       .eq('booking_id', id)
       .order('moved_at', { ascending: false })
       .limit(100),
-    client.from('keys').select('*').eq('booking_id', id).maybeSingle(),
   ])
-  const failed = [booking, services, tasks, history, movements, key].find((r) => r.error)
+  const failed = [booking, services, tasks, history, movements].find((r) => r.error)
   if (failed?.error) throw new Error(failed.error.message)
   return {
     booking: booking.data as BookingDetail['booking'],
@@ -209,7 +207,6 @@ export async function getBookingDetail(id: string): Promise<BookingDetail> {
     tasks: (tasks.data ?? []) as Task[],
     history: (history.data ?? []) as BookingDetail['history'],
     movements: (movements.data ?? []) as unknown as BookingDetail['movements'],
-    key: (key.data as KeySlot | null) ?? null,
   }
 }
 

@@ -4,6 +4,7 @@ import { AuthGate } from './components/AuthGate'
 import { AuthProvider } from './lib/auth'
 import { ChangelogPage } from './pages/ChangelogPage'
 import { CheckinPage } from './pages/CheckinPage'
+import { KeyTagsPage } from './pages/KeyTagsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ScanPage } from './pages/ScanPage'
 import { SitePlanPage } from './pages/SitePlanPage'
@@ -19,6 +20,8 @@ export function App() {
       <AuthGate>
         <BrowserRouter>
           <Routes>
+            {/* Druckbogen ohne Navigation */}
+            <Route path="schluesselanhaenger" element={<KeyTagsPage />} />
             <Route element={<AppShell />}>
               <Route index element={<TodayPage />} />
               <Route path="lageplan" element={<SitePlanPage />} />
