@@ -32,7 +32,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Buchungen
 - [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- und Ladestand im Protokoll: Verbrenner nur Tank, Elektro nur Ladestand, Hybrid beides
 - [BELEGT] Akkustand in Prozent entfällt (Nachtrag 08.10.2026, umgesetzt in 0.14.0: Spalte `protocols.soc_percent` entfernt)
-- [BELEGT] Ladestand wird wieder erfasst (Rückmeldung Lukas 09.10.2026, 0.16.0): `protocols.charge_level` `smallint` 0–8, Slider mit 8 Segmenten wie der Tankstand
+- [BELEGT] Ladestand wird wieder erfasst (Rückmeldung Lukas 09.10.2026, 0.16.0): `protocols.charge_level` in Prozent 1–100 als Textfeld (Elektro und Hybrid; Hybrid zusätzlich Tankstand-Slider)
 - [ANNAHME] „Kunde / Firma“ landet in `customer_name`; `company` ist optional zusätzlich
 - [ANNAHME] Leistungsaufgaben sind 120 min vor Abholung fällig (`settings.task_due_before_pickup_minutes`)
 - [BELEGT] Zeitraum von Datum/Uhrzeit bis Datum/Uhrzeit, Umbuchungen möglich

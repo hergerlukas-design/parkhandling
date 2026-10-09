@@ -6,11 +6,11 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ## 0.16.0 – 09.10.2026
 
 ### Neu
-- Ladestand im Annahme- und Übergabeprotokoll wieder erfassbar: Slider mit 8 Segmenten wie der Tankstand. Elektro erfasst den Ladestand, Hybrid Tank- und Ladestand, Verbrenner nur den Tankstand
-- Ladestand ist Pflicht zum Abschließen (Elektro und Hybrid), erscheint im Vergleich mit der Annahme und im PDF als „x/8“ (Feld „Batterie“)
+- Ladestand im Annahme- und Übergabeprotokoll wieder erfassbar: Textfeld in Prozent (1–100). Elektro erfasst den Ladestand, Hybrid Tankstand-Slider und Ladestand, Verbrenner nur den Tankstand
+- Ladestand ist Pflicht zum Abschließen (Elektro und Hybrid), erscheint im Vergleich mit der Annahme und im PDF als „80 %“ (Feld „Batterie“)
 
 ### Datenbank
-- Neue Spalte `protocols.charge_level` (`smallint` 0–8), Migration `20261009000100_charge_level.sql` (nur additiv). Die bis 0.14.0 erfassten Akkustände in Prozent sind nicht wiederherstellbar
+- Neue Spalte `protocols.charge_level` (`smallint`, Prozent 1–100), Migrationen `20261009000100_charge_level.sql` und `20261009000200_charge_level_percent.sql` (nur additiv). Die bis 0.14.0 erfassten Akkustände in Prozent sind nicht wiederherstellbar
 
 ## 0.15.1 – 09.10.2026
 

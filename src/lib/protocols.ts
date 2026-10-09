@@ -74,7 +74,7 @@ export function normalizeDamage(d: StoredDamage): DamageEntry {
   }
 }
 
-/** Tank- und Ladestand in Segmenten (0 = leer, 8 = voll); Slider in der UI */
+/** Tankstand in Segmenten (0 = leer, 8 = voll); Slider in der UI */
 export const FUEL_SEGMENTS = 8
 
 export interface ProtocolForm {
@@ -84,6 +84,7 @@ export interface ProtocolForm {
   /** Eingabe mit Dezimalkomma, z. B. „84213,5“ */
   mileage: string
   fuel_level: number | null
+  /** Ladestand in Prozent (1–100) */
   charge_level: number | null
   conditions: string[]
   damages: DamageEntry[]
@@ -103,7 +104,7 @@ export interface ProtocolRow {
   mileage: number | null
   /** smallint 0–8 */
   fuel_level: number | null
-  /** smallint 0–8, Elektro und Hybrid (seit 0.16.0) */
+  /** Prozent 1–100, Elektro und Hybrid (seit 0.16.0) */
   charge_level: number | null
   conditions: string[]
   damages: StoredDamage[]
@@ -139,6 +140,14 @@ export function newDamageId(): string {
 /** Tankstand bei Verbrenner und Hybrid, Ladestand bei Elektro und Hybrid */
 export const showsFuel = (fuel: FuelType | null) => fuel !== 'electric'
 export const showsCharge = (fuel: FuelType | null) => fuel === 'electric' || fuel === 'hybrid'
+
+/** Ladestand eingeben: ganze Zahl 1–100, „%“ erlaubt; sonst null */
+export function parseChargePercent(value: string): number | null {
+  const s = value.trim().replace(/\s*%$/, '')
+  if (!/^\d{1,3}$/.test(s)) return null
+  const n = Number(s)
+  return n >= 1 && n <= 100 ? n : null
+}
 
 export function defaultLocation(type: ProtocolType, customerName: string): string {
   return type === 'intake' ? SITE_NAME : `${SITE_NAME} → ${customerName}`
@@ -193,7 +202,7 @@ export function validateForFinalize(
   if (!form.inspector_name.trim()) errors.push('Name des Mitarbeiters fehlt')
   if (parseMileage(form.mileage) == null) errors.push('Kilometerstand fehlt oder ist ungültig')
   if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
-  if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt')
+  if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt oder ist ungültig (1–100 %)')
   for (const [i, d] of form.damages.entries()) {
     if (!d.pos || !d.desc.trim()) errors.push(`Schaden ${i + 1}: Position und Beschreibung angeben`)
   }
@@ -211,6 +220,7 @@ export interface Comparison {
   mileageDiff: number | null
   /** Differenz in Segmenten */
   fuelDiff: number | null
+  /** Differenz in Prozentpunkten */
   chargeDiff: number | null
   newDamages: DamageEntry[]
   lines: string[]
@@ -236,7 +246,7 @@ export function compareWithIntake(
   } else {
     if (mileageDiff != null) lines.push(`KM seit Annahme: ${sign(mileageDiff)} km (Annahme ${formatMileage(intake.mileage!)} km)`)
     if (fuelDiff != null) lines.push(`Tank: ${sign(fuelDiff)} Segmente (Annahme ${intake.fuel_level}/${FUEL_SEGMENTS})`)
-    if (chargeDiff != null) lines.push(`Ladestand: ${sign(chargeDiff)} Segmente (Annahme ${intake.charge_level}/${FUEL_SEGMENTS})`)
+    if (chargeDiff != null) lines.push(`Ladestand: ${sign(chargeDiff)} % (Annahme ${intake.charge_level} %)`)
     lines.push(
       newDamages.length
         ? `Neue Schäden seit Annahme: ${newDamages.map((d) => (d.desc.trim() ? `${d.pos} (${d.desc.trim()})` : d.pos)).join(', ')}`

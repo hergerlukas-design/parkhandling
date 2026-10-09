@@ -6,6 +6,7 @@ import {
   formFromRow,
   formatMileage,
   normalizeDamage,
+  parseChargePercent,
   parseMileage,
   pickSlotUrls,
   validateForFinalize,
@@ -89,13 +90,13 @@ describe('validateForFinalize', () => {
 
   it('verlangt bei E-Fahrzeugen den Ladestand statt des Tankstands', () => {
     const sigs = { staff: true, customer: true }
-    expect(validateForFinalize(form({ fuel_level: null }), 'electric', sigs)).toEqual(['Ladestand fehlt'])
-    expect(validateForFinalize(form({ fuel_level: null, charge_level: 5 }), 'electric', sigs)).toEqual([])
+    expect(validateForFinalize(form({ fuel_level: null }), 'electric', sigs)).toEqual(['Ladestand fehlt oder ist ungültig (1–100 %)'])
+    expect(validateForFinalize(form({ fuel_level: null, charge_level: 80 }), 'electric', sigs)).toEqual([])
   })
 
   it('verlangt bei Hybrid Tank- und Ladestand', () => {
     const errors = validateForFinalize(form({ fuel_level: null }), 'hybrid', { staff: true, customer: true })
-    expect(errors).toEqual(['Tankstand fehlt', 'Ladestand fehlt'])
+    expect(errors).toEqual(['Tankstand fehlt', 'Ladestand fehlt oder ist ungültig (1–100 %)'])
   })
 
   it('verlangt vollständige Schadensangaben', () => {
@@ -115,18 +116,30 @@ describe('normalizeDamage', () => {
   })
 })
 
+describe('parseChargePercent', () => {
+  it('akzeptiert ganze Zahlen von 1 bis 100, auch mit %', () => {
+    expect(parseChargePercent('80')).toBe(80)
+    expect(parseChargePercent(' 100 % ')).toBe(100)
+    expect(parseChargePercent('1')).toBe(1)
+  })
+
+  it('lehnt 0, über 100, Dezimalzahlen und Text ab', () => {
+    for (const v of ['', '0', '101', '55,5', 'abc', '-5']) expect(parseChargePercent(v)).toBeNull()
+  })
+})
+
 describe('compareWithIntake', () => {
   it('berechnet Differenzen und neue Schäden', () => {
     const intake = {
       mileage: 48000,
       fuel_level: 6,
-      charge_level: 3,
+      charge_level: 80,
       damages: [{ id: 'x', pos: 'Dach', type: 'Kratzer', int: 'Mittel' }],
     }
     const handover = form({
       mileage: '48120,5',
       fuel_level: 4,
-      charge_level: 7,
+      charge_level: 35,
       damages: [
         { id: 'y', pos: 'Dach', desc: 'Kratzer, etwas größer' },
         { id: 'z', pos: 'Tür vorne links', desc: 'Delle, tief' },
@@ -135,11 +148,11 @@ describe('compareWithIntake', () => {
     const c = compareWithIntake(intake, handover)
     expect(c.mileageDiff).toBe(120.5)
     expect(c.fuelDiff).toBe(-2)
-    expect(c.chargeDiff).toBe(4)
+    expect(c.chargeDiff).toBe(-45)
     expect(c.newDamages.map((d) => d.id)).toEqual(['z'])
     expect(c.lines).toContain('KM seit Annahme: +120.5 km (Annahme 48000 km)')
     expect(c.lines).toContain('Tank: -2 Segmente (Annahme 6/8)')
-    expect(c.lines).toContain('Ladestand: +4 Segmente (Annahme 3/8)')
+    expect(c.lines).toContain('Ladestand: -45 % (Annahme 80 %)')
     expect(c.lines).toContain('Neue Schäden seit Annahme: Tür vorne links (Delle, tief)')
   })
 

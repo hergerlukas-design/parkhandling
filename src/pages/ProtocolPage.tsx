@@ -36,6 +36,7 @@ import {
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
+  parseChargePercent,
   showsCharge,
   showsFuel,
   SIGNATURE_CUSTOMER,
@@ -100,12 +101,12 @@ function SlotPreview({ media, pending }: { media?: SlotMedia; pending?: QueueIte
   return null
 }
 
-/** Tank- bzw. Ladestand als Slider mit 8 Segmenten (0 = leer, 8 = voll) */
-function LevelSlider({ label, value, disabled, onChange }: { label: string; value: number | null; disabled: boolean; onChange: (v: number) => void }) {
+/** Tankstand als Slider mit 8 Segmenten (0 = leer, 8 = voll) */
+function FuelSlider({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number) => void }) {
   return (
     <div className="flex flex-col gap-2 text-sm font-medium text-subtle">
       <div className="flex items-baseline justify-between">
-        <span>{label}</span>
+        <span>Tankstand</span>
         <span className="font-mono text-base text-ink">{value == null ? 'nicht erfasst' : `${value}/${FUEL_SEGMENTS}`}</span>
       </div>
       <div className="grid grid-cols-8 gap-1" aria-hidden="true">
@@ -120,7 +121,7 @@ function LevelSlider({ label, value, disabled, onChange }: { label: string; valu
         step={1}
         value={value ?? 0}
         disabled={disabled}
-        aria-label={`${label} in Segmenten`}
+        aria-label="Tankstand in Segmenten"
         aria-valuetext={value == null ? 'nicht erfasst' : `${value} von ${FUEL_SEGMENTS}`}
         onChange={(e) => onChange(Number(e.target.value))}
         className="touch-target h-11 w-full accent-accent"
@@ -130,6 +131,31 @@ function LevelSlider({ label, value, disabled, onChange }: { label: string; valu
         <span>voll</span>
       </div>
     </div>
+  )
+}
+
+/** Ladestand in Prozent (1–100) als Textfeld; ungültige Eingaben bleiben sichtbar, gespeichert wird nur ein gültiger Wert */
+function ChargeInput({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number | null) => void }) {
+  const [text, setText] = useState(value == null ? '' : String(value))
+  useEffect(() => {
+    setText((t) => (parseChargePercent(t) === value ? t : value == null ? t : String(value)))
+  }, [value])
+  const invalid = text.trim() !== '' && parseChargePercent(text) == null
+  return (
+    <Field label="Ladestand in % (1–100)">
+      <TextInput
+        inputMode="numeric"
+        value={text}
+        disabled={disabled}
+        placeholder="z. B. 80"
+        aria-invalid={invalid}
+        onChange={(e) => {
+          setText(e.target.value)
+          onChange(parseChargePercent(e.target.value))
+        }}
+      />
+      {invalid && <span className="text-xs text-danger">Bitte eine ganze Zahl von 1 bis 100 eingeben</span>}
+    </Field>
   )
 }
 
@@ -483,10 +509,10 @@ export function ProtocolPage() {
               <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
             </Field>
             {showsFuel(fuel) && (
-              <LevelSlider label="Tankstand" value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
+              <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
             )}
             {showsCharge(fuel) && (
-              <LevelSlider label="Ladestand" value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
+              <ChargeInput value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
             )}
             {!fuel && <p className="text-xs text-muted">Antriebsart unbekannt – Tankstand erfassen, bei E-Fahrzeugen in der Buchung „Elektro“ setzen.</p>}
             <div className="flex flex-col gap-1 text-sm font-medium text-subtle">
