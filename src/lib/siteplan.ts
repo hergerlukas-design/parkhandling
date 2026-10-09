@@ -115,13 +115,12 @@ export async function moveVehicle(
   bookingId: string,
   toCode: string | null,
   reason?: string,
-  keyCode?: string | null,
 ): Promise<MoveResult> {
+  // Schlüssel = Anhänger des Stellplatzes, daher kein eigenes Schlüsselfach mehr (p_key_code bleibt leer)
   const { data, error } = await db().rpc('move_vehicle', {
     p_booking_id: bookingId,
     p_to_code: toCode,
     p_reason: reason ?? null,
-    p_key_code: keyCode ?? null,
   })
   if (error) throw new Error(error.message)
   return data as MoveResult
@@ -169,30 +168,52 @@ export async function getCheckinCandidate(id: string): Promise<CheckinCandidate 
   return data as CheckinCandidate | null
 }
 
-export async function listFreeKeys(limit = 5): Promise<string[]> {
-  const { data, error } = await db().from('keys').select('key_code').is('booking_id', null).order('key_code').limit(limit)
-  if (error) throw new Error(error.message)
-  return (data ?? []).map((k) => k.key_code as string)
-}
-
 export interface ScanTarget {
   kind: 'key' | 'location' | 'unknown'
   code: string
 }
 
-/** QR-Inhalt deuten: PF-KEY:K-018, PF-LOC:R3-E1 oder ein reiner Code. */
+/**
+ * Schlüsselanhänger: Jeder Stellplatz in Halle und Außenfläche hat einen fest gedruckten Anhänger
+ * mit seinem Code (z. B. R1-E1) und dem QR-Inhalt PF-KEY:R1-E1. Der Schlüssel hängt immer am
+ * Anhänger des Platzes, auf dem das Fahrzeug steht; in Aufbereitung, Puffer oder unterwegs bleibt
+ * er beim Fahrzeug bzw. Mitarbeiter.
+ */
+const KEY_TAG_CODE = /^(R\d+-E[1-3]|[AB]\d-\d{2})$/
+
+/** Hat dieser Platz einen eigenen Schlüsselanhänger? */
+export function hasKeyTag(code: string | null | undefined): code is string {
+  return !!code && KEY_TAG_CODE.test(code)
+}
+
+/** QR-Inhalt des Schlüsselanhängers eines Stellplatzes */
+export const keyTagQr = (code: string) => `PF-KEY:${code}`
+
+/** Was nach einer Bewegung mit dem Schlüssel zu tun ist (null = nichts) */
+export function keyHint(from: string | null, to: string | null): string | null {
+  const fromTag = hasKeyTag(from) ? from : null
+  const toTag = hasKeyTag(to) ? to : null
+  if (fromTag === toTag) return null
+  if (fromTag && toTag) return `Schlüssel vom Anhänger ${fromTag} an den Anhänger ${toTag} umhängen.`
+  if (toTag) return `Schlüssel an den Anhänger ${toTag} hängen.`
+  if (to === null) return `Schlüssel vom Anhänger ${fromTag} abnehmen und mit dem Fahrzeug übergeben.`
+  return `Schlüssel vom Anhänger ${fromTag} abnehmen, er bleibt beim Fahrzeug.`
+}
+
+/** QR-Inhalt deuten: PF-KEY:R3-E1 (Schlüsselanhänger), PF-LOC:R3-E1 oder ein reiner Stellplatz-Code. */
 export function parseScan(raw: string): ScanTarget {
   const text = raw.trim().toUpperCase()
-  const key = /^PF-KEY:(K-\d{3})$/.exec(text) ?? /^(K-\d{3})$/.exec(text)
-  if (key) return { kind: 'key', code: key[1] }
+  const key = /^PF-KEY:([A-Z0-9-]+)$/.exec(text)
+  if (key && hasKeyTag(key[1])) return { kind: 'key', code: key[1] }
   const loc = /^PF-LOC:([A-Z0-9-]+)$/.exec(text)
   if (loc) return { kind: 'location', code: loc[1] }
   if (/^(R\d+-E[1-3]|[AB]\d-\d{2}|W-[A-Z0-9]+|P-\d{2}|T-[A-Z]+)$/.test(text)) return { kind: 'location', code: text }
   return { kind: 'unknown', code: raw.trim() }
 }
 
-export async function findBookingByKey(keyCode: string): Promise<{ booking_id: string | null } | null> {
-  const { data, error } = await db().from('keys').select('booking_id').eq('key_code', keyCode).maybeSingle()
+/** Fahrzeug auf dem Stellplatz eines Schlüsselanhängers (null = Platz unbekannt) */
+export async function findBookingAtKeyTag(code: string): Promise<{ booking_id: string | null } | null> {
+  const { data, error } = await db().from('location_board').select('booking_id').eq('code', code).maybeSingle()
   if (error) throw new Error(error.message)
   return data as { booking_id: string | null } | null
 }

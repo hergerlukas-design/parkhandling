@@ -8,8 +8,8 @@ import { formatDate } from '../lib/format'
 import { getProtocol } from '../lib/protocols'
 import {
   getCheckinCandidate,
+  keyHint,
   listCheckinCandidates,
-  listFreeKeys,
   loadBoard,
   moveVehicle,
   parseScan,
@@ -21,7 +21,7 @@ import {
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import { PARKING_TYPE_LABEL } from '../types/domain'
 
-type Step = 'vehicle' | 'key' | 'place'
+type Step = 'vehicle' | 'place'
 
 const KIND_STYLE: Record<Suggestion['kind'], { badge: string; label: string; box: string; title: string }> = {
   fits: { badge: 'bg-accent-soft text-accent-dark', label: 'passt', box: 'border-solid border-accent', title: 'Passt' },
@@ -35,7 +35,6 @@ type IntakeState = 'none' | 'draft' | 'final' | null
 function Stepper({ step, intake }: { step: Step; intake: IntakeState }) {
   const items: [string, boolean, boolean][] = [
     ['Protokoll', false, intake === 'final'],
-    ['Schlüssel', step === 'key', step === 'place'],
     ['Platz wählen', step === 'place', false],
   ]
   return (
@@ -58,16 +57,15 @@ export function CheckinPage() {
   const [booking, setBooking] = useState<CheckinCandidate | null>(null)
   const [candidates, setCandidates] = useState<CheckinCandidate[]>([])
   const [search, setSearch] = useState('')
-  const [keyCode, setKeyCode] = useState<string | null>(params.get('key'))
-  const [freeKeys, setFreeKeys] = useState<string[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [chosen, setChosen] = useState<string | null>(params.get('platz'))
   const [errors, setErrors] = useState<string[]>([])
   const [warnings, setWarnings] = useState<string[] | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [intake, setIntake] = useState<IntakeState>(null)
 
-  const step: Step = !booking ? 'vehicle' : !keyCode ? 'key' : 'place'
+  const step: Step = !booking ? 'vehicle' : 'place'
   useUpdateBlocker(!!booking && !warnings, 'Check-in')
 
   // Annahmeprotokoll der gewählten Buchung
@@ -93,12 +91,7 @@ export function CheckinPage() {
     return () => clearTimeout(t)
   }, [search, booking])
 
-  useEffect(() => {
-    if (step === 'key') listFreeKeys(6).then(setFreeKeys).catch(() => undefined)
-  }, [step])
-
-  // Platzvorschläge sofort nach der Fahrzeugwahl laden, damit der empfohlene Platz
-  // schon beim Schlüssel-Schritt sichtbar ist
+  // Platzvorschläge sofort nach der Fahrzeugwahl laden
   useEffect(() => {
     if (!booking) return
     let cancelled = false
@@ -115,7 +108,6 @@ export function CheckinPage() {
   }, [booking])
 
   const recommended = suggestions.find((s) => s.kind === 'fits')?.code ?? null
-  const recommendation = recommendedSuggestion(suggestions)
   const openServices = booking?.open_task_count ?? 0
   const openNames = useMemo(
     () => (booking?.task_chips ?? []).filter((c) => c.status !== 'done').map((c) => c.title).join(' · '),
@@ -127,13 +119,16 @@ export function CheckinPage() {
     setBusy(true)
     setErrors([])
     try {
-      const res = await moveVehicle(booking.id, code, reason, keyCode)
+      const res = await moveVehicle(booking.id, code, reason)
       const extra = recommended && code !== recommended && booking.parking_type === 'indoor' && reason === 'Einlagern'
         ? [`Abweichung vom Vorschlag ${recommended}.`]
         : []
       const all = [...extra, ...res.warnings]
-      if (all.length) setWarnings(all)
-      else navigate(`/fahrzeuge/${booking.id}`)
+      const keyTodo = keyHint(res.from, res.to)
+      if (all.length || keyTodo) {
+        setHint(keyTodo)
+        setWarnings(all)
+      } else navigate(`/fahrzeuge/${booking.id}`)
     } catch (e) {
       setErrors([(e as Error).message])
     } finally {
@@ -144,10 +139,7 @@ export function CheckinPage() {
   function onScan(raw: string) {
     const scan = parseScan(raw)
     setErrors([])
-    if (step === 'key') {
-      if (scan.kind === 'key') setKeyCode(scan.code)
-      else setErrors([`„${scan.code}“ ist kein Schlüssel-QR-Code.`])
-    } else if (step === 'place') {
+    if (step === 'place') {
       if (scan.kind === 'location') {
         setChosen(scan.code)
         void confirm(scan.code)
@@ -169,9 +161,12 @@ export function CheckinPage() {
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-4 p-6">
         <h1 className="text-xl font-semibold">{booking.plate} eingecheckt</h1>
-        <ul className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn-ink">
-          {warnings.map((w) => <li key={w}>{w}</li>)}
-        </ul>
+        {hint && <p className="rounded-xl bg-accent-soft px-4 py-3 text-lg font-semibold text-accent-dark">{hint}</p>}
+        {warnings.length > 0 && (
+          <ul className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn-ink">
+            {warnings.map((w) => <li key={w}>{w}</li>)}
+          </ul>
+        )}
         <div className="flex gap-2">
           <Button variant="primary" onClick={() => navigate(`/fahrzeuge/${booking.id}`)}>Zum Fahrzeug</Button>
           <Button onClick={() => navigate('/lageplan')}>Lageplan</Button>
@@ -195,10 +190,7 @@ export function CheckinPage() {
         <div className="flex flex-col gap-4">
           {booking ? (
             <section className="rounded-2xl border border-line bg-surface p-4">
-              <p className="text-xs text-subtle">
-                {keyCode ? `Schlüssel ${keyCode}` : 'Schlüssel noch nicht gescannt'}
-                {intake === 'final' && ' · Annahmeprotokoll unterschrieben'}
-              </p>
+              {intake === 'final' && <p className="text-xs text-subtle">Annahmeprotokoll unterschrieben</p>}
               <div className="mt-1 font-mono text-3xl font-bold">{booking.plate}</div>
               <div className="text-subtle">{[booking.vehicle_model, booking.external_ref && `Buchung ${booking.external_ref}`].filter(Boolean).join(' · ')}</div>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -212,15 +204,10 @@ export function CheckinPage() {
                   <span className="font-semibold">{intake === 'draft' ? 'Fortsetzen' : 'Erstellen'}</span>
                 </Link>
               )}
-              {step === 'key' && recommendation && (
-                <p className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm text-accent-dark">
-                  <span className="font-semibold">Empfohlener Platz {recommendation.code}</span> – {recommendation.reason}
-                </p>
-              )}
               {booking.task_chips.length > 0 && (
                 <p className="mt-3 text-sm"><span className="font-semibold">Gebuchte Leistungen</span><br />{booking.task_chips.map((c) => c.title).join(' · ')}</p>
               )}
-              <button type="button" className="mt-2 text-xs text-accent underline" onClick={() => { setBooking(null); setKeyCode(null); setChosen(null); setSuggestions([]) }}>
+              <button type="button" className="mt-2 text-xs text-accent underline" onClick={() => { setBooking(null); setChosen(null); setSuggestions([]) }}>
                 Anderes Fahrzeug
               </button>
             </section>
@@ -257,22 +244,7 @@ export function CheckinPage() {
             </section>
           )}
 
-          {step === 'key' && (
-            <section className="rounded-2xl border border-line bg-surface p-4">
-              <h2 className="mb-2 font-semibold">Schlüssel</h2>
-              <p className="mb-2 text-sm text-subtle">Schlüsselanhänger scannen oder freies Fach wählen:</p>
-              <div className="flex flex-wrap gap-2">
-                {freeKeys.map((k) => (
-                  <button key={k} type="button" onClick={() => setKeyCode(k)}
-                    className="touch-target rounded-lg border border-line-strong px-3 py-2 font-mono text-sm font-semibold">{k}</button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {(step === 'key' || step === 'place') && (
-            <QrScanner onResult={onScan} label={step === 'key' ? 'Schlüssel-QR scannen' : 'Stellplatz-QR scannen zum Bestätigen'} />
-          )}
+          {step === 'place' && <QrScanner onResult={onScan} label="Stellplatz-QR scannen zum Bestätigen" />}
           <ErrorList errors={errors} />
         </div>
 
