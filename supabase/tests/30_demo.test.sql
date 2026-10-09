@@ -26,8 +26,6 @@ select pg_temp.assert_eq((select count(distinct parking_type)::int from public.b
   'Indoor, Außen mit und ohne Plane');
 select pg_temp.assert_eq((select count(*)::int from public.bookings where source = 'demo' and status = 'ready') > 0,
   true, 'einige Fahrzeuge bereit');
-select pg_temp.assert_eq((select count(*)::int from public.keys k join public.bookings b on b.id = k.booking_id
-  where b.source = 'demo'), 35, 'Schlüssel zugeordnet');
 -- Kennzeichenformat M-AB 1234
 select pg_temp.assert_eq((select count(*)::int from public.bookings where source = 'demo'
   and plate !~ '^M-[A-Z]{2} [0-9]{4}$'), 0, 'Kennzeichenformat');

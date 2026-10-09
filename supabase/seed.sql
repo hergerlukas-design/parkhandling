@@ -50,8 +50,4 @@ insert into public.locations (code, name, area, capacity, qr_code, sort_order) v
   ('T-VAL',  'Vallet unterwegs', 'transit', 50, 'PF-LOC:T-VAL',  3200)
 on conflict (code) do nothing;
 
--- Schlüsselfächer [ANNAHME]: Tresor K-001 bis K-150
-insert into public.keys (key_code, storage_place, qr_code)
-select format('K-%s', lpad(n::text, 3, '0')), 'Tresor', format('PF-KEY:K-%s', lpad(n::text, 3, '0'))
-from generate_series(1, 150) n
-on conflict (key_code) do nothing;
+-- Schlüsselfächer: je Stellplatz in Halle und Außenfläche ein Fach mit dessen Code (keine eigene Tabelle, seit 0.18.0)

@@ -16,9 +16,12 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 24 Plätze (A1, A2)
 - [ANNAHME] Außen B (ohne Plane): 2 Reihen × 24 Plätze (B1, B2)
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone
-- [BELEGT] Schlüssel (Issue #9, Entscheidung Lukas 09.10.2026, 0.17.0): Jeder Stellplatz in Halle und Außenfläche hat einen fest gedruckten Anhänger mit seinem Code und QR-Code `PF-KEY:<Stellplatz>`. Der Schlüssel hängt am Anhänger des Platzes, auf dem das Fahrzeug steht; beim Umsetzen wird er umgehängt (die App zeigt den Hinweis). In Aufbereitung, Puffer und unterwegs bleibt er beim Fahrzeug bzw. Mitarbeiter. Die Schlüsselnummer wird nicht gespeichert, sondern aus dem aktuellen Platz abgeleitet
-- [ENTFALLEN] Tresor mit Fächern K-001 bis K-150 (Tabelle `keys` wird von der App seit 0.17.0 nicht mehr genutzt)
-- [ANNAHME] Platz-Codes: Halle `R<Spalte>-E<Ebene>`, Außen `A1-07`, Arbeitsorte `W-AUF1`, `W-LAD1`, `W-UEB`, Puffer `P-01`; QR-Inhalt `PF-LOC:<Code>` bzw. `PF-KEY:<Code>` (Schlüsselanhänger)
+- [BELEGT] Schlüssel (Issue #16, 0.18.0): 1 Fach pro Stellplatz, Fach-Code = Stellplatz-Code, keine Schlüsselerfassung in der App
+- [BELEGT] Zur Aufbereitung (und zu Ladeplatz, Puffer, unterwegs) wandert der Schlüssel mit und kommt danach ins Fach des neuen Stellplatzes (Entscheidung Lukas 09.10.2026)
+- [ANNAHME] Umsetzen wird nicht als Schlüsselbewegung erfasst; die Umsetz-Aufgabe nennt das Fach, die App beim Umsetzen das neue Fach
+- [BELEGT] Zweitschlüssel: kein eigenes Datenmodell, liegen im selben Fach, Kennzeichen am Anhänger
+- [ENTFALLEN] Tresor mit Fächern K-001 bis K-150, Schlüsselanhänger mit Stellplatz-Code (0.17.0) und Tabelle `keys` (gelöscht in 0.18.0)
+- [ANNAHME] Platz-Codes: Halle `R<Spalte>-E<Ebene>`, Außen `A1-07`, Arbeitsorte `W-AUF1`, `W-LAD1`, `W-UEB`, Puffer `P-01`; QR-Inhalt `PF-LOC:<Code>` (gilt für Stellplatz-Schild und Schlüsselfach)
 - [ANNAHME] Kapazität: Aufbereitung/Ladeplatz/Puffer je 1 Fahrzeug, Übergabezone 6, „Hol- & Bringservice unterwegs“ 50 (Code `T-VAL` unverändert; Bezeichnung seit 0.14.0 ohne „Vallet“)
 - [ANNAHME] Spalte `column` aus der Arbeitsanweisung heißt in der DB `rack_column` (SQL-Schlüsselwort)
 
@@ -45,7 +48,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 
 ## Lageplan & Scannen
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
-- [ANNAHME] QR-Inhalte: Stellplatz `PF-LOC:<Code>`, Schlüsselanhänger `PF-KEY:R1-E1`; reine Codes werden als Stellplatz erkannt
+- [ANNAHME] QR-Inhalte: Stellplatz und Fach `PF-LOC:<Code>`; reine Codes werden als Stellplatz erkannt, `PF-KEY:<Code>` aus 0.17.0 ebenfalls
 - [ANNAHME] Außenplatz-Vorschlag: „Außen mit Plane“ → Außen A, „Außen“ → Außen B, sonst Pufferzone
 - [ANNAHME] Übergabe ist bis zum Übergabeprotokoll (Schritt 10) ohne Unterschrift möglich
 - [ANNAHME] Umsetzen eines Blockierers kostet 2 Bewegungen (raus und wieder rein)

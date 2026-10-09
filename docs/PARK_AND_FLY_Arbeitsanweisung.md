@@ -41,7 +41,6 @@ Alle Tabellen mit `id uuid`, `created_at`, `updated_at`. Änderungen nur über M
 | `media` | Alle Dateien (Fotos, Unterschriften, PDFs) | `booking_id`, `owner_type` (`task`, `protocol`, `damage`), `owner_id`, `kind` (`photo`, `signature`, `pdf`), `provider` (`supabase`, später `r2`), `bucket`, `path`, `thumb_path`, `width`, `height`, `bytes`, `taken_at`, `retention_until`, `archived_at` |
 | `locations` | Alle Orte | `code` (z. B. `R3-E1`, `A1-07`), `area` (`hall`, `outdoor_a`, `outdoor_b`, `work`, `buffer`, `transit`), `rack`, `column`, `level` (1–3, nur Halle), `row`, `number`, `has_cover`, `status` (`free`, `occupied`, `reserved`, `blocked`), `qr_code` |
 | `vehicle_movements` | Lückenlose Bewegungshistorie | `booking_id`, `from_location_id`, `to_location_id`, `moved_by`, `moved_at`, `reason` |
-| `keys` | Schlüsselverwaltung | `booking_id`, `key_code`, `storage_place`, `qr_code` |
 | `protocols` | Annahme und Übergabe | `booking_id`, `type` (`intake`, `handover`), `mileage`, `fuel_level`, `soc_percent`, `damages jsonb`, `signature_media_id`, `pdf_media_id`, `sent_at` |
 | `transport_jobs` | Shuttle und Vallet | `type` (`shuttle_slot`, `premium_on_demand`, `vallet`), `direction` (`to_airport`, `from_airport`), `scheduled_at`, `driver_id`, `status` |
 | `transport_passengers` | Buchungen pro Shuttle-Fahrt | `transport_job_id`, `booking_id`, `persons` |
@@ -54,6 +53,8 @@ Aktueller Ort eines Fahrzeugs = letzter Eintrag in `vehicle_movements` (zusätzl
 `booked → arrived → stored → in_service → ready → in_transit → completed` sowie `cancelled`.
 
 Beim Anlegen einer Buchung erzeugt ein Trigger automatisch Aufgaben: Grundreinigung (immer) plus je gebuchter Leistung eine Aufgabe. Sind alle Aufgaben `done`, wechselt der Status auf `ready`.
+
+**Schlüssel (geändert durch Issue #16, 09.10.2026):** Keine Tabelle `keys`. Jeder Stellplatz in Halle und Außenfläche (`area` in `hall`, `outdoor_a`, `outdoor_b`, zusammen 120) hat genau ein Schlüsselfach, Fach-Code = `locations.code`. Die App erfasst keine Schlüsselbewegungen. Eine eigene Schlüsseltabelle ist auf später verschoben.
 
 ## 4. Buchungsschnittstelle (Adapter)
 
@@ -77,7 +78,7 @@ Funktionen (als Postgres-Funktion oder Edge Function, mit Unit-Tests):
 
 1. `suggest_hall_location(booking_id)`: schlägt einen Platz vor, der die Regeln einhält. Bevorzugt Spalten, in denen die Reihenfolge ohne Umsetzen passt. Gibt bei Bedarf einen Pufferplatz zurück.
 2. `check_column(rack, column)`: prüft die Reihenfolge und liefert Konflikte.
-3. Bei Konflikt: automatische Aufgabe `relocate` mit `due_at` vor der früheren Abholung, plus Anzeige der nötigen Anzahl Umsetzvorgänge.
+3. Bei Konflikt: automatische Aufgabe `relocate` mit `due_at` vor der früheren Abholung, plus Anzeige der nötigen Anzahl Umsetzvorgänge. Die Aufgabe enthält den Hinweis „Schlüssel mitnehmen: Fach [alt] → Fach [neu]“; beim Umsetzen nennt die App das neue Fach.
 4. Freie Plätze mit belegter Ebene darunter werden als „nur mit Umsetzen" markiert (Status `blocked`, berechnet, nicht manuell).
 
 Aufbereitung möglichst vor dem Einlagern einplanen, da Arbeiten an E2/E3-Fahrzeugen Umsetzvorgänge kosten. Die App weist beim Einlagern darauf hin, wenn noch offene Aufgaben bestehen.
@@ -109,7 +110,8 @@ Navigation als Seitenleiste (Tablet) bzw. Bottom-Bar (Smartphone), angelehnt an 
 
 ## 8. Ein- und Auschecken
 
-- QR-Code am Schlüsselanhänger und an jedem Stellplatz. Ablauf: Schlüssel scannen → Platz scannen → bestätigen. Alternativ Auswahl im Lageplan.
+- QR-Code an jedem Stellplatz und Schlüsselfach (gleicher Code). Ablauf Einparken: Stellplatz bestätigen (QR scannen oder aus der Liste wählen) → Fahrzeug zuordnen → bestätigen. Kein Schlüssel-Scan.
+- Der Schlüssel liegt im Fach des Stellplatzes. Zur Aufbereitung, zum Ladeplatz, in den Puffer oder unterwegs geht er mit dem Fahrzeug und kommt danach ins Fach des neuen Stellplatzes.
 - Jede Bewegung schreibt `vehicle_movements`. Zielorte beim Auschecken: Aufbereitung, Ladeplatz, Übergabe, Vallet unterwegs, anderer Stellplatz.
 - In der Halle wird vor dem Einchecken `suggest_hall_location` angezeigt. Abweichungen sind erlaubt, erzeugen aber eine Warnung.
 

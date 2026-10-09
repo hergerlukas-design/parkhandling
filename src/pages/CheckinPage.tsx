@@ -213,7 +213,7 @@ export function CheckinPage() {
             </section>
           ) : (
             <section className="rounded-2xl border border-line bg-surface p-4">
-              <h2 className="mb-2 font-semibold">Welches Fahrzeug?</h2>
+              <h2 className="mb-2 font-semibold">{chosen ? `Welches Fahrzeug kommt auf ${chosen}?` : 'Welches Fahrzeug?'}</h2>
               <TextInput placeholder="Kennzeichen, Kunde oder Buchungsnummer" value={search} onChange={(e) => setSearch(e.target.value)} />
               <ul className="mt-2 flex max-h-96 flex-col gap-1 overflow-y-auto">
                 {candidates.map((c) => (

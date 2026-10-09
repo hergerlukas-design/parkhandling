@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasKeyTag, keyHint, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
+import { hasKeySlot, keyHint, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
 
 describe('parseScan', () => {
   it('erkennt Schlüssel- und Stellplatz-QR-Codes', () => {
@@ -15,22 +15,28 @@ describe('parseScan', () => {
   })
 })
 
-describe('Schlüsselanhänger', () => {
+describe('Schlüsselfächer', () => {
   it('gibt es nur für Halle und Außenflächen', () => {
-    expect(['R1-E1', 'R8-E3', 'A1-07', 'B2-24'].every(hasKeyTag)).toBe(true)
-    expect(['W-AUF1', 'P-01', 'T-VAL', null].some(hasKeyTag)).toBe(false)
+    expect(['R1-E1', 'R8-E3', 'A1-07', 'B2-24'].every(hasKeySlot)).toBe(true)
+    expect(['W-AUF1', 'P-01', 'T-VAL', null].some(hasKeySlot)).toBe(false)
   })
   it('sagt, was nach einer Bewegung mit dem Schlüssel passiert', () => {
-    expect(keyHint('W-UEB', 'R1-E1')).toBe('Schlüssel an den Anhänger R1-E1 hängen.')
-    expect(keyHint(null, 'A1-07')).toBe('Schlüssel an den Anhänger A1-07 hängen.')
-    expect(keyHint('R1-E1', 'R4-E2')).toBe('Schlüssel vom Anhänger R1-E1 an den Anhänger R4-E2 umhängen.')
-    expect(keyHint('R1-E1', 'W-AUF1')).toBe('Schlüssel vom Anhänger R1-E1 abnehmen, er bleibt beim Fahrzeug.')
-    expect(keyHint('R1-E1', null)).toBe('Schlüssel vom Anhänger R1-E1 abnehmen und mit dem Fahrzeug übergeben.')
+    expect(keyHint('W-UEB', 'R1-E1')).toBe('Schlüssel ins Fach R1-E1 legen.')
+    expect(keyHint(null, 'A1-07')).toBe('Schlüssel ins Fach A1-07 legen.')
+    expect(keyHint('R1-E1', 'R4-E2')).toBe('Schlüssel mitnehmen: Fach R1-E1 → Fach R4-E2.')
+    expect(keyHint('R1-E1', 'W-AUF1')).toBe('Schlüssel aus Fach R1-E1 nehmen, er geht mit dem Fahrzeug.')
+    expect(keyHint('R1-E1', null)).toBe('Schlüssel aus Fach R1-E1 nehmen und mit dem Fahrzeug übergeben.')
     expect(keyHint('W-AUF1', 'P-01')).toBeNull()
     expect(keyHint(null, 'W-AUF1')).toBeNull()
   })
   it('meldet unbekannte Inhalte', () => {
     expect(parseScan('https://example.com')).toEqual({ kind: 'unknown', code: 'https://example.com' })
+  })
+  it('beschreibt den Ort für Liste und Suche', () => {
+    expect(whereabouts('R1-E1')).toBe('Fach R1-E1')
+    expect(whereabouts('W-AUF2')).toBe('in Aufbereitung')
+    expect(whereabouts('P-01')).toBe('im Puffer')
+    expect(whereabouts(null)).toBe('nicht eingecheckt')
   })
 })
 

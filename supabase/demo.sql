@@ -127,7 +127,6 @@ begin
       update public.bookings set status = 'stored' where id = b;
       insert into public.vehicle_movements (booking_id, to_location_id, moved_at, reason)
       select b, id, t, 'Einlagern (Demo)' from public.locations where code = loc_code;
-      update public.keys set booking_id = b where key_code = format('K-%s', lpad(i::text, 3, '0'));
 
       -- Teil der Fahrzeuge ist fertig aufbereitet → Status „bereit“
       if i % 4 = 0 then
