@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.19.0 – 09.10.2026
+
+### Geändert
+- Auschecken/Umsetzen: Ziele „Aufbereitung 1/2“ und „Ladeplatz 1/2“ entfernt
+- Auschecken in die Übergabezone fragt danach „Übergabeprotokoll jetzt erstellen?“ und öffnet auf Wunsch direkt das Übergabeprotokoll
+- „Übergeben (verlässt das Gelände)“: veralteten Hinweis „folgt in Schritt 10“ ersetzt durch Link zum Übergabeprotokoll
+- Aufgabe: Popup schließt sich nach Klick auf „Erledigt“ automatisch
+
 ## 0.18.0 – 09.10.2026
 
 ### Geändert (Issue #16)
