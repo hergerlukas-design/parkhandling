@@ -37,11 +37,16 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
     return () => void unsubscribe()
   }, [load, taskId])
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>, { close = false } = {}) {
     setBusy(true)
     setError(null)
     try {
       await action()
+      if (close) {
+        onChanged()
+        onClose()
+        return
+      }
       await load()
       onChanged()
     } catch (e) {
@@ -77,7 +82,7 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           {task.status === 'in_progress' && (
             <>
               <Button disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'open' }))}>Zurück auf offen</Button>
-              <Button variant="primary" disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'done' }))}>
+              <Button variant="primary" disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'done' }), { close: true })}>
                 Erledigt
               </Button>
             </>
