@@ -59,7 +59,6 @@ select pg_temp.assert_eq(
 -- ---------------------------------------------------------------------------
 select id as r1e1 from public.locations where code = 'R1-E1' \gset
 select id as r1e2 from public.locations where code = 'R1-E2' \gset
-select id as r1e3 from public.locations where code = 'R1-E3' \gset
 select id as work from public.locations where code = 'W-UEB' \gset
 
 update public.bookings set status = 'arrived' where id = :'b1';
@@ -74,7 +73,6 @@ select pg_temp.assert_eq((select from_location_id from public.vehicle_movements 
   :'work'::uuid, 'from_location_id automatisch gesetzt');
 select pg_temp.assert_eq((select status from public.locations where id = :'r1e1'), 'occupied', 'R1-E1 belegt');
 select pg_temp.assert_eq((select status from public.locations where id = :'r1e2'), 'blocked', 'R1-E2 nur mit Umsetzen');
-select pg_temp.assert_eq((select status from public.locations where id = :'r1e3'), 'blocked', 'R1-E3 nur mit Umsetzen');
 
 -- Nachträglich erfasste (ältere) Bewegung überschreibt den aktuellen Ort nicht
 insert into public.vehicle_movements (booking_id, to_location_id, moved_at, reason)
@@ -139,7 +137,7 @@ select pg_temp.assert_eq(
 insert into public.vehicle_movements (booking_id, to_location_id, reason) values (:'b1', null, 'Übergabe');
 update public.bookings set status = 'completed' where id = :'b1';
 select pg_temp.assert_eq((select status from public.locations where id = :'r1e1'), 'free', 'R1-E1 frei');
-select pg_temp.assert_eq((select status from public.locations where id = :'r1e3'), 'free', 'R1-E3 frei');
+select pg_temp.assert_eq((select status from public.locations where id = :'r1e2'), 'free', 'R1-E2 frei');
 
 -- ---------------------------------------------------------------------------
 -- 7. RLS: nur freigeschaltetes Personal

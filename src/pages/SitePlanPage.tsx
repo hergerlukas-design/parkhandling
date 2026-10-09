@@ -137,8 +137,8 @@ export function SitePlanPage() {
           <>
             <HallGrid slots={hall} conflictRacks={new Set(conflicts.map((c) => c.rack))} selectedId={selectedId} onSelect={select} />
             <p className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-subtle">
-              <span>↓ Einlagern: oben zuerst (E3 → E1)</span>
-              <span>↑ Auslagern: unten zuerst (E1 → E3)</span>
+              <span>↓ Einlagern: oben zuerst (E2 → E1)</span>
+              <span>↑ Auslagern: unten zuerst (E1 → E2)</span>
               <span>Früheste Abholung gehört nach unten.</span>
             </p>
           </>

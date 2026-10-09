@@ -2,11 +2,10 @@ import type { BoardSlot } from '../../lib/siteplan'
 import { Icon } from '../Icon'
 import { SlotTile } from './SlotTile'
 
-const LEVELS = [3, 2, 1] as const
-
 /**
- * Halle als Regalraster. Tablet: Spalten R1–Rn nebeneinander, Ebenen E3 (oben) bis E1 (unten).
- * Smartphone: eine Zeile je Regalspalte mit E1 links bis E3 rechts.
+ * Halle als Regalraster. Tablet: Spalten R1–Rn nebeneinander, oberste Ebene oben bis E1 (unten).
+ * Smartphone: eine Zeile je Regalspalte mit E1 links bis zur obersten Ebene rechts.
+ * Die Ebenen ergeben sich aus den aktiven Stellplätzen (derzeit 2).
  */
 export function HallGrid({
   slots,
@@ -20,6 +19,9 @@ export function HallGrid({
   onSelect: (slot: BoardSlot) => void
 }) {
   const racks = [...new Set(slots.map((s) => s.rack!))].sort((a, b) => a - b)
+  const levels = [...new Set(slots.map((s) => s.level!))].sort((a, b) => a - b)
+  const top = levels[levels.length - 1]
+  const cols = { gridTemplateColumns: `2.5rem repeat(${levels.length}, minmax(0, 1fr))` }
   const at = (rack: number, level: number) => slots.find((s) => s.rack === rack && s.level === level)
 
   return (
@@ -41,11 +43,11 @@ export function HallGrid({
             </tr>
           </thead>
           <tbody>
-            {LEVELS.map((level) => (
+            {[...levels].reverse().map((level) => (
               <tr key={level}>
                 <th className="text-left align-middle text-sm font-semibold">
                   E{level}
-                  <span className="block text-[11px] font-normal text-muted">{level === 3 ? 'oben' : level === 1 ? 'unten' : ''}</span>
+                  <span className="block text-[11px] font-normal text-muted">{level === top ? 'oben' : level === 1 ? 'unten' : ''}</span>
                 </th>
                 {racks.map((r) => {
                   const slot = at(r, level)
@@ -63,17 +65,17 @@ export function HallGrid({
 
       {/* Smartphone */}
       <div className="md:hidden">
-        <div className="grid grid-cols-[2.5rem_1fr_1fr_1fr] gap-2 px-1 pb-1 text-xs font-semibold text-subtle">
+        <div className="grid gap-2 px-1 pb-1 text-xs font-semibold text-subtle" style={cols}>
           <span />
-          <span>E1 unten</span>
-          <span>E2</span>
-          <span>E3 oben</span>
+          {levels.map((level) => (
+            <span key={level}>E{level}{level === 1 ? ' unten' : level === top ? ' oben' : ''}</span>
+          ))}
         </div>
         <div className="flex flex-col gap-2">
           {racks.map((r) => (
-            <div key={r} className="grid grid-cols-[2.5rem_1fr_1fr_1fr] items-stretch gap-2">
+            <div key={r} className="grid items-stretch gap-2" style={cols}>
               <span className={`self-center text-sm font-bold ${conflictRacks.has(r) ? 'text-danger' : ''}`}>R{r}</span>
-              {[1, 2, 3].map((level) => {
+              {levels.map((level) => {
                 const slot = at(r, level)
                 return slot ? <SlotTile key={level} slot={slot} compact selected={slot.id === selectedId} onSelect={onSelect} /> : <span key={level} />
               })}

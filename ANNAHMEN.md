@@ -11,10 +11,11 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 ## Betrieb
 - [BELEGT] Standort: Park & Fly Flughafen München
 - [BELEGT] Ca. 100–120 Stellplätze, davon ca. 25 Indoor (Premium)
-- [BELEGT] Indoor-Regale abhängig, 3 Ebenen; frühe Abholung unten
-- [ANNAHME] Halle: 8 Regalspalten × 3 Ebenen = 24 Plätze (R1–R8, E1–E3)
-- [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 24 Plätze (A1, A2)
-- [ANNAHME] Außen B (ohne Plane): 2 Reihen × 24 Plätze (B1, B2)
+- [BELEGT] Indoor-Regale abhängig, 2 Ebenen (bis 0.19.0: 3); frühe Abholung unten
+- [BELEGT] Halle: 8 Regale × 2 Ebenen = 16 Plätze (R1–R8, E1–E2), seit 0.20.0; E3-Plätze sind deaktiviert
+- [BELEGT] Außen max. 80 Plätze (seit 0.20.0); Aufteilung [ANNAHME] je zur Hälfte:
+- [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 20 Plätze (A1, A2)
+- [ANNAHME] Außen B (ohne Plane): 2 Reihen × 20 Plätze (B1, B2)
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone
 - [BELEGT] Schlüssel (Issue #16, 0.18.0): 1 Fach pro Stellplatz, Fach-Code = Stellplatz-Code, keine Schlüsselerfassung in der App
 - [BELEGT] Zur Aufbereitung (und zu Ladeplatz, Puffer, unterwegs) wandert der Schlüssel mit und kommt danach ins Fach des neuen Stellplatzes (Entscheidung Lukas 09.10.2026)

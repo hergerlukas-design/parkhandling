@@ -39,9 +39,9 @@ select pg_temp.assert_eq((
   join public.locations hi on hi.area = 'hall' and hi.rack = lo.rack and hi.level = lo.level + 1
   join public.bookings bh on bh.current_location_id = hi.id
   where lo.area = 'hall' and bl.end_at > bh.end_at), 1, 'genau ein Reihenfolge-Konflikt (R6)');
-select pg_temp.assert_eq((select status from public.locations where code = 'R6-E3'), 'blocked',
-  'R6-E3 nur mit Umsetzen');
-select pg_temp.assert_eq((select count(*)::int from public.locations where code like 'R7-%' and status = 'free'), 3,
+select pg_temp.assert_eq((select count(*)::int from public.locations where code like 'R6-%' and status = 'occupied'), 2,
+  'R6 voll belegt');
+select pg_temp.assert_eq((select count(*)::int from public.locations where code like 'R7-%' and status = 'free'), 2,
   'R7 frei');
 
 -- Listen-View: Filterzahlen und Chips

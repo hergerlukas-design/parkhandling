@@ -5,10 +5,10 @@
 --   psql "$DATABASE_URL" -f supabase/demo.sql
 --
 -- Belegung:
---   R1–R5  je 3 Fahrzeuge in korrekter Reihenfolge (früheste Abholung unten)
+--   R1–R5  je 2 Fahrzeuge in korrekter Reihenfolge (früheste Abholung unten)
 --   R6     bewusst falsch sortiert: E2 wird VOR E1 abgeholt → Umsetz-Konflikt
 --   R7–R8  frei
---   A1/A2  10 Fahrzeuge mit Plane, B1/B2 8 Fahrzeuge ohne Plane
+--   A1/A2  15 Fahrzeuge mit Plane, B1/B2 8 Fahrzeuge ohne Plane
 --   5 Ankünfte in den nächsten Tagen (noch ohne Platz)
 -- =============================================================================
 
@@ -52,23 +52,23 @@ begin
     stored := true;
     loc_code := null;
 
-    if i <= 15 then
-      -- Halle R1–R5 korrekt: E1 früheste, E3 späteste Abholung
+    if i <= 10 then
+      -- Halle R1–R5 korrekt: E1 frühere, E2 spätere Abholung
       ptype := 'indoor';
-      col := (i - 1) / 3 + 1;
-      lvl := 3 - (i - 1) % 3;
+      col := (i - 1) / 2 + 1;
+      lvl := 2 - (i - 1) % 2;
       end_day := (col - 1) + (lvl - 1) * 3;
       loc_code := format('R%s-E%s', col, lvl);
-    elsif i <= 17 then
+    elsif i <= 12 then
       -- Halle R6 falsch sortiert: E1 holt am Tag 9 ab, E2 schon am Tag 5
       ptype := 'indoor';
-      lvl := i - 15;
+      lvl := i - 10;
       end_day := case lvl when 1 then 9 else 5 end;
       loc_code := format('R6-E%s', lvl);
     elsif i <= 27 then
       ptype := 'outdoor_cover';
       end_day := (i * 3) % 14;
-      loc_code := format('A%s-%s', 1 + (i % 2), lpad((i - 15)::text, 2, '0'));
+      loc_code := format('A%s-%s', 1 + (i % 2), lpad((i - 12)::text, 2, '0'));
     elsif i <= 35 then
       ptype := 'outdoor';
       end_day := (i * 5) % 14;

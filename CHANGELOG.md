@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.20.0 – 09.10.2026
+
+### Geändert
+- Halle: 8 Regale × 2 Ebenen (16 Plätze), die Ebene E3 entfällt. Lageplan-Raster richtet sich nach den vorhandenen Ebenen
+- Außen: max. 80 Plätze – Außen A (mit Plane) und Außen B (ohne Plane) je 2 Reihen × 20 Plätze (bisher 24)
+- Demo-Daten: R1–R5 je 2 Fahrzeuge, R6 bewusst falsch sortiert, R7–R8 frei
+
+### Datenbank
+- Migration `20261009000400_layout_8x2_outdoor_80.sql`: wegfallende Plätze (R*-E3, A/B Nr. 21–24) werden deaktiviert, nicht gelöscht – die Bewegungshistorie bleibt erhalten. Belegte Plätze bleiben aktiv, bis das Fahrzeug umgesetzt ist
+
 ## 0.19.0 – 09.10.2026
 
 ### Geändert

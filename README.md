@@ -1,7 +1,7 @@
 # Park & Fly Manager
 
 Interne PWA zur Steuerung des Park & Fly Betriebs am Flughafen München: Buchungen, Lageplan mit
-3-Ebenen-Regalen, Ein-/Auschecken per QR, Aufgaben mit Fotos, Annahme-/Übergabeprotokoll mit
+2-Ebenen-Regalen, Ein-/Auschecken per QR, Aufgaben mit Fotos, Annahme-/Übergabeprotokoll mit
 Unterschrift und PDF, Tagesübersicht.
 
 - Verbindliche Regeln: [`docs/PARK_AND_FLY_Arbeitsanweisung.md`](docs/PARK_AND_FLY_Arbeitsanweisung.md)
@@ -102,7 +102,7 @@ Am besten mit einem Tablet (Querformat) und einem Smartphone parallel, angemelde
       steht das Fahrzeug auf **bereit**.
    4. *Auschecken:* Fahrzeug-Detail → *Auschecken* (z. B. in die Übergabezone) → *Protokolle → Übergabe*.
       Vergleich zur Annahme prüfen, unterschreiben, abschließen, *Fahrzeug übergeben*.
-3. **Regal-Konflikt:** Ein Fahrzeug in E2/E3 einer Halle-Spalte per *Bearbeiten* auf eine frühere Abholung
+3. **Regal-Konflikt:** Ein Fahrzeug in E2 einer Halle-Spalte per *Bearbeiten* auf eine frühere Abholung
    als das Fahrzeug darunter umbuchen → Konflikt-Banner im Lageplan und Umsetz-Aufgabe auf dem Board.
    Nach dem Umsetzen schließt sich die Aufgabe automatisch.
 4. **Update-Banner:** Version in `package.json` erhöhen, neu bauen und ausliefern. Auf einem Gerät ist ein

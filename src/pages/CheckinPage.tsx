@@ -236,7 +236,7 @@ export function CheckinPage() {
           {step === 'place' && openServices > 0 && booking?.parking_type === 'indoor' && (
             <section className="rounded-2xl bg-warn-soft p-4 text-sm text-warn-ink">
               <h2 className="font-semibold">{openServices} Leistung{openServices === 1 ? '' : 'en'} offen</h2>
-              <p className="mt-1">{openNames}. Wird das Fahrzeug jetzt auf E2/E3 eingelagert, kostet jede spätere Arbeit Umsetzvorgänge. Empfehlung: erst Aufbereitung, dann einlagern.</p>
+              <p className="mt-1">{openNames}. Wird das Fahrzeug jetzt auf E2 eingelagert, kostet jede spätere Arbeit Umsetzvorgänge. Empfehlung: erst Aufbereitung, dann einlagern.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" disabled={busy} onClick={() => void firstPrep()}
                   className="touch-target rounded-lg bg-warn-ink px-4 py-2 font-semibold text-white">Erst Aufbereitung</button>

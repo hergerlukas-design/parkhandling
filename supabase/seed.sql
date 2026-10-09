@@ -17,24 +17,24 @@ insert into public.services (code, name, category, price, is_default, sort_order
   ('ZUSATZ',     'Zusatzleistung',      'other',    null, false, 80, '[]')
 on conflict (code) do nothing;
 
--- Halle [ANNAHME]: 8 Regalspalten × 3 Ebenen (R1–R8, E1 unten – E3 oben)
+-- Halle [ANNAHME]: 8 Regalspalten × 2 Ebenen (R1–R8, E1 unten – E2 oben)
 insert into public.locations (code, area, rack, rack_column, level, has_cover, qr_code, sort_order)
 select format('R%s-E%s', r, e), 'hall', r, 1, e, true, format('PF-LOC:R%s-E%s', r, e), r * 10 + e
-from generate_series(1, 8) r, generate_series(1, 3) e
+from generate_series(1, 8) r, generate_series(1, 2) e
 on conflict (code) do nothing;
 
--- Außen A [ANNAHME]: mit Abdeckplane, Reihen A1–A2 à 24 Plätze (Code A1-07)
+-- Außen A [ANNAHME]: mit Abdeckplane, Reihen A1–A2 à 20 Plätze (Code A1-07)
 insert into public.locations (code, area, "row", number, has_cover, qr_code, sort_order)
 select format('A%s-%s', rw, lpad(n::text, 2, '0')), 'outdoor_a', format('A%s', rw), n, true,
   format('PF-LOC:A%s-%s', rw, lpad(n::text, 2, '0')), 1000 + rw * 100 + n
-from generate_series(1, 2) rw, generate_series(1, 24) n
+from generate_series(1, 2) rw, generate_series(1, 20) n
 on conflict (code) do nothing;
 
--- Außen B [ANNAHME]: ohne Plane, Reihen B1–B2 à 24 Plätze
+-- Außen B [ANNAHME]: ohne Plane, Reihen B1–B2 à 20 Plätze (außen gesamt max. 80)
 insert into public.locations (code, area, "row", number, has_cover, qr_code, sort_order)
 select format('B%s-%s', rw, lpad(n::text, 2, '0')), 'outdoor_b', format('B%s', rw), n, false,
   format('PF-LOC:B%s-%s', rw, lpad(n::text, 2, '0')), 2000 + rw * 100 + n
-from generate_series(1, 2) rw, generate_series(1, 24) n
+from generate_series(1, 2) rw, generate_series(1, 20) n
 on conflict (code) do nothing;
 
 -- Arbeitsorte [ANNAHME]

@@ -110,7 +110,7 @@ export function MoveDialog({
         </button>
       </div>
       {target === '' && (
-        <Field label="Stellplatz-Code (z. B. R7-E3, A1-07, P-01)" className="mt-3">
+        <Field label="Stellplatz-Code (z. B. R7-E2, A1-07, P-01)" className="mt-3">
           <TextInput value={otherCode} autoCapitalize="characters" onChange={(e) => setOtherCode(e.target.value)} />
         </Field>
       )}
