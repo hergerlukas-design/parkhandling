@@ -74,7 +74,7 @@ export function normalizeDamage(d: StoredDamage): DamageEntry {
   }
 }
 
-/** Tankstand in Segmenten (0 = leer, 8 = voll); Slider in der UI */
+/** Tank- und Ladestand in Segmenten (0 = leer, 8 = voll); Slider in der UI */
 export const FUEL_SEGMENTS = 8
 
 export interface ProtocolForm {
@@ -84,6 +84,7 @@ export interface ProtocolForm {
   /** Eingabe mit Dezimalkomma, z. B. „84213,5“ */
   mileage: string
   fuel_level: number | null
+  charge_level: number | null
   conditions: string[]
   damages: DamageEntry[]
   remarks: string
@@ -102,6 +103,8 @@ export interface ProtocolRow {
   mileage: number | null
   /** smallint 0–8 */
   fuel_level: number | null
+  /** smallint 0–8, Elektro und Hybrid (seit 0.16.0) */
+  charge_level: number | null
   conditions: string[]
   damages: StoredDamage[]
   remarks: string | null
@@ -133,8 +136,9 @@ export function newDamageId(): string {
   return Math.random().toString(36).slice(2, 10)
 }
 
-/** Tankstand nur bei Verbrenner und Hybrid (Akkustand entfällt seit 0.14.0) */
+/** Tankstand bei Verbrenner und Hybrid, Ladestand bei Elektro und Hybrid */
 export const showsFuel = (fuel: FuelType | null) => fuel !== 'electric'
+export const showsCharge = (fuel: FuelType | null) => fuel === 'electric' || fuel === 'hybrid'
 
 export function defaultLocation(type: ProtocolType, customerName: string): string {
   return type === 'intake' ? SITE_NAME : `${SITE_NAME} → ${customerName}`
@@ -152,6 +156,7 @@ export function formFromRow(
     vin: row?.vin ?? base?.vin ?? '',
     mileage: row?.mileage != null ? formatMileage(row.mileage) : '',
     fuel_level: row?.fuel_level ?? null,
+    charge_level: row?.charge_level ?? null,
     conditions: row?.conditions ?? [],
     damages: (row?.damages ?? []).map(normalizeDamage),
     remarks: row?.remarks ?? '',
@@ -188,6 +193,7 @@ export function validateForFinalize(
   if (!form.inspector_name.trim()) errors.push('Name des Mitarbeiters fehlt')
   if (parseMileage(form.mileage) == null) errors.push('Kilometerstand fehlt oder ist ungültig')
   if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
+  if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt')
   for (const [i, d] of form.damages.entries()) {
     if (!d.pos || !d.desc.trim()) errors.push(`Schaden ${i + 1}: Position und Beschreibung angeben`)
   }
@@ -205,18 +211,21 @@ export interface Comparison {
   mileageDiff: number | null
   /** Differenz in Segmenten */
   fuelDiff: number | null
+  chargeDiff: number | null
   newDamages: DamageEntry[]
   lines: string[]
 }
 
 
 export function compareWithIntake(
-  intake: Pick<ProtocolRow, 'mileage' | 'fuel_level' | 'damages'> | null,
+  intake: Pick<ProtocolRow, 'mileage' | 'fuel_level' | 'charge_level' | 'damages'> | null,
   form: ProtocolForm,
 ): Comparison {
   const mileage = parseMileage(form.mileage)
   const mileageDiff = intake?.mileage != null && mileage != null ? Math.round((mileage - intake.mileage) * 10) / 10 : null
   const fuelDiff = intake?.fuel_level != null && form.fuel_level != null ? form.fuel_level - intake.fuel_level : null
+  const chargeDiff =
+    intake?.charge_level != null && form.charge_level != null ? form.charge_level - intake.charge_level : null
   // Freitext lässt sich nicht verlässlich vergleichen: neu ist ein Schaden an einer Position ohne Schaden bei der Annahme
   const known = new Set((intake?.damages ?? []).map((d) => d.pos))
   const newDamages = intake ? form.damages.filter((d) => d.pos && !known.has(d.pos)) : []
@@ -227,13 +236,14 @@ export function compareWithIntake(
   } else {
     if (mileageDiff != null) lines.push(`KM seit Annahme: ${sign(mileageDiff)} km (Annahme ${formatMileage(intake.mileage!)} km)`)
     if (fuelDiff != null) lines.push(`Tank: ${sign(fuelDiff)} Segmente (Annahme ${intake.fuel_level}/${FUEL_SEGMENTS})`)
+    if (chargeDiff != null) lines.push(`Ladestand: ${sign(chargeDiff)} Segmente (Annahme ${intake.charge_level}/${FUEL_SEGMENTS})`)
     lines.push(
       newDamages.length
         ? `Neue Schäden seit Annahme: ${newDamages.map((d) => (d.desc.trim() ? `${d.pos} (${d.desc.trim()})` : d.pos)).join(', ')}`
         : 'Keine neuen Schäden seit Annahme',
     )
   }
-  return { mileageDiff, fuelDiff, newDamages, lines }
+  return { mileageDiff, fuelDiff, chargeDiff, newDamages, lines }
 }
 
 // ---------------------------------------------------------------------------
@@ -314,6 +324,7 @@ export function buildPdfData(input: {
     location: form.location_text,
     odometer: parseMileage(form.mileage) ?? 0,
     fuel_level: form.fuel_level,
+    charge_level: form.charge_level,
     remarks,
     inspection_date: input.inspectionDate,
     license_plate: booking.plate,
@@ -332,7 +343,7 @@ export function buildPdfData(input: {
 // ---------------------------------------------------------------------------
 
 const PROTOCOL_COLUMNS =
-  'id, booking_id, type, status, inspector_name, location_text, vin, mileage, fuel_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
+  'id, booking_id, type, status, inspector_name, location_text, vin, mileage, fuel_level, charge_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
 
 export async function getProtocolBooking(bookingId: string): Promise<ProtocolBooking> {
   const { data, error } = await db()
@@ -388,6 +399,7 @@ function formToColumns(form: ProtocolForm) {
     vin: form.vin.trim().toUpperCase() || null,
     mileage: parseMileage(form.mileage),
     fuel_level: form.fuel_level,
+    charge_level: form.charge_level,
     conditions: form.conditions,
     damages: form.damages,
     remarks: form.remarks.trim() || null,

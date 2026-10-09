@@ -30,8 +30,9 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Preise im Katalog leer (`null`); Gesamtpreis pro Buchung manuell eintragbar
 
 ## Buchungen
-- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert den Tankstand im Protokoll: Verbrenner und Hybrid erfassen ihn, Elektro nicht
-- [BELEGT] Akkustand entfällt (Nachtrag 08.10.2026, umgesetzt in 0.14.0: Spalte `protocols.soc_percent` entfernt)
+- [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- und Ladestand im Protokoll: Verbrenner nur Tank, Elektro nur Ladestand, Hybrid beides
+- [BELEGT] Akkustand in Prozent entfällt (Nachtrag 08.10.2026, umgesetzt in 0.14.0: Spalte `protocols.soc_percent` entfernt)
+- [BELEGT] Ladestand wird wieder erfasst (Rückmeldung Lukas 09.10.2026, 0.16.0): `protocols.charge_level` `smallint` 0–8, Slider mit 8 Segmenten wie der Tankstand
 - [ANNAHME] „Kunde / Firma“ landet in `customer_name`; `company` ist optional zusätzlich
 - [ANNAHME] Leistungsaufgaben sind 120 min vor Abholung fällig (`settings.task_due_before_pickup_minutes`)
 - [BELEGT] Zeitraum von Datum/Uhrzeit bis Datum/Uhrzeit, Umbuchungen möglich
@@ -67,7 +68,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Tankstand als Slider mit 8 Segmenten (`smallint` 0–8), 0.14.0. Bestehende Prozentwerte (10/25/50/75/100 %) wurden auf Segmente umgerechnet (1/2/4/6/8)
 - [BELEGT] Schadenseinträge haben einen eigenen Speichern-Button; ungespeicherte Änderungen blockieren das Abschließen, bereits hochgeladene Schadensfotos bleiben erhalten (0.14.0)
 - [BELEGT] Schadensfotos (`owner_type` damage): längste Kante 2400 px, WebP 0,85, Ziel ca. 500 KB. Alle übrigen Fotos bleiben 1600 px / 0,75; Thumbnails 320 px. Lightbox mit Pinch-to-Zoom und Doppeltippen (0.14.0)
-- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tankstand (bei Verbrenner und Hybrid), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
+- [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tankstand (bei Verbrenner und Hybrid), Ladestand (bei Elektro und Hybrid), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
 - [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
 - [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig

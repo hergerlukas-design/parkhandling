@@ -36,6 +36,7 @@ import {
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
+  showsCharge,
   showsFuel,
   SIGNATURE_CUSTOMER,
   SIGNATURE_STAFF,
@@ -99,12 +100,12 @@ function SlotPreview({ media, pending }: { media?: SlotMedia; pending?: QueueIte
   return null
 }
 
-/** Tankstand als Slider mit 8 Segmenten (0 = leer, 8 = voll) */
-function FuelSlider({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number) => void }) {
+/** Tank- bzw. Ladestand als Slider mit 8 Segmenten (0 = leer, 8 = voll) */
+function LevelSlider({ label, value, disabled, onChange }: { label: string; value: number | null; disabled: boolean; onChange: (v: number) => void }) {
   return (
     <div className="flex flex-col gap-2 text-sm font-medium text-subtle">
       <div className="flex items-baseline justify-between">
-        <span>Tankstand</span>
+        <span>{label}</span>
         <span className="font-mono text-base text-ink">{value == null ? 'nicht erfasst' : `${value}/${FUEL_SEGMENTS}`}</span>
       </div>
       <div className="grid grid-cols-8 gap-1" aria-hidden="true">
@@ -119,7 +120,7 @@ function FuelSlider({ value, disabled, onChange }: { value: number | null; disab
         step={1}
         value={value ?? 0}
         disabled={disabled}
-        aria-label="Tankstand in Segmenten"
+        aria-label={`${label} in Segmenten`}
         aria-valuetext={value == null ? 'nicht erfasst' : `${value} von ${FUEL_SEGMENTS}`}
         onChange={(e) => onChange(Number(e.target.value))}
         className="touch-target h-11 w-full accent-accent"
@@ -482,7 +483,10 @@ export function ProtocolPage() {
               <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
             </Field>
             {showsFuel(fuel) && (
-              <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
+              <LevelSlider label="Tankstand" value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
+            )}
+            {showsCharge(fuel) && (
+              <LevelSlider label="Ladestand" value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
             )}
             {!fuel && <p className="text-xs text-muted">Antriebsart unbekannt – Tankstand erfassen, bei E-Fahrzeugen in der Buchung „Elektro“ setzen.</p>}
             <div className="flex flex-col gap-1 text-sm font-medium text-subtle">

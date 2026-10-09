@@ -15,8 +15,8 @@ import { PDFDocument, rgb, StandardFonts, degrees, type PDFPage, type PDFFont, t
 // Datentypen (aus protocols.ts)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Tankstand als Segmente („6/8“), nicht erfasst als „–“ */
-function fuelText(level: number | null): string {
+/** Tank- bzw. Ladestand als Segmente („6/8“), nicht erfasst als „–“ */
+function levelText(level: number | null): string {
   return level == null ? '–' : `${level}/8`
 }
 
@@ -260,6 +260,8 @@ export interface PdfData {
   odometer: number
   /** Tankstand in Segmenten 0–8, null = nicht erfasst */
   fuel_level: number | null
+  /** Ladestand in Segmenten 0–8, null = nicht erfasst */
+  charge_level: number | null
   remarks: string
   inspection_date: string
   license_plate: string
@@ -589,11 +591,13 @@ function drawSection2Technik(
   cursorY = drawHeading(page, fonts.bold, cursorY, _L.section2)
 
   if (data.protocol_type === 'annahme') {
-    drawCell(page, fonts, ML, cursorY, C2 * 2, ROW8, _L.fuel, fuelText(data.fuel_level))
+    drawCell(page, fonts, ML,      cursorY, C2, ROW8, _L.fuel,    levelText(data.fuel_level))
+    drawCell(page, fonts, ML + C2, cursorY, C2, ROW8, _L.battery, levelText(data.charge_level))
     cursorY -= ROW8
   } else {
-    drawCell(page, fonts, ML,              cursorY, C3A, ROW8, _L.fuel,       fuelText(data.fuel_level))
-    drawCell(page, fonts, ML + C3A,        cursorY, C3B + C3C, ROW8, _L.conditions, data.conditions.join(', '))
+    drawCell(page, fonts, ML,              cursorY, C3A, ROW8, _L.fuel,       levelText(data.fuel_level))
+    drawCell(page, fonts, ML + C3A,        cursorY, C3B, ROW8, _L.battery,    levelText(data.charge_level))
+    drawCell(page, fonts, ML + C3A + C3B,  cursorY, C3C, ROW8, _L.conditions, data.conditions.join(', '))
     cursorY -= ROW8
   }
 

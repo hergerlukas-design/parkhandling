@@ -30,6 +30,7 @@ function form(patch: Partial<ProtocolForm> = {}): ProtocolForm {
     ...formFromRow(null, { type: 'intake', booking, inspectorName: 'Mitarbeiter 1' }),
     mileage: '48.210',
     fuel_level: 4,
+    charge_level: null,
     ...patch,
   }
 }
@@ -86,9 +87,15 @@ describe('validateForFinalize', () => {
     ])
   })
 
-  it('verlangt bei E-Fahrzeugen keinen Tankstand (Akkustand entfällt)', () => {
-    const errors = validateForFinalize(form({ fuel_level: null }), 'electric', { staff: true, customer: true })
-    expect(errors).toEqual([])
+  it('verlangt bei E-Fahrzeugen den Ladestand statt des Tankstands', () => {
+    const sigs = { staff: true, customer: true }
+    expect(validateForFinalize(form({ fuel_level: null }), 'electric', sigs)).toEqual(['Ladestand fehlt'])
+    expect(validateForFinalize(form({ fuel_level: null, charge_level: 5 }), 'electric', sigs)).toEqual([])
+  })
+
+  it('verlangt bei Hybrid Tank- und Ladestand', () => {
+    const errors = validateForFinalize(form({ fuel_level: null }), 'hybrid', { staff: true, customer: true })
+    expect(errors).toEqual(['Tankstand fehlt', 'Ladestand fehlt'])
   })
 
   it('verlangt vollständige Schadensangaben', () => {
@@ -113,11 +120,13 @@ describe('compareWithIntake', () => {
     const intake = {
       mileage: 48000,
       fuel_level: 6,
+      charge_level: 3,
       damages: [{ id: 'x', pos: 'Dach', type: 'Kratzer', int: 'Mittel' }],
     }
     const handover = form({
       mileage: '48120,5',
       fuel_level: 4,
+      charge_level: 7,
       damages: [
         { id: 'y', pos: 'Dach', desc: 'Kratzer, etwas größer' },
         { id: 'z', pos: 'Tür vorne links', desc: 'Delle, tief' },
@@ -126,9 +135,11 @@ describe('compareWithIntake', () => {
     const c = compareWithIntake(intake, handover)
     expect(c.mileageDiff).toBe(120.5)
     expect(c.fuelDiff).toBe(-2)
+    expect(c.chargeDiff).toBe(4)
     expect(c.newDamages.map((d) => d.id)).toEqual(['z'])
     expect(c.lines).toContain('KM seit Annahme: +120.5 km (Annahme 48000 km)')
     expect(c.lines).toContain('Tank: -2 Segmente (Annahme 6/8)')
+    expect(c.lines).toContain('Ladestand: +4 Segmente (Annahme 3/8)')
     expect(c.lines).toContain('Neue Schäden seit Annahme: Tür vorne links (Delle, tief)')
   })
 
