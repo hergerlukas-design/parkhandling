@@ -1,9 +1,7 @@
 node_modules
 dist
-dev-dist
-.git
 .env.local
 .env.*.local
-supabase
-mockup
-landing
+e2e
+test-results
+playwright-report

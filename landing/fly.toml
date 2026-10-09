@@ -1,0 +1,26 @@
+# Eigene Fly.io-App für die Landingpage (unabhängig von der internen App `parkhandling`).
+# Einmalig anlegen: fly apps create parkhandling-landing
+# Deploy aus dem Ordner landing/: fly deploy --remote-only
+
+app = 'parkhandling-landing'
+primary_region = 'fra'
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '3s'
+    grace_period = '5s'
+    method = 'GET'
+    path = '/healthz'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

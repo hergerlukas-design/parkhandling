@@ -8,6 +8,8 @@ Unterschrift und PDF, Tagesübersicht.
 - Umfang Phase 1: [`docs/PHASE1_Startauftrag.md`](docs/PHASE1_Startauftrag.md)
 - Platzhalterwerte und offene Fragen: [`ANNAHMEN.md`](ANNAHMEN.md)
 - Änderungen je Version: [`CHANGELOG.md`](CHANGELOG.md)
+- Öffentliche Landingpage mit Anfrageformular (eigene App, eigene Version): [`landing/README.md`](landing/README.md)
+- Offene Fragen: [`OFFENE_FRAGEN.md`](OFFENE_FRAGEN.md)
 - UI-Referenz (Klick-Prototyp): [`mockup/index.html`](mockup/index.html) im Browser öffnen
 
 Stack: React 19 · TypeScript · Vite · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, Realtime,

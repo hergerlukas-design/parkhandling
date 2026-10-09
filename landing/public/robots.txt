@@ -1,0 +1,3 @@
+# Bis Datenschutzerklärung, Impressum und Aufbewahrungsfrist geklärt sind: nicht indexieren
+User-agent: *
+Disallow: /

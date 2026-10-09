@@ -1,6 +1,6 @@
 # ANNAHMEN – Park & Fly Prototyp
 
-Stand: 08.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
+Stand: 09.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
 Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
@@ -90,3 +90,19 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Shuttle/Hol- & Bringservice ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
 - [ANNAHME] Supabase-Region EU (Frankfurt) – das bestehende Projekt `parkhandling` liegt laut Supabase in `eu-west-1` (Irland); Region nur bei Neuanlage wählbar
 - [ANNAHME] Nur Testdaten bis Datenschutz und Hosting geklärt sind
+
+## Landingpage (Stufe 1, `landing/` 0.1.0)
+- [ANNAHME] Unterordner-Struktur: Die Landingpage liegt im Repo `parkhandling` unter `landing/`, als eigenständige App (eigenes `package.json`, `CHANGELOG.md`, `README.md`, eigene Fly-App `parkhandling-landing`, Build-Kontext nur `landing/`). Kein Import aus `src/`; gemeinsam genutzt wird nur `supabase/`
+- [ANNAHME] Eigene Versionierung: Version der Landingpage nur in `landing/package.json` (Start `0.1.0`), Anzeige im Footer über `__APP_VERSION__`. Die Version der internen App bleibt davon unberührt
+- [ANNAHME] Eigene Tabelle `inquiries` statt `bookings`, damit der Status-Flow der internen App unverändert bleibt. Status `new`, `contacted`, `converted`, `rejected`; Übernahme in eine Buchung über `converted_booking_id` (manuell, Stufe 2). Zusätzliche Spalte `notification_status` (Ergebnis der Betriebsmail)
+- [ANNAHME] Bestätigungsmail an den Kunden aus (`settings.inquiry_customer_confirmation = false`), bis Mail-Anbieter und Datenschutz geklärt sind. Benachrichtigung an den Betrieb geht an `settings.inquiry_notify_address`, solange `null` an `settings.mail_test_address`
+- [ANNAHME] Preise werden nicht angezeigt, sondern „auf Anfrage“ (Preisliste offen)
+- [ANNAHME] Kennzeichen als Freitext, max. 15 Zeichen, in Großbuchstaben gespeichert; Vor- und Nachname max. 100, E-Mail max. 254, Telefon max. 30 Zeichen
+- [ANNAHME] Kennzeichen, Vor- und Nachname, E-Mail, Anreise, Abholung und Stellplatzart sind Pflicht; Telefon, Leistungen und Nachricht optional
+- [ANNAHME] Abholung muss mindestens einen Tag nach der Anreise liegen (gleicher Tag nicht möglich); Anreise heute ist erlaubt, höchstens 365 Tage im Voraus. Nur Datum, keine Uhrzeit (Uhrzeit/Flug in der Nachricht)
+- [ANNAHME] Datumsfeld als natives Datumsfeld des Browsers (zeigt in deutschen Browsern TT.MM.JJJJ); zusätzlich wird das gewählte Datum als „Mo., 12.10.2026“ angezeigt
+- [ANNAHME] Spam-Schutz: Honeypot und zu schnelles Ausfüllen (< 3 s, im Browser gemessen) werden still verworfen (Antwort wie Erfolg, nichts gespeichert). Rate-Limit zählt jeden Versuch, auch verworfene; IP wird nur als HMAC gespeichert und nach einem Tag gelöscht
+- [ANNAHME] UTM: neue UTM-Parameter ersetzen die gespeicherten der Sitzung vollständig (letzte Anzeige zählt); Referrer nur von fremden Seiten, beim ersten Aufruf der Sitzung
+- [ANNAHME] Keine Webfonts (Systemschrift) und keine externen Ressourcen, damit keine Daten an Dritte gehen; Content-Security-Policy erlaubt nur die eigene Seite und Supabase
+- [ANNAHME] Bis zum Go-live `noindex` (Meta-Tag, `X-Robots-Tag`, `robots.txt`). Automatisches Deployment vorbereitet, aber aus (`LANDING_DEPLOY_ENABLED`)
+- [ANNAHME] Edge Function `inquiry-submit` wird ohne JWT-Prüfung deployt (`--no-verify-jwt`), da die Seite anonym sendet
