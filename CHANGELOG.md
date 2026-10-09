@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.18.0 – 09.10.2026
+
+### Geändert (Issue #16)
+- Schlüsselkonzept: 1 Schlüsselfach pro Stellplatz, Fach-Code = Stellplatz-Code. Die App erfasst keine Schlüssel. Hinweise lauten jetzt „Schlüssel ins Fach R1-E1 legen“, „Schlüssel mitnehmen: Fach R1-E1 → Fach R4-E2“ bzw. „Schlüssel aus Fach R1-E1 nehmen, er geht mit dem Fahrzeug“ (Aufbereitung, Ladeplatz, Puffer, unterwegs)
+- Einparken vom Stellplatz aus: Scan eines freien Stellplatzes öffnet das Einchecken mit diesem Platz, dort Fahrzeug zuordnen und bestätigen. Scan eines belegten Platzes öffnet das Fahrzeug
+- Fahrzeugliste: Spalte „Stellplatz / Fach“; steht das Fahrzeug nicht auf einem Stellplatz, steht dort der Ort (z. B. „in Aufbereitung“)
+- Umsetz-Aufgaben enthalten „Schlüssel mitnehmen: Fach [alt] → Fach des neuen Stellplatzes“
+- Einstellungen → Betrieb → „Stellplätze/QR-Codes“: Fachliste mit Code, Stellplatz, Bereich und Fahrzeug; Etiketten mit QR-Code (`PF-LOC`) für Stellplatz-Schild und Fach. Ersetzt den Druckbogen für Schlüsselanhänger
+
+### Datenbank
+- Tabelle `keys` gelöscht, `move_vehicle` erfasst keine Schlüssel mehr (Parameter `p_key_code` wird ignoriert, ältere Tablets funktionieren weiter). Migration `20261009000300_key_slot_per_location.sql`
+
 ## 0.17.1 – 09.10.2026
 
 ### Behoben

@@ -20,6 +20,9 @@ set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000c1';
 select pg_temp.assert_eq((select count(*)::int from public.tasks t join public.bookings b on b.id = t.booking_id
   join public.locations l on l.id = b.current_location_id
   where t.type = 'relocate' and t.status = 'open' and l.code = 'R6-E1'), 1, 'Umsetz-Aufgabe für R6');
+select pg_temp.assert_eq((select t.note like '%Schlüssel mitnehmen: Fach R6-E1 → Fach des neuen Stellplatzes.' from public.tasks t
+  join public.bookings b on b.id = t.booking_id join public.locations l on l.id = b.current_location_id
+  where t.type = 'relocate' and t.status = 'open' and l.code = 'R6-E1'), true, 'Umsetz-Aufgabe nennt das Schlüsselfach');
 
 -- Testfahrzeuge mit Abholung in 2, 4, 6 und 8 Tagen
 select count(*) from (
@@ -43,9 +46,10 @@ select pg_temp.assert_eq((select kind || ':' || code from public.suggest_hall_lo
 -- ---------------------------------------------------------------------------
 -- 2. Korrekte Reihenfolge: von oben nach unten einlagern, späteste Abholung oben
 -- ---------------------------------------------------------------------------
+-- p_key_code wird seit 0.18.0 ignoriert (ältere Tablets senden ihn noch)
 select public.move_vehicle(:'b8', 'R7-E3', 'Einlagern', 'K-140');
 select pg_temp.assert_eq((select status from public.bookings where id = :'b8'), 'stored', 'Status eingelagert');
-select pg_temp.assert_eq((select key_code from public.keys where booking_id = :'b8'), 'K-140', 'Schlüssel zugeordnet');
+select pg_temp.assert_eq(to_regclass('public.keys') is null, true, 'keine Schlüsseltabelle (Fach = Stellplatz)');
 -- Vorschlag für Abholung in 6 Tagen: R7-E2 (passt unter E3 mit 8 Tagen, enger als leere Spalte R8)
 select pg_temp.assert_eq((select code from public.suggest_hall_location(:'b6') limit 1), 'R7-E2', 'enge Reihenfolge bevorzugt');
 select public.move_vehicle(:'b6', 'R7-E2');
@@ -122,10 +126,9 @@ exception when raise_exception then
   if sqlerrm not like '%Auslagern von R7-E3 nicht möglich%' then raise; end if;
 end;
 $$;
--- Übergabe aus der Übergabezone: Buchung abgeschlossen, Schlüssel frei
+-- Übergabe aus der Übergabezone: Buchung abgeschlossen
 select public.move_vehicle(:'b2', null, 'Übergeben');
 select pg_temp.assert_eq((select status from public.bookings where id = :'b2'), 'completed', 'Übergabe schließt Buchung ab');
-select pg_temp.assert_eq((select count(*)::int from public.keys where booking_id = :'b2'), 0, 'Schlüssel freigegeben');
 select pg_temp.assert_eq((select count(*)::int from public.vehicle_movements where booking_id = :'b2'), 3,
   'lückenlose Bewegungshistorie');
 reset role;

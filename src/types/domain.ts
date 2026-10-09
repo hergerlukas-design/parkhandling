@@ -100,13 +100,6 @@ export interface ChecklistItem {
   done: boolean
 }
 
-export interface KeySlot extends Row {
-  booking_id: string | null
-  key_code: string
-  storage_place: string | null
-  qr_code: string | null
-}
-
 export interface Location extends Row {
   code: string
   name: string | null

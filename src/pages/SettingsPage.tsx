@@ -71,15 +71,15 @@ export function SettingsPage() {
         )}
         <Card title="Betrieb">
           <p className="text-sm text-subtle">
-            Jeder Stellplatz in Halle und Außenfläche hat einen Schlüsselanhänger mit seinem Code und QR-Code.
+            Jeder Stellplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
           </p>
           <Link
-            to="/schluesselanhaenger"
+            to="/stellplaetze"
             className="touch-target mt-3 inline-flex items-center rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold"
           >
-            Schlüsselanhänger drucken
+            Stellplätze/QR-Codes
           </Link>
-          <p className="mt-3 text-sm text-subtle">Leistungskatalog, Stellplatz-Schilder und Mail-Testadresse folgen in Phase 1.</p>
+          <p className="mt-3 text-sm text-subtle">Leistungskatalog und Mail-Testadresse folgen in Phase 1.</p>
         </Card>
       </div>
     </Page>

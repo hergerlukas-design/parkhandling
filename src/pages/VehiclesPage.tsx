@@ -14,6 +14,7 @@ import {
   type TaskChip,
 } from '../lib/bookings'
 import { DUE_STYLE, dueCategory, formatPeriod, formatPickup } from '../lib/due'
+import { hasKeySlot, whereabouts } from '../lib/siteplan'
 
 /** "Aufbereitung innen" → "Innen" (kompakte Chips wie im Klick-Prototyp) */
 function shortTitle(title: string | null): string {
@@ -153,7 +154,7 @@ export function VehiclesPage() {
             <tr>
               <th className="px-4 py-2.5">Kennzeichen</th>
               <th className="px-3 py-2.5">Fahrzeug</th>
-              <th className="px-3 py-2.5">Ort</th>
+              <th className="px-3 py-2.5">Stellplatz / Fach</th>
               <th className="px-3 py-2.5">Zeitraum</th>
               <th className="px-3 py-2.5">Abholung</th>
               <th className="px-3 py-2.5">Leistungen</th>
@@ -170,7 +171,15 @@ export function VehiclesPage() {
               >
                 <td className="px-4 py-3 font-mono font-semibold whitespace-nowrap">{b.plate}</td>
                 <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
-                <td className="px-3 py-3 whitespace-nowrap">{b.location_code ?? '–'}</td>
+                <td className="px-3 py-3 whitespace-nowrap">
+                  {hasKeySlot(b.location_code) ? (
+                    <span className="font-mono font-semibold">{b.location_code}</span>
+                  ) : b.location_code ? (
+                    <span>{whereabouts(b.location_code)} <span className="font-mono text-xs text-muted">{b.location_code}</span></span>
+                  ) : (
+                    '–'
+                  )}
+                </td>
                 <td className="px-3 py-3 whitespace-nowrap">{formatPeriod(b.start_at, b.end_at)}</td>
                 <td className="px-3 py-3"><PickupCell b={b} /></td>
                 <td className="px-3 py-3"><ServiceChips chips={b.task_chips} /></td>
@@ -197,7 +206,9 @@ export function VehiclesPage() {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="font-mono text-base font-semibold">{b.plate}</span>
-                    <span className="text-sm text-subtle">{b.location_code ?? ''}</span>
+                    <span className="text-sm text-subtle">
+                      {hasKeySlot(b.location_code) ? b.location_code : b.location_code ? whereabouts(b.location_code) : ''}
+                    </span>
                   </span>
                   <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
                   <span className="flex items-baseline justify-between gap-2 text-sm">

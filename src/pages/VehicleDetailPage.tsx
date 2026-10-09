@@ -10,7 +10,7 @@ import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/book
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
-import { hasKeyTag } from '../lib/siteplan'
+import { hasKeySlot, whereabouts } from '../lib/siteplan'
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
@@ -138,7 +138,7 @@ export function VehicleDetailPage() {
   if (!data) return <p className="p-6 text-sm text-muted">Lädt …</p>
 
   const { booking: b, services, tasks, history, movements } = data
-  const keyTag = hasKeyTag(b.location?.code) ? b.location!.code : null
+  const keySlot = hasKeySlot(b.location?.code) ? b.location!.code : null
   const relevant = tasks.filter((t) => t.status !== 'cancelled' && t.type !== 'relocate')
   const done = relevant.filter((t) => t.status === 'done').length
   const due = dueCategory(b.end_at)
@@ -247,10 +247,10 @@ export function VehicleDetailPage() {
                 </div>
               </div>
               <div className="rounded-xl bg-ground p-3">
-                <div className="text-xs text-subtle">Schlüssel</div>
-                <div className="font-mono text-xl font-bold">{keyTag ?? '–'}</div>
+                <div className="text-xs text-subtle">Schlüsselfach</div>
+                <div className="font-mono text-xl font-bold">{keySlot ?? '–'}</div>
                 <div className="text-xs text-subtle">
-                  {keyTag ? 'am Anhänger des Stellplatzes' : b.location ? 'beim Fahrzeug' : 'noch nicht eingecheckt'}
+                  {keySlot ? 'Fach = Stellplatz' : b.location ? `Schlüssel beim Fahrzeug, ${whereabouts(b.location.code)}` : 'noch nicht eingecheckt'}
                 </div>
               </div>
             </div>
