@@ -36,6 +36,8 @@ import {
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
+  parseChargePercent,
+  showsCharge,
   showsFuel,
   SIGNATURE_CUSTOMER,
   SIGNATURE_STAFF,
@@ -129,6 +131,31 @@ function FuelSlider({ value, disabled, onChange }: { value: number | null; disab
         <span>voll</span>
       </div>
     </div>
+  )
+}
+
+/** Ladestand in Prozent (1–100) als Textfeld; ungültige Eingaben bleiben sichtbar, gespeichert wird nur ein gültiger Wert */
+function ChargeInput({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number | null) => void }) {
+  const [text, setText] = useState(value == null ? '' : String(value))
+  useEffect(() => {
+    setText((t) => (parseChargePercent(t) === value ? t : value == null ? t : String(value)))
+  }, [value])
+  const invalid = text.trim() !== '' && parseChargePercent(text) == null
+  return (
+    <Field label="Ladestand in % (1–100)">
+      <TextInput
+        inputMode="numeric"
+        value={text}
+        disabled={disabled}
+        placeholder="z. B. 80"
+        aria-invalid={invalid}
+        onChange={(e) => {
+          setText(e.target.value)
+          onChange(parseChargePercent(e.target.value))
+        }}
+      />
+      {invalid && <span className="text-xs text-danger">Bitte eine ganze Zahl von 1 bis 100 eingeben</span>}
+    </Field>
   )
 }
 
@@ -483,6 +510,9 @@ export function ProtocolPage() {
             </Field>
             {showsFuel(fuel) && (
               <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
+            )}
+            {showsCharge(fuel) && (
+              <ChargeInput value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
             )}
             {!fuel && <p className="text-xs text-muted">Antriebsart unbekannt – Tankstand erfassen, bei E-Fahrzeugen in der Buchung „Elektro“ setzen.</p>}
             <div className="flex flex-col gap-1 text-sm font-medium text-subtle">

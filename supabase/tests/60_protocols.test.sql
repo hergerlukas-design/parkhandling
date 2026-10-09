@@ -66,11 +66,18 @@ select pg_temp.assert_eq((select mail_status from public.protocols where id = :'
 update public.bookings set return_mode = 'vallet' where id = :'bid';
 select pg_temp.assert_eq((select return_mode from public.bookings where id = :'bid'), 'pickup_delivery', 'vallet → pickup_delivery');
 
--- Fuel-Level nur 0–8, Kilometerstand mit einer Nachkommastelle
+-- Tankstand nur 0–8, Ladestand nur 1–100 %, Kilometerstand mit einer Nachkommastelle
 do $$
 begin
   insert into public.protocols (booking_id, type, fuel_level) select booking_id, 'handover', 9 from public.protocols where location_text = 'Park & Fly Flughafen München' limit 1;
   raise exception 'FEHLER: fuel_level 9 akzeptiert';
+exception when check_violation then null;
+end;
+$$;
+do $$
+begin
+  insert into public.protocols (booking_id, type, charge_level) select booking_id, 'handover', 101 from public.protocols where location_text = 'Park & Fly Flughafen München' limit 1;
+  raise exception 'FEHLER: charge_level 101 akzeptiert';
 exception when check_violation then null;
 end;
 $$;
