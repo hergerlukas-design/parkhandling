@@ -163,7 +163,8 @@ export function formFromRow(
     inspector_name: row?.inspector_name ?? ctx.inspectorName,
     location_text: row?.location_text ?? defaultLocation(ctx.type, ctx.booking.customer_name),
     vin: row?.vin ?? base?.vin ?? '',
-    mileage: row?.mileage != null ? formatMileage(row.mileage) : '',
+    // Übergabe: KM-Stand der Annahme übernehmen, dazu kommen nur die Meter bis zum Kunden
+    mileage: row?.mileage != null ? formatMileage(row.mileage) : base?.mileage != null ? formatMileage(base.mileage) : '',
     fuel_level: row?.fuel_level ?? null,
     charge_level: row?.charge_level ?? null,
     conditions: row?.conditions ?? [],
@@ -191,6 +192,19 @@ export function parseMileage(value: string): number | null {
   const n = Number(normalized)
   return Number.isFinite(n) && n <= 9_999_999.9 ? Math.round(n * 10) / 10 : null
 }
+
+/**
+ * Übergabe: KM-Stand aus dem Annahme-Stand und den zusätzlich gefahrenen Kilometern.
+ * Leere Eingabe = nichts dazugekommen; ungültige Eingabe liefert null.
+ */
+export function mileageAfterIntake(intakeMileage: number, extra: string): string | null {
+  if (!extra.trim()) return formatMileage(intakeMileage)
+  const add = parseMileage(extra)
+  return add == null ? null : formatMileage(Math.round((intakeMileage + add) * 10) / 10)
+}
+
+/** Ab dieser Strecke seit der Annahme weist das Formular auf eine mögliche Fehleingabe hin */
+export const MILEAGE_EXTRA_WARN_KM = 5
 
 /** Pflichtangaben vor dem Abschließen */
 export function validateForFinalize(

@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.20.0 – 11.10.2026
+
+### Geändert
+- Übergabeprotokoll: Kilometerstand der Annahme wird übernommen und ausgegraut angezeigt; erfasst werden nur die seither gefahrenen Kilometer („+ seither gefahren“), der KM-Stand der Übergabe wird daraus berechnet. Hinweis ab mehr als 5 km, bei Abweichung (z. B. Tippfehler in der Annahme) lässt sich der Stand weiterhin direkt eingeben
+
 ## 0.19.0 – 09.10.2026
 
 ### Geändert
