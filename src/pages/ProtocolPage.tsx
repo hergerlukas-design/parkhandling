@@ -163,31 +163,27 @@ function ChargeInput({ value, disabled, onChange }: { value: number | null; disa
 }
 
 /**
- * Übergabe: KM-Stand der Annahme ausgegraut daneben, der neue Stand ist mit dem der Annahme vorbelegt
- * (meist kommen nur ein paar hundert Meter dazu). Darunter steht, wie viel seit der Annahme dazukam.
+ * Übergabe: Kilometerstand mit dem Stand der Annahme vorbelegt (meist kommen nur ein paar hundert Meter dazu),
+ * darunter Annahme-Stand und Zuwachs.
  */
 function MileageSinceIntake({ intakeMileage, value, onChange }: { intakeMileage: number; value: string; onChange: (mileage: string) => void }) {
   const current = parseMileage(value)
   const diff = current != null ? Math.round((current - intakeMileage) * 10) / 10 : null
+  const warn = diff != null && (diff < 0 || diff > MILEAGE_EXTRA_WARN_KM)
   return (
     <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="KM-Stand Annahme">
-          <TextInput value={formatMileage(intakeMileage)} readOnly tabIndex={-1} aria-readonly className="cursor-default bg-chip text-muted" />
-        </Field>
-        <Field label="Neuer KM-Stand">
-          <TextInput inputMode="decimal" value={value} placeholder="z. B. 84213,5" onChange={(e) => onChange(e.target.value)} />
-        </Field>
-      </div>
-      {diff == null ? (
-        <p className="text-sm text-danger-ink">Eingabe ungültig</p>
-      ) : diff < 0 ? (
-        <p className="text-sm text-warn-ink">{formatMileage(-diff)} km weniger als bei der Annahme – bitte prüfen.</p>
-      ) : (
-        <p className="text-sm text-subtle">
-          Seit der Annahme: <strong>+{formatMileage(diff)} km</strong>
-          {diff > MILEAGE_EXTRA_WARN_KM && <span className="text-warn-ink"> · mehr als {MILEAGE_EXTRA_WARN_KM} km – bitte prüfen</span>}
-        </p>
+      <Field label="Kilometerstand (Dezimalkomma möglich)">
+        <TextInput inputMode="decimal" value={value} placeholder="z. B. 84213,5" onChange={(e) => onChange(e.target.value)} />
+      </Field>
+      <p className={`text-xs ${warn ? 'text-warn-ink' : 'text-muted'}`}>
+        Annahme: {formatMileage(intakeMileage)} km
+        {diff != null && ` · ${diff >= 0 ? '+' : '−'}${formatMileage(Math.abs(diff))} km`}
+        {warn && ' – bitte prüfen'}
+      </p>
+      {current !== intakeMileage && (
+        <button type="button" className="self-start text-xs text-subtle underline" onClick={() => onChange(formatMileage(intakeMileage))}>
+          Annahme-Stand übernehmen
+        </button>
       )}
     </div>
   )
