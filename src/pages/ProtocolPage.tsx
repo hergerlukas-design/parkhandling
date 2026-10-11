@@ -30,7 +30,6 @@ import {
   INSPECTION_CONDITIONS,
   listProtocolMedia,
   MILEAGE_EXTRA_WARN_KM,
-  mileageAfterIntake,
   parseMileage,
   newDamageId,
   normalizeDamage,
@@ -164,60 +163,32 @@ function ChargeInput({ value, disabled, onChange }: { value: number | null; disa
 }
 
 /**
- * Übergabe: KM-Stand der Annahme ausgegraut übernehmen, erfasst werden nur die seither gefahrenen Kilometer
- * (meist ein paar hundert Meter). Weicht der Stand ab (z. B. Tippfehler in der Annahme), lässt er sich direkt eingeben.
+ * Übergabe: KM-Stand der Annahme ausgegraut daneben, der neue Stand ist mit dem der Annahme vorbelegt
+ * (meist kommen nur ein paar hundert Meter dazu). Darunter steht, wie viel seit der Annahme dazukam.
  */
 function MileageSinceIntake({ intakeMileage, value, onChange }: { intakeMileage: number; value: string; onChange: (mileage: string) => void }) {
   const current = parseMileage(value)
-  const initialDiff = current != null ? Math.round((current - intakeMileage) * 10) / 10 : 0
-  const [direct, setDirect] = useState(initialDiff < 0)
-  const [extra, setExtra] = useState(initialDiff > 0 ? formatMileage(initialDiff) : '')
   const diff = current != null ? Math.round((current - intakeMileage) * 10) / 10 : null
-
-  if (direct) {
-    return (
-      <div className="flex flex-col gap-1">
-        <Field label="Kilometerstand (Dezimalkomma möglich)">
-          <TextInput inputMode="decimal" value={value} placeholder="z. B. 84213,5" onChange={(e) => onChange(e.target.value)} />
-        </Field>
-        <p className="text-xs text-muted">
-          Annahme: {formatMileage(intakeMileage)} km{diff != null && ` · ${diff >= 0 ? '+' : ''}${formatMileage(diff)} km`}
-        </p>
-        <button type="button" className="self-start text-xs text-subtle underline" onClick={() => {
-          const keep = diff != null && diff > 0 ? formatMileage(diff) : ''
-          setDirect(false)
-          setExtra(keep)
-          onChange(mileageAfterIntake(intakeMileage, keep) ?? '')
-        }}>
-          Annahme-Stand übernehmen
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-1">
       <div className="grid grid-cols-2 gap-3">
         <Field label="KM-Stand Annahme">
           <TextInput value={formatMileage(intakeMileage)} readOnly tabIndex={-1} aria-readonly className="cursor-default bg-chip text-muted" />
         </Field>
-        <Field label="+ seither gefahren (km)">
-          <TextInput inputMode="decimal" value={extra} placeholder="z. B. 0,3" onChange={(e) => {
-            setExtra(e.target.value)
-            onChange(mileageAfterIntake(intakeMileage, e.target.value) ?? '')
-          }} />
+        <Field label="Neuer KM-Stand">
+          <TextInput inputMode="decimal" value={value} placeholder="z. B. 84213,5" onChange={(e) => onChange(e.target.value)} />
         </Field>
       </div>
-      <p className="text-sm text-subtle">
-        KM-Stand Übergabe: <strong>{current != null ? `${formatMileage(current)} km` : '–'}</strong>
-        {current == null && <span className="text-danger-ink"> · Eingabe ungültig</span>}
-      </p>
-      {diff != null && diff > MILEAGE_EXTRA_WARN_KM && (
-        <p className="text-xs text-warn-ink">Mehr als {MILEAGE_EXTRA_WARN_KM} km seit der Annahme – bitte prüfen.</p>
+      {diff == null ? (
+        <p className="text-sm text-danger-ink">Eingabe ungültig</p>
+      ) : diff < 0 ? (
+        <p className="text-sm text-warn-ink">{formatMileage(-diff)} km weniger als bei der Annahme – bitte prüfen.</p>
+      ) : (
+        <p className="text-sm text-subtle">
+          Seit der Annahme: <strong>+{formatMileage(diff)} km</strong>
+          {diff > MILEAGE_EXTRA_WARN_KM && <span className="text-warn-ink"> · mehr als {MILEAGE_EXTRA_WARN_KM} km – bitte prüfen</span>}
+        </p>
       )}
-      <button type="button" className="self-start text-xs text-subtle underline" onClick={() => setDirect(true)}>
-        Stand weicht ab? Direkt eingeben
-      </button>
     </div>
   )
 }

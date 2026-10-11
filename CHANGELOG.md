@@ -6,7 +6,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ## 0.20.0 – 11.10.2026
 
 ### Geändert
-- Übergabeprotokoll: Kilometerstand der Annahme wird übernommen und ausgegraut angezeigt; erfasst werden nur die seither gefahrenen Kilometer („+ seither gefahren“), der KM-Stand der Übergabe wird daraus berechnet. Hinweis ab mehr als 5 km, bei Abweichung (z. B. Tippfehler in der Annahme) lässt sich der Stand weiterhin direkt eingeben
+- Übergabeprotokoll: Kilometerstand der Annahme wird ausgegraut neben „Neuer KM-Stand“ angezeigt und als neuer Stand vorbelegt; darunter steht, wie viel seit der Annahme dazukam. Hinweis ab mehr als 5 km oder wenn der neue Stand niedriger ist als bei der Annahme
 
 ## 0.19.0 – 09.10.2026
 

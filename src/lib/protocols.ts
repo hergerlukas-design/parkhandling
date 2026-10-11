@@ -193,16 +193,6 @@ export function parseMileage(value: string): number | null {
   return Number.isFinite(n) && n <= 9_999_999.9 ? Math.round(n * 10) / 10 : null
 }
 
-/**
- * Übergabe: KM-Stand aus dem Annahme-Stand und den zusätzlich gefahrenen Kilometern.
- * Leere Eingabe = nichts dazugekommen; ungültige Eingabe liefert null.
- */
-export function mileageAfterIntake(intakeMileage: number, extra: string): string | null {
-  if (!extra.trim()) return formatMileage(intakeMileage)
-  const add = parseMileage(extra)
-  return add == null ? null : formatMileage(Math.round((intakeMileage + add) * 10) / 10)
-}
-
 /** Ab dieser Strecke seit der Annahme weist das Formular auf eine mögliche Fehleingabe hin */
 export const MILEAGE_EXTRA_WARN_KM = 5
 

@@ -5,7 +5,6 @@ import {
   compareWithIntake,
   formFromRow,
   formatMileage,
-  mileageAfterIntake,
   normalizeDamage,
   parseChargePercent,
   parseMileage,
@@ -51,23 +50,6 @@ describe('parseMileage', () => {
     expect(parseMileage('84213')).toBe(84213)
     expect(parseMileage('84213,55')).toBeNull()
     expect(parseMileage('84213,')).toBeNull()
-  })
-})
-
-describe('mileageAfterIntake', () => {
-  it('addiert die zusätzlichen Kilometer zum Annahme-Stand', () => {
-    expect(mileageAfterIntake(84213.5, '0,3')).toBe('84213,8')
-    expect(mileageAfterIntake(84213.5, '0,5')).toBe('84214')
-    expect(mileageAfterIntake(48000, '2')).toBe('48002')
-  })
-
-  it('übernimmt den Annahme-Stand bei leerer Eingabe', () => {
-    expect(mileageAfterIntake(48000, '')).toBe('48000')
-  })
-
-  it('lehnt ungültige Eingaben ab', () => {
-    expect(mileageAfterIntake(48000, '-1')).toBeNull()
-    expect(mileageAfterIntake(48000, 'abc')).toBeNull()
   })
 })
 
