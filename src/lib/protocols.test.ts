@@ -5,6 +5,7 @@ import {
   compareWithIntake,
   formFromRow,
   formatMileage,
+  mileageAfterIntake,
   normalizeDamage,
   parseChargePercent,
   parseMileage,
@@ -53,6 +54,23 @@ describe('parseMileage', () => {
   })
 })
 
+describe('mileageAfterIntake', () => {
+  it('addiert die zusätzlichen Kilometer zum Annahme-Stand', () => {
+    expect(mileageAfterIntake(84213.5, '0,3')).toBe('84213,8')
+    expect(mileageAfterIntake(84213.5, '0,5')).toBe('84214')
+    expect(mileageAfterIntake(48000, '2')).toBe('48002')
+  })
+
+  it('übernimmt den Annahme-Stand bei leerer Eingabe', () => {
+    expect(mileageAfterIntake(48000, '')).toBe('48000')
+  })
+
+  it('lehnt ungültige Eingaben ab', () => {
+    expect(mileageAfterIntake(48000, '-1')).toBeNull()
+    expect(mileageAfterIntake(48000, 'abc')).toBeNull()
+  })
+})
+
 describe('Anzeige Kilometerstand', () => {
   it('zeigt Dezimalkomma und lässt „,0“ weg', () => {
     expect(formatMileage(84213.5)).toBe('84213,5')
@@ -74,6 +92,11 @@ describe('formFromRow', () => {
     const f = formFromRow(null, { type: 'handover', booking, inspectorName: 'M2', intake })
     expect(f.vin).toBe('WVWZZZ1KZ6W000001')
     expect(f.location_text).toBe('Park & Fly Flughafen München → Erika Test')
+  })
+
+  it('übernimmt bei der Übergabe den KM-Stand der Annahme', () => {
+    const intake = { mileage: 84213.5 } as never
+    expect(formFromRow(null, { type: 'handover', booking, inspectorName: 'M2', intake }).mileage).toBe('84213,5')
   })
 })
 
