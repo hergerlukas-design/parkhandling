@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.21.0 – 17.10.2026
+
+### Neu
+- Einstellungen → „Stellplätze: Halle & Außenfläche“ (nur Admin): Größe per +/− einstellen
+  - Halle: Regale × Ebenen, z. B. 4 Regale × 2 Ebenen (1–30 Regale, 1–5 Ebenen)
+  - Außen A (mit Plane) und Außen B (ohne Plane): Reihen × Plätze je Reihe (1–9 Reihen, 1–99 Plätze)
+- Vorschau zeigt, welche Plätze dazukommen oder wegfallen; steht auf einem wegfallenden Platz ein Fahrzeug oder ist er reserviert, ist die Umstellung gesperrt, bis umgesetzt ist
+- Wegfallende Plätze werden deaktiviert, nicht gelöscht: sie verschwinden aus Lageplan, Platzvorschlägen und Etiketten und kommen beim Vergrößern mit demselben QR-Code zurück
+- Lageplan Halle zeigt so viele Ebenen, wie eingestellt sind (vorher fest E1–E3)
+
+### Datenbank
+- Funktionen `set_hall_layout(Regale, Ebenen)` und `set_outdoor_layout(Bereich, Reihen, Plätze)`, Ebenen 1–5 erlaubt. Migration `20261017000100_site_layout.sql`
+
 ## 0.20.1 – 11.10.2026
 
 ### Geändert

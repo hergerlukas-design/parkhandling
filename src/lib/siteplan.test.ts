@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasKeySlot, keyHint, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
+import { hallLayout, hasKeySlot, keyHint, outdoorLayout, previewHallLayout, previewOutdoorLayout, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
 
 describe('parseScan', () => {
   it('erkennt Schlüssel- und Stellplatz-QR-Codes', () => {
@@ -69,5 +69,53 @@ describe('Platzvorschläge', () => {
   it('empfiehlt den Puffer, wenn nichts passt', () => {
     expect(recommendedSuggestion([sug('R5-E2', 'conflict'), sug('P-01', 'buffer')])?.code).toBe('P-01')
     expect(recommendedSuggestion([sug('R5-E2', 'relocate')])).toBeNull()
+  })
+})
+
+describe('Hallengröße', () => {
+  const hall = (rack: number, level: number, patch: Partial<BoardSlot> = {}) =>
+    ({ id: `R${rack}-E${level}`, code: `R${rack}-E${level}`, area: 'hall', rack, rack_column: 1, level,
+      status: 'free', booking_id: null, ...patch }) as BoardSlot
+  const board = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((r) => [1, 2, 3].map((e) => hall(r, e)))
+
+  it('liest Regale × Ebenen aus den aktiven Plätzen', () => {
+    expect(hallLayout(board)).toEqual({ racks: 8, levels: 3 })
+    expect(hallLayout([])).toEqual({ racks: 0, levels: 0 })
+  })
+  it('zeigt, welche Plätze wegfallen und welche die Umstellung sperren', () => {
+    const occupied = board.map((s) => (s.code === 'R6-E1' ? { ...s, booking_id: 'b1', plate: 'M-X 1' } : s))
+    const p = previewHallLayout(occupied, 4, 2)
+    expect(p.removed).toHaveLength(16)
+    expect(p.blockers.map((s) => s.code)).toEqual(['R6-E1'])
+    expect(p.added).toBe(0)
+  })
+  it('zählt neue Plätze beim Vergrößern', () => {
+    const p = previewHallLayout(board, 10, 4)
+    expect(p.removed).toHaveLength(0)
+    expect(p.added).toBe(16)
+  })
+  it('akzeptiert Plätze bis Ebene 5', () => {
+    expect(hasKeySlot('R10-E5')).toBe(true)
+    expect(hasKeySlot('R1-E6')).toBe(false)
+  })
+})
+
+describe('Außenfläche umstellen', () => {
+  const place = (row: number, n: number, patch: Partial<BoardSlot> = {}) => {
+    const code = `A${row}-${String(n).padStart(2, '0')}`
+    return { id: code, code, area: 'outdoor_a', row: `A${row}`, number: n, status: 'free', booking_id: null, ...patch } as BoardSlot
+  }
+  const board = [1, 2].flatMap((r) => Array.from({ length: 24 }, (_, i) => place(r, i + 1)))
+
+  it('liest Reihen × Plätze je Reihe', () => {
+    expect(outdoorLayout(board, 'outdoor_a')).toEqual({ rows: 2, places: 24 })
+    expect(outdoorLayout(board, 'outdoor_b')).toEqual({ rows: 0, places: 0 })
+  })
+  it('zeigt wegfallende und sperrende Plätze', () => {
+    const occupied = board.map((s) => (s.code === 'A2-03' ? { ...s, status: 'reserved' as const } : s))
+    const p = previewOutdoorLayout(occupied, 'outdoor_a', 1, 20)
+    expect(p.removed).toHaveLength(28)
+    expect(p.blockers.map((s) => s.code)).toEqual(['A2-03'])
+    expect(previewOutdoorLayout(board, 'outdoor_a', 3, 30).added).toBe(42)
   })
 })

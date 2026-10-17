@@ -106,7 +106,7 @@ export interface Location extends Row {
   area: LocationArea
   rack: number | null
   rack_column: number | null
-  level: 1 | 2 | 3 | null
+  level: number | null
   row: string | null
   number: number | null
   has_cover: boolean

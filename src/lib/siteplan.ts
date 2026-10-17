@@ -14,7 +14,7 @@ export interface BoardSlot {
   area: LocationArea
   rack: number | null
   rack_column: number | null
-  level: 1 | 2 | 3 | null
+  level: number | null
   row: string | null
   number: number | null
   has_cover: boolean
@@ -178,7 +178,7 @@ export interface ScanTarget {
  * Fach-Code = Stellplatz-Code (z. B. R1-E1). Die App erfasst keine Schlüssel; der Schlüssel liegt im
  * Fach des Platzes, auf dem das Fahrzeug steht. In Aufbereitung, Puffer oder unterwegs geht er mit.
  */
-const KEY_SLOT_CODE = /^(R\d+-E[1-3]|[AB]\d-\d{2})$/
+const KEY_SLOT_CODE = /^(R\d+-E[1-5]|[AB]\d-\d{2})$/
 
 /** Hat dieser Platz ein Schlüsselfach (Halle, Außen A/B)? */
 export function hasKeySlot(code: string | null | undefined): code is string {
@@ -215,7 +215,7 @@ export function parseScan(raw: string): ScanTarget {
   if (key && hasKeySlot(key[1])) return { kind: 'key', code: key[1] }
   const loc = /^PF-LOC:([A-Z0-9-]+)$/.exec(text)
   if (loc) return { kind: 'location', code: loc[1] }
-  if (/^(R\d+-E[1-3]|[AB]\d-\d{2}|W-[A-Z0-9]+|P-\d{2}|T-[A-Z]+)$/.test(text)) return { kind: 'location', code: text }
+  if (/^(R\d+-E[1-5]|[AB]\d-\d{2}|W-[A-Z0-9]+|P-\d{2}|T-[A-Z]+)$/.test(text)) return { kind: 'location', code: text }
   return { kind: 'unknown', code: raw.trim() }
 }
 
@@ -232,3 +232,78 @@ export const MOVE_TARGETS: { code: string | null; label: string; reason: string 
   { code: 'T-VAL', label: 'Hol- & Bringservice unterwegs', reason: 'Hol- & Bringservice' },
   { code: null, label: 'Übergeben (verlässt das Gelände)', reason: 'Übergeben' },
 ]
+
+/** Hallengröße aus den aktiven Hallenplätzen (Regale × Ebenen) */
+export function hallLayout(board: BoardSlot[]): { racks: number; levels: number } {
+  const hall = board.filter((s) => s.area === 'hall')
+  return {
+    racks: Math.max(0, ...hall.map((s) => s.rack ?? 0)),
+    levels: Math.max(0, ...hall.map((s) => s.level ?? 0)),
+  }
+}
+
+export type OutdoorArea = 'outdoor_a' | 'outdoor_b'
+
+/** Reihe „A2“ → 2 */
+const rowNumber = (row: string | null) => Number(row?.slice(1) ?? 0)
+
+/** Größe eines Außenbereichs aus den aktiven Plätzen (Reihen × Plätze je Reihe) */
+export function outdoorLayout(board: BoardSlot[], area: OutdoorArea): { rows: number; places: number } {
+  const inArea = board.filter((s) => s.area === area)
+  return {
+    rows: Math.max(0, ...inArea.map((s) => rowNumber(s.row))),
+    places: Math.max(0, ...inArea.map((s) => s.number ?? 0)),
+  }
+}
+
+export interface LayoutPreview {
+  /** Plätze, die wegfallen (deaktiviert werden) */
+  removed: BoardSlot[]
+  /** davon belegt oder reserviert – solange es welche gibt, ist die Umstellung gesperrt */
+  blockers: BoardSlot[]
+  /** Anzahl Plätze, die neu dazukommen */
+  added: number
+}
+
+function previewLayout(slots: BoardSlot[], keep: (s: BoardSlot) => boolean, total: number): LayoutPreview {
+  const removed = slots.filter((s) => !keep(s))
+  return {
+    removed,
+    blockers: removed.filter((s) => s.booking_id || s.status === 'reserved'),
+    added: total - (slots.length - removed.length),
+  }
+}
+
+/** Was eine Umstellung der Halle auf racks × levels bewirkt (aus Sicht der aktuell aktiven Plätze) */
+export function previewHallLayout(board: BoardSlot[], racks: number, levels: number): LayoutPreview {
+  return previewLayout(board.filter((s) => s.area === 'hall'), (s) => s.rack! <= racks && s.level! <= levels, racks * levels)
+}
+
+/** Was eine Umstellung eines Außenbereichs auf rows × places bewirkt */
+export function previewOutdoorLayout(board: BoardSlot[], area: OutdoorArea, rows: number, places: number): LayoutPreview {
+  return previewLayout(
+    board.filter((s) => s.area === area),
+    (s) => rowNumber(s.row) <= rows && s.number! <= places,
+    rows * places,
+  )
+}
+
+export interface LayoutResult {
+  created: number
+  activated: number
+  deactivated: number
+}
+
+/** Admin: Halle umstellen. Die Datenbank legt fehlende Plätze an und deaktiviert wegfallende. */
+export async function setHallLayout(racks: number, levels: number): Promise<LayoutResult> {
+  const { data, error } = await db().rpc('set_hall_layout', { p_racks: racks, p_levels: levels })
+  if (error) throw new Error(error.message)
+  return data as LayoutResult
+}
+
+/** Admin: Außenbereich umstellen (Reihen × Plätze je Reihe). */
+export async function setOutdoorLayout(area: OutdoorArea, rows: number, places: number): Promise<LayoutResult> {
+  const { data, error } = await db().rpc('set_outdoor_layout', { p_area: area, p_rows: rows, p_places: places })
+  if (error) throw new Error(error.message)
+  return data as LayoutResult
+}
