@@ -242,7 +242,21 @@ export function hallLayout(board: BoardSlot[]): { racks: number; levels: number 
   }
 }
 
-export interface HallLayoutPreview {
+export type OutdoorArea = 'outdoor_a' | 'outdoor_b'
+
+/** Reihe „A2“ → 2 */
+const rowNumber = (row: string | null) => Number(row?.slice(1) ?? 0)
+
+/** Größe eines Außenbereichs aus den aktiven Plätzen (Reihen × Plätze je Reihe) */
+export function outdoorLayout(board: BoardSlot[], area: OutdoorArea): { rows: number; places: number } {
+  const inArea = board.filter((s) => s.area === area)
+  return {
+    rows: Math.max(0, ...inArea.map((s) => rowNumber(s.row))),
+    places: Math.max(0, ...inArea.map((s) => s.number ?? 0)),
+  }
+}
+
+export interface LayoutPreview {
   /** Plätze, die wegfallen (deaktiviert werden) */
   removed: BoardSlot[]
   /** davon belegt oder reserviert – solange es welche gibt, ist die Umstellung gesperrt */
@@ -251,21 +265,45 @@ export interface HallLayoutPreview {
   added: number
 }
 
-/** Was eine Umstellung auf racks × levels bewirkt (aus Sicht der aktuell aktiven Plätze) */
-export function previewHallLayout(board: BoardSlot[], racks: number, levels: number): HallLayoutPreview {
-  const hall = board.filter((s) => s.area === 'hall')
-  const removed = hall.filter((s) => s.rack! > racks || s.level! > levels)
-  const kept = hall.length - removed.length
+function previewLayout(slots: BoardSlot[], keep: (s: BoardSlot) => boolean, total: number): LayoutPreview {
+  const removed = slots.filter((s) => !keep(s))
   return {
     removed,
     blockers: removed.filter((s) => s.booking_id || s.status === 'reserved'),
-    added: racks * levels - kept,
+    added: total - (slots.length - removed.length),
   }
 }
 
+/** Was eine Umstellung der Halle auf racks × levels bewirkt (aus Sicht der aktuell aktiven Plätze) */
+export function previewHallLayout(board: BoardSlot[], racks: number, levels: number): LayoutPreview {
+  return previewLayout(board.filter((s) => s.area === 'hall'), (s) => s.rack! <= racks && s.level! <= levels, racks * levels)
+}
+
+/** Was eine Umstellung eines Außenbereichs auf rows × places bewirkt */
+export function previewOutdoorLayout(board: BoardSlot[], area: OutdoorArea, rows: number, places: number): LayoutPreview {
+  return previewLayout(
+    board.filter((s) => s.area === area),
+    (s) => rowNumber(s.row) <= rows && s.number! <= places,
+    rows * places,
+  )
+}
+
+export interface LayoutResult {
+  created: number
+  activated: number
+  deactivated: number
+}
+
 /** Admin: Halle umstellen. Die Datenbank legt fehlende Plätze an und deaktiviert wegfallende. */
-export async function setHallLayout(racks: number, levels: number): Promise<{ created: number; activated: number; deactivated: number }> {
+export async function setHallLayout(racks: number, levels: number): Promise<LayoutResult> {
   const { data, error } = await db().rpc('set_hall_layout', { p_racks: racks, p_levels: levels })
   if (error) throw new Error(error.message)
-  return data as { created: number; activated: number; deactivated: number }
+  return data as LayoutResult
+}
+
+/** Admin: Außenbereich umstellen (Reihen × Plätze je Reihe). */
+export async function setOutdoorLayout(area: OutdoorArea, rows: number, places: number): Promise<LayoutResult> {
+  const { data, error } = await db().rpc('set_outdoor_layout', { p_area: area, p_rows: rows, p_places: places })
+  if (error) throw new Error(error.message)
+  return data as LayoutResult
 }

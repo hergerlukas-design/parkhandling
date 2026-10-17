@@ -1,4 +1,5 @@
--- Halle umstellen (0.21.0): set_hall_layout legt Plätze an, (de)aktiviert sie und schützt belegte Plätze
+-- Halle und Außenfläche umstellen (0.21.0): set_hall_layout/set_outdoor_layout legen Plätze an,
+-- (de)aktivieren sie und schützen belegte bzw. reservierte Plätze
 \set ON_ERROR_STOP 1
 \o /dev/null
 
@@ -60,6 +61,34 @@ select pg_temp.assert_eq(public.set_hall_layout(9, 4) - 'racks' - 'levels', '{"c
   'vorhandene Plätze reaktiviert');
 select public.set_hall_layout(8, 3);
 
+-- ---------------------------------------------------------------------------
+-- Außenfläche
+-- ---------------------------------------------------------------------------
+select pg_temp.assert_eq(pg_temp.error_of('select public.set_outdoor_layout(''hall'', 2, 24)'), 'Unbekannter Außenbereich hall',
+  'nur Außen A/B');
+select pg_temp.assert_eq(pg_temp.error_of('select public.set_outdoor_layout(''outdoor_b'', 10, 24)'), 'Reihen: 1 bis 9 erlaubt',
+  'Reihen begrenzt');
+
+-- Vergrößern: Reihe B3 mit 30 Plätzen, B1/B2 je 6 Plätze mehr
+select pg_temp.assert_eq(public.set_outdoor_layout('outdoor_b', 3, 30) ->> 'created', '42', '42 Außenplätze angelegt');
+select pg_temp.assert_eq((select count(*)::int from public.location_board where area = 'outdoor_b'), 90, 'Außen B 3 × 30');
+select pg_temp.assert_eq((select has_cover::text || ' ' || qr_code from public.locations where code = 'B3-30'), 'false PF-LOC:B3-30',
+  'neuer Platz ohne Plane mit QR-Code');
+select pg_temp.assert_eq((select has_cover from public.locations where code = 'A1-01'), true, 'Außen A unverändert mit Plane');
+
+-- Reservierter Platz sperrt das Verkleinern
+reset role;
+update public.locations set status = 'reserved' where code = 'B3-30';
+set role authenticated;
+select pg_temp.assert_eq(pg_temp.error_of('select public.set_outdoor_layout(''outdoor_b'', 2, 24)') like '%B3-30 (reserviert)%', true,
+  'reservierter Platz sperrt die Umstellung');
+reset role;
+update public.locations set status = 'free' where code = 'B3-30';
+set role authenticated;
+
+select pg_temp.assert_eq(public.set_outdoor_layout('outdoor_b', 2, 24) ->> 'deactivated', '42', '42 Außenplätze deaktiviert');
+select pg_temp.assert_eq((select count(*)::int from public.location_board where area = 'outdoor_b'), 48, 'Außen B wieder 2 × 24');
+
 reset role;
 \o
-\echo '  ✓ 70_hall_layout'
+\echo '  ✓ 70_site_layout'

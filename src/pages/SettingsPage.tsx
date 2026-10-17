@@ -5,7 +5,7 @@ import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
-import { HallLayoutSettings } from '../components/siteplan/HallLayoutSettings'
+import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { UserManagement } from '../components/users/UserManagement'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
 
@@ -71,8 +71,8 @@ export function SettingsPage() {
           </Card>
         )}
         {profile?.role === 'admin' && (
-          <Card title="Halle">
-            <HallLayoutSettings />
+          <Card title="Stellplätze: Halle & Außenfläche">
+            <SiteLayoutSettings />
           </Card>
         )}
         <Card title="Betrieb">
