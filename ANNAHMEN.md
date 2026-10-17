@@ -12,7 +12,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Standort: Park & Fly Flughafen München
 - [BELEGT] Ca. 100–120 Stellplätze, davon ca. 25 Indoor (Premium)
 - [BELEGT] Indoor-Regale abhängig, 3 Ebenen; frühe Abholung unten
-- [ANNAHME] Halle: 8 Regalspalten × 3 Ebenen = 24 Plätze (R1–R8, E1–E3)
+- [ANNAHME] Halle: 8 Regalspalten × 3 Ebenen = 24 Plätze (R1–R8, E1–E3); Admins stellen die Größe unter Einstellungen → Halle um (1–30 Regale, 1–5 Ebenen)
 - [ANNAHME] Außen A (mit Abdeckplane): 2 Reihen × 24 Plätze (A1, A2)
 - [ANNAHME] Außen B (ohne Plane): 2 Reihen × 24 Plätze (B1, B2)
 - [ANNAHME] Arbeitsorte: Aufbereitung 1, Aufbereitung 2, Ladeplatz 1–2, Pufferzone (3 Plätze), Übergabezone

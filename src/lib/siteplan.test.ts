@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasKeySlot, keyHint, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
+import { hallLayout, hasKeySlot, keyHint, previewHallLayout, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
 
 describe('parseScan', () => {
   it('erkennt Schlüssel- und Stellplatz-QR-Codes', () => {
@@ -69,5 +69,33 @@ describe('Platzvorschläge', () => {
   it('empfiehlt den Puffer, wenn nichts passt', () => {
     expect(recommendedSuggestion([sug('R5-E2', 'conflict'), sug('P-01', 'buffer')])?.code).toBe('P-01')
     expect(recommendedSuggestion([sug('R5-E2', 'relocate')])).toBeNull()
+  })
+})
+
+describe('Hallengröße', () => {
+  const hall = (rack: number, level: number, patch: Partial<BoardSlot> = {}) =>
+    ({ id: `R${rack}-E${level}`, code: `R${rack}-E${level}`, area: 'hall', rack, rack_column: 1, level,
+      status: 'free', booking_id: null, ...patch }) as BoardSlot
+  const board = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((r) => [1, 2, 3].map((e) => hall(r, e)))
+
+  it('liest Regale × Ebenen aus den aktiven Plätzen', () => {
+    expect(hallLayout(board)).toEqual({ racks: 8, levels: 3 })
+    expect(hallLayout([])).toEqual({ racks: 0, levels: 0 })
+  })
+  it('zeigt, welche Plätze wegfallen und welche die Umstellung sperren', () => {
+    const occupied = board.map((s) => (s.code === 'R6-E1' ? { ...s, booking_id: 'b1', plate: 'M-X 1' } : s))
+    const p = previewHallLayout(occupied, 4, 2)
+    expect(p.removed).toHaveLength(16)
+    expect(p.blockers.map((s) => s.code)).toEqual(['R6-E1'])
+    expect(p.added).toBe(0)
+  })
+  it('zählt neue Plätze beim Vergrößern', () => {
+    const p = previewHallLayout(board, 10, 4)
+    expect(p.removed).toHaveLength(0)
+    expect(p.added).toBe(16)
+  })
+  it('akzeptiert Plätze bis Ebene 5', () => {
+    expect(hasKeySlot('R10-E5')).toBe(true)
+    expect(hasKeySlot('R1-E6')).toBe(false)
   })
 })

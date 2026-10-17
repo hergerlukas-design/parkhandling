@@ -17,7 +17,7 @@ insert into public.services (code, name, category, price, is_default, sort_order
   ('ZUSATZ',     'Zusatzleistung',      'other',    null, false, 80, '[]')
 on conflict (code) do nothing;
 
--- Halle [ANNAHME]: 8 Regalspalten × 3 Ebenen (R1–R8, E1 unten – E3 oben)
+-- Halle [ANNAHME]: 8 Regalspalten × 3 Ebenen (R1–R8, E1 unten – E3 oben), umstellbar unter Einstellungen → Halle
 insert into public.locations (code, area, rack, rack_column, level, has_cover, qr_code, sort_order)
 select format('R%s-E%s', r, e), 'hall', r, 1, e, true, format('PF-LOC:R%s-E%s', r, e), r * 10 + e
 from generate_series(1, 8) r, generate_series(1, 3) e
