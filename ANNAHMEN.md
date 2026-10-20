@@ -106,3 +106,21 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Keine Webfonts (Systemschrift) und keine externen Ressourcen, damit keine Daten an Dritte gehen; Content-Security-Policy erlaubt nur die eigene Seite und Supabase
 - [ANNAHME] Bis zum Go-live `noindex` (Meta-Tag, `X-Robots-Tag`, `robots.txt`). Automatisches Deployment vorbereitet, aber aus (`LANDING_DEPLOY_ENABLED`)
 - [ANNAHME] Edge Function `inquiry-submit` wird ohne JWT-Prüfung deployt (`--no-verify-jwt`), da die Seite anonym sendet
+
+## Landingpage Online-Buchung (Stufe 2, `landing/` 0.2.0)
+- [BELEGT] Der Kunde landet über den Button „Jetzt buchen“ auf der Jimdo-Website auf der Buchungsseite der Landingpage, gibt Daten ein und bezahlt mit PayPal (auch Kreditkarte über PayPal)
+- [BELEGT] Die Buchung geht nach der Zahlung direkt in die Park Handling App (Tabelle `bookings`) und ist sofort bestätigt; die Bestätigungsmail geht sofort an den Kunden
+- [BELEGT] Preise: vier Tarife laut Preiskategorien-Vorlage, Dauerklassen 5–8 / 9–15 / 16–30 Tage. Unter 5 Tagen kein Preis (keine Online-Buchung), über 30 Tage ist der Monatstarif nicht vorgesehen
+- [BELEGT] Der Hol- & Bringservice ist als Rückgabe-Option wählbar, Shuttle ist im Tarif enthalten
+- [ANNAHME] Preise brutto in EUR (Kunde: „denke brutto, bin nicht komplett sicher“). Vor Go-live bestätigen
+- [ANNAHME] Dauer = Kalendertage zwischen Anreise- und Abholdatum; Uhrzeiten werden als Berliner Ortszeit gespeichert
+- [ANNAHME] Stellplatzart der Buchung folgt dem Tarif: Economy → Außen ohne Plane, Space → Außen mit Abdeckplane, Business und Premium → Halle (Indoor)
+- [ANNAHME] Buchungsquelle `landing`, Zahlungsreferenz (PayPal-Order-ID) als `external_ref`, Buchungsnummer `PF-<erste 8 Zeichen der Buchungs-ID>`
+- [ANNAHME] Zusatzleistungen (z. B. Fahrzeugaufbereitung) sind online noch nicht buchbar; die Anmerkungen nehmen Wünsche auf
+- [ANNAHME] Absender der Bestätigung: `booking@parkhandling.de` als Platzhalter (Einstellung `booking_confirmation_from`); tatsächlich versendet wird über die Secret-Adresse `MAIL_FROM`, bis die Absenderadresse feststeht
+- [ANNAHME] Sandbox-Zahlungen über `PAYPAL_ENV=sandbox`, Standard. Live erst nach Freigabe
+- [ANNAHME] Die bestehende Anfrage-Funktion und die Tabelle `inquiries` bleiben vorerst unverändert im Repo, werden aber nicht mehr genutzt
+- [OFFEN] AGB, Widerrufsbelehrung und Button-Text für Online-Verträge fachlich prüfen (Pflicht vor Go-live)
+- [OFFEN] Ob Preise brutto oder netto gelten (MwSt.-Angabe in der Vorlage fehlt)
+- [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain
+- [OFFEN] Ob die Buchung mit Zahlung auch bei Park OS-Buchungen gilt; Park OS liefert eigene Buchungen (Schnittstelle/E-Mail noch offen)

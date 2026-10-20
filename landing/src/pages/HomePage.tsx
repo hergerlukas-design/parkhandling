@@ -1,55 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { usePageTitle } from '../components/usePageTitle'
-import type { ParkingType } from '../lib/inquiry'
-
-interface Offer {
-  title: string
-  badge?: string
-  text: string
-  points: string[]
-  parking?: ParkingType
-}
-
-const PARKING: Offer[] = [
-  {
-    title: 'Park & Fly Halle',
-    badge: 'Premium · Indoor',
-    text: 'Ihr Fahrzeug steht überdacht in unserer Halle, geschützt vor Wetter, Hagel und Laub.',
-    points: ['Überdachter Stellplatz', 'Ideal für längere Reisen', 'Auf Wunsch mit Aufbereitung'],
-    parking: 'indoor',
-  },
-  {
-    title: 'Außen mit Abdeckplane',
-    text: 'Außenstellplatz, Ihr Fahrzeug wird mit einer Abdeckplane geschützt.',
-    points: ['Schutz vor Schmutz und Sonne', 'Gutes Preis-Leistungs-Verhältnis'],
-    parking: 'outdoor_cover',
-  },
-  {
-    title: 'Außen ohne Plane',
-    text: 'Der unkomplizierte Außenstellplatz für alle, die einfach günstig parken möchten.',
-    points: ['Schnell angefragt', 'Für kurze und lange Reisen'],
-    parking: 'outdoor',
-  },
-]
-
-const EXTRAS: Offer[] = [
-  {
-    title: 'Shuttle zum Terminal',
-    text: 'Wir bringen Sie zum Flughafen und holen Sie nach der Landung wieder ab.',
-    points: ['Stündlich innerhalb der Betriebszeiten', 'Abholung nach Ihrer Landung'],
-  },
-  {
-    title: 'Fahrzeugaufbereitung',
-    badge: 'Zusatzleistung',
-    text: 'Während Sie verreist sind, reinigen und pflegen wir Ihr Fahrzeug innen und außen.',
-    points: ['Innen- und Außenreinigung', 'Sauber zurück nach der Reise'],
-  },
-]
+import { type Tariff, fetchTariffs } from '../lib/api'
+import { formatEuro } from '../lib/booking'
 
 const STEPS = [
-  { title: 'Anfrage senden', text: 'Reisedaten, Stellplatzart und Wünsche angeben. Dauert etwa zwei Minuten.' },
-  { title: 'Angebot erhalten', text: 'Wir prüfen die Verfügbarkeit und melden uns per E-Mail mit Ihrem Preis.' },
-  { title: 'Bestätigen & losfliegen', text: 'Erst mit Ihrer Bestätigung wird gebucht. Die Anfrage ist unverbindlich.' },
+  { title: 'Zeitraum & Tarif wählen', text: 'Anreise, Abholung und Tarif angeben. Der Preis richtet sich nach der Dauer.' },
+  { title: 'Mit PayPal bezahlen', text: 'Die Zahlung läuft über PayPal, auch mit Kreditkarte möglich.' },
+  { title: 'Bestätigung per E-Mail', text: 'Nach der Zahlung ist Ihre Buchung bestätigt. Die Bestätigung kommt per E-Mail.' },
 ]
 
 function Check() {
@@ -60,39 +18,43 @@ function Check() {
   )
 }
 
-function OfferCard({ offer, highlight = false }: { offer: Offer; highlight?: boolean }) {
+function TariffCard({ tariff, highlight }: { tariff: Tariff; highlight: boolean }) {
+  const points = tariff.included_text.split(', ')
   return (
     <article
       className={`flex flex-col rounded-2xl border bg-card p-5 shadow-sm ${
         highlight ? 'border-accent-strong ring-2 ring-accent' : 'border-line'
       }`}
     >
-      {offer.badge && (
-        <span className="mb-2 self-start rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-accent">
-          {offer.badge}
-        </span>
-      )}
-      <h3 className="text-lg font-semibold">{offer.title}</h3>
-      <p className="mt-1 text-ink-soft">{offer.text}</p>
+      <span className="mb-2 self-start rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-accent">
+        {tariff.parking_type === 'indoor' ? 'Indoor' : tariff.parking_type === 'outdoor_cover' ? 'Außen mit Plane' : 'Außen'}
+      </span>
+      <h3 className="text-lg font-semibold">{tariff.label}</h3>
+      <p className="mt-1 text-sm text-ink-soft">Shuttle zum Terminal: {tariff.shuttle_text}</p>
+      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+        <dt className="text-ink-soft">5–8 Tage</dt>
+        <dd className="text-right font-semibold">{formatEuro(tariff.price_week)}</dd>
+        <dt className="text-ink-soft">9–15 Tage</dt>
+        <dd className="text-right font-semibold">{formatEuro(tariff.price_holiday)}</dd>
+        <dt className="text-ink-soft">16–30 Tage</dt>
+        <dd className="text-right font-semibold">{formatEuro(tariff.price_month)}</dd>
+      </dl>
       <ul className="mt-3 space-y-1.5 text-sm">
-        {offer.points.map((p) => (
+        {points.map((p) => (
           <li key={p} className="flex gap-2">
             <Check />
             {p}
           </li>
         ))}
       </ul>
-      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
-        <span className="text-sm font-semibold">Preis auf Anfrage</span>
-        {offer.parking && (
-          <Link
-            to={`/anfrage?stellplatz=${offer.parking}`}
-            aria-label={`${offer.title} anfragen`}
-            className="inline-flex min-h-11 items-center rounded-lg border border-ink px-4 text-sm font-semibold hover:bg-ink hover:text-white"
-          >
-            Anfragen
-          </Link>
-        )}
+      <div className="mt-auto pt-4">
+        <Link
+          to={`/anfrage?tarif=${tariff.code}`}
+          aria-label={`${tariff.label} buchen`}
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-ink px-4 text-sm font-semibold hover:bg-ink hover:text-white"
+        >
+          Jetzt buchen
+        </Link>
       </div>
     </article>
   )
@@ -100,6 +62,14 @@ function OfferCard({ offer, highlight = false }: { offer: Offer; highlight?: boo
 
 export function HomePage() {
   usePageTitle('Parken am Flughafen')
+  const [tariffs, setTariffs] = useState<Tariff[] | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    fetchTariffs()
+      .then(setTariffs)
+      .catch(() => setFailed(true))
+  }, [])
 
   return (
     <>
@@ -118,37 +88,30 @@ export function HomePage() {
               to="/anfrage"
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-accent px-6 text-base font-semibold text-ink hover:bg-white"
             >
-              Jetzt unverbindlich anfragen
+              Jetzt buchen
             </Link>
-            <span className="text-sm text-white/70">Preise auf Anfrage · Antwort per E-Mail</span>
+            <span className="text-sm text-white/70">Online bezahlen mit PayPal · Bestätigung per E-Mail</span>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-10" aria-labelledby="stellplaetze">
-        <h2 id="stellplaetze" className="text-2xl font-bold">
-          Unsere Stellplätze
+      <section className="mx-auto max-w-5xl px-4 py-10" aria-labelledby="tarife">
+        <h2 id="tarife" className="text-2xl font-bold">
+          Unsere Tarife
         </h2>
-        <p className="mt-1 text-ink-soft">Wählen Sie, wie Ihr Fahrzeug während der Reise stehen soll.</p>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {PARKING.map((o, i) => (
-            <OfferCard key={o.title} offer={o} highlight={i === 0} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-4 pb-10" aria-labelledby="leistungen">
-        <h2 id="leistungen" className="text-2xl font-bold">
-          Dazu buchbar
-        </h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {EXTRAS.map((o) => (
-            <OfferCard key={o.title} offer={o} />
-          ))}
-        </div>
+        <p className="mt-1 text-ink-soft">Der Preis richtet sich nach der Dauer Ihrer Reise.</p>
+        {failed && <p className="mt-5 text-danger">Die Tarife konnten gerade nicht geladen werden. Bitte laden Sie die Seite neu.</p>}
+        {!failed && !tariffs && <p className="mt-5 text-ink-soft">Tarife werden geladen …</p>}
+        {tariffs && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {tariffs.map((t) => (
+              <TariffCard key={t.code} tariff={t} highlight={t.code === 'premium'} />
+            ))}
+          </div>
+        )}
         <p className="mt-4 text-sm text-ink-soft">
-          Lieber ohne Shuttle? Mit unserem <strong>Hol- &amp; Bringservice</strong> holen wir Ihr Fahrzeug ab und
-          bringen es zurück. Einfach im Formular mit angeben.
+          In allen Tarifen enthalten: Annahme und Ausgabe sowie ParkHandling. Lieber ohne Shuttle? Mit unserem{' '}
+          <strong>Hol- &amp; Bringservice</strong> holen wir Ihr Fahrzeug ab und bringen es zurück. Einfach im Buchungsformular angeben.
         </p>
       </section>
 
@@ -174,13 +137,13 @@ export function HomePage() {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 py-12 text-center">
-        <h2 className="text-2xl font-bold">Reise geplant?</h2>
-        <p className="mt-1 text-ink-soft">Senden Sie uns Ihre Daten, wir melden uns mit einem Angebot.</p>
+        <h2 className="text-2xl font-bold">Jetzt Zeitraum wählen</h2>
+        <p className="mt-1 text-ink-soft">Buchbar für 5 bis 30 Tage.</p>
         <Link
           to="/anfrage"
           className="mt-5 inline-flex min-h-12 items-center justify-center rounded-xl bg-ink px-6 font-semibold text-white hover:bg-ink-soft"
         >
-          Zur Anfrage
+          Zur Buchung
         </Link>
       </section>
     </>

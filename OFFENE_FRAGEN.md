@@ -3,6 +3,14 @@
 Stand: 09.10.2026 · Fragen, die vor dem nächsten Schritt geklärt werden müssen. Geklärte Punkte
 wandern als [BELEGT] nach `ANNAHMEN.md`.
 
+## Landingpage (Stufe 2, Online-Buchung) – vor Go-live zu klären
+- [OFFEN] AGB, Widerrufsbelehrung, Button-Text „zahlungspflichtig buchen“ (Verbrauchervertrag)
+- [OFFEN] Preise brutto oder netto (Annahme: brutto)
+- [OFFEN] PayPal-Konto: Client-ID (`VITE_PAYPAL_CLIENT_ID`), Secrets `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV`
+- [OFFEN] Absenderadresse der Bestätigung (Platzhalter `booking@parkhandling.de`)
+- [OFFEN] Zusatzleistungen (Aufbereitung) online buchbar?
+- [OFFEN] Anbindung Park OS (API oder E-Mail)
+
 ## Landingpage (Stufe 1) – vor Go-live zu klären
 - [OFFEN] Datenschutzerklärung (Seite `/datenschutz` ist Platzhalter)
 - [OFFEN] Impressum: Betreiber, Anschrift, Vertretung, Kontakt, USt-ID (Seite `/impressum` ist Platzhalter)

@@ -1,8 +1,9 @@
 # Park & Fly – Landingpage
 
-Öffentliche Landingpage, auf die Anzeigen verlinken. Besucher sehen die Angebote und senden eine
-**unverbindliche Anfrage**. Die Anfrage landet in Supabase (Tabelle `inquiries`) und wird vom Betrieb
-manuell bestätigt. Online-Buchung, Verfügbarkeit, Preise und Zahlung sind Stufe 2.
+Öffentliche Buchungsseite. Der Button „Jetzt buchen“ auf der Jimdo-Website führt auf `/anfrage`. Der Kunde
+wählt Tarif und Zeitraum, gibt seine Daten ein und bezahlt mit PayPal. Danach ist die Buchung sofort
+bestätigt, landet in der Tabelle `bookings` der Park Handling App und bekommt eine Bestätigungsmail.
+Stufe 2 (Version 0.2.0). Die Verfügbarkeit wird noch nicht geprüft.
 
 > **Stand: vorbereitet, nicht live.** Go-live erst nach Klärung von Datenschutzerklärung, Impressum
 > und Aufbewahrungsfrist (siehe `../OFFENE_FRAGEN.md`). Bis dahin ist die Seite `noindex`.
@@ -20,8 +21,8 @@ Stack: React 19 · TypeScript · Vite · Tailwind CSS 4 · Supabase Edge Functio
 
 | Pfad | Inhalt |
 |---|---|
-| `/` | Angebote: Halle Premium (Indoor), Außen mit Abdeckplane, Außen ohne Plane, Shuttle, Fahrzeugaufbereitung. Preise „auf Anfrage“ |
-| `/anfrage` | Formular; `?stellplatz=indoor\|outdoor_cover\|outdoor\|any` wählt die Stellplatzart vor |
+| `/` | Startseite mit den Tarifen und Preisen je Dauer (aus der Datenbank) |
+| `/anfrage` | Buchungsseite; `?tarif=economy\|space\|business\|premium` wählt den Tarif vor |
 | `/danke` | Bestätigung nach dem Absenden |
 | `/impressum`, `/datenschutz` | Platzhalter „wird vor Go-live ergänzt“ |
 
@@ -84,6 +85,30 @@ Ablauf: Rate-Limit (5 pro IP und Stunde → `429`) → Honeypot gefüllt oder Fo
 3 Sekunden ausgefüllt → still verworfen (Antwort wie Erfolg, nichts gespeichert) → serverseitige
 Prüfung (`422` mit Feldfehlern) → Speichern → Mail an den Betrieb. Ohne Mail-Secrets wird trotzdem
 gespeichert, `notification_status = 'not_configured'`.
+
+### Online-Buchung (Stufe 2)
+
+Migration `../supabase/migrations/20261020000100_booking_checkout.sql` legt `booking_tariffs` (Tarife mit
+Preisen je Dauer, Pflege über Admin) und `booking_checkouts` (Zwischenspeicher bis zur Zahlung) an.
+Die Edge Function `booking-checkout` läuft ohne JWT-Prüfung:
+
+```bash
+supabase functions deploy booking-checkout --no-verify-jwt
+```
+
+| Secret | Inhalt |
+|---|---|
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | PayPal-REST-Zugang (nur serverseitig) |
+| `PAYPAL_ENV` | `sandbox` (Standard) oder `live` |
+| `MAIL_FROM`, `RESEND_API_KEY` | Bestätigungsmail an den Kunden |
+
+Frontend: `VITE_PAYPAL_CLIENT_ID` in `landing/.env` (öffentlich). Ohne Wert zeigt die Seite
+„Die Online-Zahlung ist derzeit nicht verfügbar“.
+
+Ablauf: `tariffs` (Anzeige) → `create` (Formular prüfen, Betrag berechnen, PayPal-Bestellung anlegen) →
+Kunde zahlt bei PayPal → `capture` (Zahlung prüfen: Status, Betrag, Währung) → Buchung in `bookings`
+anlegen → Bestätigungsmail. Ist die Zahlung erfasst, aber die Buchung fehlt, meldet das Log
+`CRITICAL` und der Kunde erhält eine Meldung, sich zu melden.
 
 Empfänger der Benachrichtigung (Betreff im Testmodus mit „[TEST]“):
 

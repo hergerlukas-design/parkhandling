@@ -20,7 +20,7 @@ export function Layout() {
               to="/anfrage"
               className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-ink hover:bg-white"
             >
-              Anfragen
+              Jetzt buchen
             </Link>
           )}
         </div>
