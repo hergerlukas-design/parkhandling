@@ -19,7 +19,7 @@ export interface Tariff {
   price_month: number
 }
 
-export type FieldErrors = Partial<Record<keyof BookingForm, string>>
+export type FieldErrors = Partial<Record<string, string>>
 
 type Result<T> = { ok: true; data: T } | { ok: false; message: string; fields?: FieldErrors }
 
@@ -54,6 +54,27 @@ export interface CheckoutStarted {
 
 export function createCheckout(form: BookingForm) {
   return call<CheckoutStarted>({ action: 'create', form })
+}
+
+export interface WithdrawalForm {
+  booking_ref: string
+  email: string
+  name: string
+  reason: string
+  consent_withdraw: boolean
+  /** Honeypot – bleibt bei Menschen leer */
+  website: string
+}
+
+export interface WithdrawalReceipt {
+  booking_ref: string
+  received_at: string
+  duplicate?: boolean
+}
+
+/** Online-Widerruf: Eingang wird gespeichert und per E-Mail bestätigt */
+export function submitWithdrawal(form: WithdrawalForm) {
+  return call<WithdrawalReceipt>({ action: 'withdraw', form })
 }
 
 export function captureCheckout(checkoutId: string, paypalOrderId: string) {

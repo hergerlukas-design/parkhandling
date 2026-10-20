@@ -1,5 +1,5 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
-import { berlinToUtcIso, type BookingInput, confirmationMail, type TariffRow, tierForDays, validateBooking } from './logic.ts'
+import { berlinToUtcIso, type BookingInput, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateWithdrawal, withdrawalMails } from './logic.ts'
 
 const tariffs: TariffRow[] = [
   {
@@ -70,4 +70,23 @@ Deno.test('Bestätigungsmail nimmt die Buchung an und enthält AGB und Widerruf'
   })
   if (!m.text.includes('nehmen wir Ihre Buchung verbindlich an')) throw new Error('Annahme fehlt')
   if (!m.text.includes('AGB-TEXT') || !m.text.includes('WIDERRUF-TEXT')) throw new Error('Texte fehlen')
+})
+
+Deno.test('Widerruf: Buchungsnummer, E-Mail und Bestätigung sind Pflicht', () => {
+  const ok = { booking_ref: 'pf-1a2b3c4d', email: 'a@b.de', name: 'Test Person', reason: '', consent_withdraw: true, website: '' }
+  if (Object.keys(validateWithdrawal(ok)).length !== 0) throw new Error('gültig abgelehnt')
+  if (!validateWithdrawal({ ...ok, booking_ref: 'XYZ' }).booking_ref) throw new Error('Format')
+  if (!validateWithdrawal({ ...ok, consent_withdraw: false }).consent_withdraw) throw new Error('Bestätigung')
+  if (!validateWithdrawal({ ...ok, website: 'spam' }).website) throw new Error('honeypot')
+})
+
+Deno.test('Widerruf: Zeitpunkt in Berliner Ortszeit und Mail mit Eingangsbestätigung', () => {
+  if (formatBerlinDateTime(new Date('2026-10-20T16:05:00Z')) !== '20.10.2026, 18:05 Uhr') throw new Error('Zeit')
+  const m = withdrawalMails({
+    bookingRef: 'PF-1A2B3C4D', customerName: 'Test Person', email: 'a@b.de', receivedAt: new Date('2026-10-20T16:05:00Z'),
+    reason: null, withinPeriod: true, earlyStart: false,
+  })
+  if (!m.customer.text.includes('Eingegangen am: 20.10.2026, 18:05 Uhr')) throw new Error('Eingang fehlt')
+  if (!m.customer.text.includes('Sie widerrufen den Vertrag')) throw new Error('Inhalt fehlt')
+  if (!m.staff.subject.includes('PF-1A2B3C4D')) throw new Error('Betreff')
 })

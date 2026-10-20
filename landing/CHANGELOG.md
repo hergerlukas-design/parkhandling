@@ -5,6 +5,18 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.4.0 – 20.10.2026
+
+### Neu
+- Online-Widerruf auf `/widerruf` (AGB Ziffer 12.2, § 356a BGB): Buchungsnummer, E-Mail und Name, Bestätigung, Hinweis optional
+- Widerruf wird über Buchungsnummer und E-Mail der Buchung zugeordnet. Doppelte Erklärungen liefern den ersten Eingang zurück
+- Der Eingang wird mit Datum und Uhrzeit (Berliner Zeit) gespeichert und dem Kunden per E-Mail bestätigt. Der Betrieb erhält einen Hinweis
+- Tabelle `booking_withdrawals` (Migration `20261020000200_booking_withdrawals.sql`, Personal liest, Schreiben nur über die Edge Function)
+
+### Offen vor Go-live
+- Die AGB verweisen auf `https://www.parkhandling.de/widerrufsrecht`. Diese Adresse muss auf das Formular zeigen oder der Link angepasst werden
+- Rückzahlung über PayPal und anteilige Abrechnung bei frühem Beginn passieren manuell
+
 ## 0.3.0 – 20.10.2026
 
 ### Neu (AGB und Widerruf umgesetzt, Entwurf `ParkHandling_AGB_Final`)

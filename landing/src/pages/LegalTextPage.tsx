@@ -1,5 +1,6 @@
 import { usePageTitle } from '../components/usePageTitle'
 import { AGB_BLOCKS, AGB_VERSION, WIDERRUF_BLOCKS, type LegalBlock } from '../content/legal'
+import { WithdrawalForm } from '../components/WithdrawalForm'
 
 const TITLES = { agb: 'Allgemeine Geschäftsbedingungen', widerruf: 'Widerrufsbelehrung' } as const
 
@@ -33,6 +34,7 @@ export function LegalTextPage({ kind }: { kind: keyof typeof TITLES }) {
     <article className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="text-3xl font-bold">{TITLES[kind]}</h1>
       <p className="mt-2 text-sm text-ink-soft">Stand: {AGB_VERSION}. Diese Fassung wird Ihnen auch per E-Mail übermittelt.</p>
+      {kind === 'widerruf' && <WithdrawalForm />}
       <Blocks blocks={blocks} />
     </article>
   )

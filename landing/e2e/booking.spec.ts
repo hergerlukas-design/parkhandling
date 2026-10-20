@@ -123,3 +123,40 @@ test('Shuttle verlangt Flugnummern, bei Selbst-Rückgabe entfallen sie', async (
   await expect(page.getByLabel('Flugnummer Hinflug')).toHaveCount(0)
   await expectNoHorizontalScroll(page)
 })
+
+test('Online-Widerruf: Eingang wird mit Zeitpunkt bestätigt', async ({ page }) => {
+  await page.route('**/functions/v1/booking-checkout', (route) => {
+    const body = route.request().postDataJSON() as { action?: string }
+    if (body.action === 'withdraw')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ booking_ref: 'PF-1A2B3C4D', received_at: '2026-10-20T16:05:00.000Z' }),
+      })
+    return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+  })
+  await page.goto('/widerruf')
+  await page.getByLabel('Buchungsnummer').fill('pf-1a2b3c4d')
+  await page.getByLabel('E-Mail der Buchung').fill('max@example.de')
+  await page.getByLabel('Vor- und Nachname').fill('Max Muster')
+  await page.getByRole('button', { name: 'Widerruf absenden' }).click()
+  await expect(page.getByText('Ihr Widerruf ist eingegangen')).toBeVisible()
+  await expect(page.getByText('20.10.2026, 18:05 Uhr')).toBeVisible()
+  await expectNoHorizontalScroll(page)
+})
+
+test('Online-Widerruf: ohne Bestätigung und bei unbekannter Buchung wird es erklärt', async ({ page }) => {
+  await page.route('**/functions/v1/booking-checkout', (route) =>
+    route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Zu dieser Buchungsnummer und E-Mail-Adresse finden wir keine Buchung. Bitte prüfen Sie die Angaben.' }),
+    }),
+  )
+  await page.goto('/widerruf')
+  await page.getByLabel('Buchungsnummer').fill('PF-1A2B3C4D')
+  await page.getByLabel('E-Mail der Buchung').fill('max@example.de')
+  await page.getByLabel('Vor- und Nachname').fill('Max Muster')
+  await page.getByRole('button', { name: 'Widerruf absenden' }).click()
+  await expect(page.getByText('keine Buchung')).toBeVisible()
+})

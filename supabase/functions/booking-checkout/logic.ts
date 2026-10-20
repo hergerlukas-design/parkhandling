@@ -376,3 +376,107 @@ export function confirmationMail(args: {
   )
   return { subject: `Buchungsbestätigung ${args.bookingRef}`, text: lines.join('\n') }
 }
+
+// -----------------------------------------------------------------------------
+// Online-Widerruf (AGB Ziffer 12.2, Widerrufsbelehrung)
+// -----------------------------------------------------------------------------
+
+/** Buchungsnummer aus der Buchungs-ID, wie in der Bestätigung */
+export function bookingRefFor(id: string): string {
+  return `PF-${id.slice(0, 8).toUpperCase()}`
+}
+
+export const BOOKING_REF_RE = /^PF-[0-9A-F]{8}$/
+
+export interface WithdrawalInput {
+  booking_ref: string
+  email: string
+  name: string
+  reason: string
+  /** Erklärung des Widerrufs (Pflicht) */
+  consent_withdraw: boolean
+  /** Honeypot – muss leer sein */
+  website: string
+}
+
+export type WithdrawalErrors = Partial<Record<keyof WithdrawalInput, string>>
+
+export function validateWithdrawal(input: WithdrawalInput): WithdrawalErrors {
+  const e: WithdrawalErrors = {}
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+  if (str(input.website)) e.website = 'Ungültige Anfrage.'
+  const ref = str(input.booking_ref).toUpperCase()
+  if (!BOOKING_REF_RE.test(ref)) e.booking_ref = 'Bitte die Buchungsnummer angeben (Format PF-XXXXXXXX).'
+  const email = str(input.email)
+  if (!email || email.length > LIMITS.email || !EMAIL_RE.test(email)) e.email = 'Bitte eine gültige E-Mail-Adresse angeben.'
+  const name = str(input.name)
+  if (!name || name.length > LIMITS.name) e.name = 'Bitte Vor- und Nachnamen angeben.'
+  if (str(input.reason).length > 500) e.reason = 'Höchstens 500 Zeichen.'
+  if (input.consent_withdraw !== true) e.consent_withdraw = 'Bitte bestätigen Sie den Widerruf.'
+  return e
+}
+
+/** Berliner Ortszeit als „TT.MM.JJJJ, HH:MM Uhr“ */
+export function formatBerlinDateTime(date: Date): string {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(date)
+      .map((x) => [x.type, x.value]),
+  )
+  return `${p.day}.${p.month}.${p.year}, ${p.hour}:${p.minute} Uhr`
+}
+
+export function withdrawalMails(args: {
+  bookingRef: string
+  customerName: string
+  email: string
+  receivedAt: Date
+  reason: string | null
+  withinPeriod: boolean
+  earlyStart: boolean
+}): { customer: { subject: string; text: string }; staff: { subject: string; text: string } } {
+  const received = formatBerlinDateTime(args.receivedAt)
+  const customerLines = [
+    `Hallo ${args.customerName},`,
+    '',
+    'wir bestätigen den Eingang Ihrer Widerrufserklärung. Dies ist Ihre Eingangsbestätigung.',
+    '',
+    `Buchungsnummer: ${args.bookingRef}`,
+    `Eingegangen am: ${received} (Berliner Zeit)`,
+    'Inhalt: Sie widerrufen den Vertrag über die oben genannte Buchung.',
+  ]
+  if (args.reason) customerLines.push(`Ihr Hinweis: ${args.reason}`)
+  customerLines.push(
+    '',
+    'Die Rückzahlung erfolgt unverzüglich, spätestens binnen 14 Tagen nach Eingang dieser Erklärung, mit demselben Zahlungsmittel (PayPal), sofern nichts anderes vereinbart ist. Dafür werden Ihnen keine Entgelte berechnet.',
+  )
+  if (args.earlyStart)
+    customerLines.push(
+      'Sie haben den Beginn der Leistung vor Ablauf der Widerrufsfrist verlangt. Für bereits erbrachte Leistungen ist daher ein anteiliger Betrag zu zahlen. Dazu melden wir uns mit einer Abrechnung.',
+    )
+  customerLines.push('', 'Mit freundlichen Grüßen', 'Park & Fly München')
+
+  const staffLines = [
+    `Widerruf eingegangen: ${args.bookingRef}`,
+    '',
+    `Kunde:           ${args.customerName} (${args.email})`,
+    `Eingegangen am:  ${received}`,
+    `Innerhalb 14 Tage: ${args.withinPeriod ? 'ja' : 'NEIN, bitte prüfen'}`,
+    `Früher Beginn:   ${args.earlyStart ? 'ja, Abrechnung erbrachter Leistungen nötig' : 'nein'}`,
+    `Hinweis:         ${args.reason ?? '–'}`,
+    '',
+    'Bitte die Rückzahlung über PayPal veranlassen und die Buchung in der App prüfen.',
+  ]
+  return {
+    customer: { subject: `Eingangsbestätigung Widerruf ${args.bookingRef}`, text: customerLines.join('\n') },
+    staff: { subject: `Widerruf ${args.bookingRef} eingegangen`, text: staffLines.join('\n') },
+  }
+}

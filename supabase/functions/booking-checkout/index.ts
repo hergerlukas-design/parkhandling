@@ -14,10 +14,14 @@ import { mailerFromEnv } from '../_shared/mailer.ts'
 import {
   berlinToUtcIso,
   type BookingInput,
+  bookingRefFor,
   confirmationMail,
   type NormalizedBooking,
   type TariffRow,
   validateBooking,
+  validateWithdrawal,
+  type WithdrawalInput,
+  withdrawalMails,
 } from './logic.ts'
 import { PayPalClient, PayPalError, paypalConfigFromEnv } from './paypal.ts'
 import { AGB_PLAIN, AGB_VERSION, WIDERRUF_PLAIN } from './legal.ts'
@@ -279,11 +283,141 @@ async function sendConfirmation(bookingId: string, value: NormalizedBooking, tar
   }
 }
 
+const WITHDRAWAL_PERIOD_MS = 14 * 24 * 60 * 60 * 1000
+
+/** Mailempfänger: im Testbetrieb immer die Testadresse, sonst Kunde bzw. Betriebsadresse */
+async function mailSettings(): Promise<{ testMode: boolean; testAddress: string | null; notifyAddress: string | null }> {
+  const { data } = await admin
+    .from('settings')
+    .select('key, value')
+    .in('key', ['mail_mode', 'mail_test_address', 'inquiry_notify_address'])
+  const s = Object.fromEntries((data ?? []).map((r) => [r.key, r.value]))
+  return {
+    testMode: s.mail_mode !== 'live',
+    testAddress: typeof s.mail_test_address === 'string' ? s.mail_test_address : null,
+    notifyAddress: typeof s.inquiry_notify_address === 'string' ? s.inquiry_notify_address : null,
+  }
+}
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (m) => `\\${m}`)
+}
+
+async function handleWithdraw(req: Request, body: { form?: WithdrawalInput }) {
+  const ipHash = `withdraw:${await hashIp(clientIp(req))}`
+  const { data: allowed, error: rateErr } = await admin.rpc('inquiry_rate_check', {
+    p_ip_hash: ipHash,
+    p_limit: RATE_LIMIT,
+    p_window: `${RATE_WINDOW_SECONDS} seconds`,
+  })
+  if (rateErr) throw rateErr
+  if (allowed !== true) return json({ error: 'Zu viele Versuche. Bitte versuchen Sie es später erneut.' }, 429)
+
+  const input: WithdrawalInput = {
+    booking_ref: String(body.form?.booking_ref ?? '').trim().toUpperCase(),
+    email: String(body.form?.email ?? '').trim(),
+    name: String(body.form?.name ?? '').trim(),
+    reason: String(body.form?.reason ?? '').trim(),
+    consent_withdraw: body.form?.consent_withdraw === true,
+    website: String(body.form?.website ?? ''),
+  }
+  const errors = validateWithdrawal(input)
+  if (Object.keys(errors).length > 0) return json({ error: 'Bitte die markierten Felder prüfen.', fields: errors }, 422)
+
+  // Buchung über E-Mail-Adresse (ohne Groß-/Kleinschreibung) suchen, dann die Buchungsnummer abgleichen
+  const { data: candidates } = await admin
+    .from('bookings')
+    .select('id, customer_name, customer_email, received_at')
+    .eq('source', 'landing')
+    .ilike('customer_email', escapeLike(input.email))
+    .limit(50)
+  const booking = (candidates ?? []).find((b) => bookingRefFor(b.id) === input.booking_ref)
+  if (!booking)
+    return json(
+      { error: 'Zu dieser Buchungsnummer und E-Mail-Adresse finden wir keine Buchung. Bitte prüfen Sie die Angaben.' },
+      404,
+    )
+
+  // Doppelter Widerruf: den ersten Eingang zurückgeben, keine zweite Erklärung anlegen
+  const { data: existing } = await admin
+    .from('booking_withdrawals')
+    .select('received_at')
+    .eq('booking_ref', input.booking_ref)
+    .maybeSingle()
+  if (existing) return json({ booking_ref: input.booking_ref, received_at: existing.received_at, duplicate: true })
+
+  const receivedAt = new Date()
+  const withinPeriod = receivedAt.getTime() - new Date(booking.received_at).getTime() <= WITHDRAWAL_PERIOD_MS
+  const { data: bookingNotes } = await admin.from('bookings').select('notes').eq('id', booking.id).single()
+  const earlyStart = /Vorzeitiger Leistungsbeginn: ausdrücklich zugestimmt/.test(bookingNotes?.notes ?? '')
+
+  const { error: insErr } = await admin.from('booking_withdrawals').insert({
+    booking_id: booking.id,
+    booking_ref: input.booking_ref,
+    customer_name: input.name,
+    customer_email: input.email,
+    reason: input.reason || null,
+    received_at: receivedAt.toISOString(),
+    within_period: withinPeriod,
+    ip_hash: ipHash,
+  })
+  if (insErr) {
+    if (insErr.code === '23505') {
+      const { data: again } = await admin.from('booking_withdrawals').select('received_at').eq('booking_ref', input.booking_ref).single()
+      return json({ booking_ref: input.booking_ref, received_at: again?.received_at, duplicate: true })
+    }
+    throw insErr
+  }
+
+  await sendWithdrawalMails(booking.id, input, receivedAt, withinPeriod, earlyStart)
+  return json({ booking_ref: input.booking_ref, received_at: receivedAt.toISOString() })
+}
+
+async function sendWithdrawalMails(
+  bookingId: string,
+  input: WithdrawalInput,
+  receivedAt: Date,
+  withinPeriod: boolean,
+  earlyStart: boolean,
+) {
+  const mailer = mailerFromEnv(Deno.env)
+  if (!mailer) {
+    console.warn('no mailer configured; withdrawal confirmation not sent', bookingId)
+    return
+  }
+  const settings = await mailSettings()
+  const mails = withdrawalMails({
+    bookingRef: input.booking_ref,
+    customerName: input.name,
+    email: input.email,
+    receivedAt,
+    reason: input.reason || null,
+    withinPeriod,
+    earlyStart,
+  })
+  const tag = (subject: string) => (settings.testMode ? `[TEST] ${subject}` : subject)
+  const customerTo = settings.testMode ? settings.testAddress : input.email
+  const staffTo = settings.testMode ? settings.testAddress : (settings.notifyAddress ?? settings.testAddress)
+  try {
+    if (customerTo) await mailer.send({ to: [customerTo], subject: tag(mails.customer.subject), text: mails.customer.text })
+    if (customerTo) {
+      await admin.from('booking_withdrawals').update({ confirmation_sent: true }).eq('booking_ref', input.booking_ref)
+    }
+  } catch (err) {
+    console.error('withdrawal confirmation failed', bookingId, err instanceof Error ? err.message : err)
+  }
+  try {
+    if (staffTo) await mailer.send({ to: [staffTo], subject: tag(mails.staff.subject), text: mails.staff.text })
+  } catch (err) {
+    console.error('withdrawal staff notice failed', bookingId, err instanceof Error ? err.message : err)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Methode nicht erlaubt' }, 405)
 
-  let body: { action?: string; form?: BookingInput; checkout_id?: string; paypal_order_id?: string }
+  let body: { action?: string; form?: BookingInput & WithdrawalInput; checkout_id?: string; paypal_order_id?: string }
   try {
     body = await req.json()
   } catch {
@@ -298,6 +432,8 @@ Deno.serve(async (req) => {
         return await handleCreate(req, body)
       case 'capture':
         return await handleCapture(body)
+      case 'withdraw':
+        return await handleWithdraw(req, body)
       default:
         return json({ error: 'Unbekannte Aktion' }, 400)
     }
