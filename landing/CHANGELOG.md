@@ -5,6 +5,11 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.2.1 – 20.10.2026
+
+### Behoben
+- Layout-Effekt gibt nichts mehr zurück (`destroy is not a function` bei Seitenwechsel, wenn `window.scrollTo` einen Wert liefert, z. B. durch Browser-Erweiterungen)
+
 ## 0.2.0 – 20.10.2026
 
 ### Neu (Stufe 2: Online-Buchung mit PayPal)

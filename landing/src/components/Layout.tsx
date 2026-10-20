@@ -3,7 +3,10 @@ import { Link, Outlet, useLocation } from 'react-router'
 
 export function Layout() {
   const { pathname } = useLocation()
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Effekt gibt bewusst nichts zurück: React erwartet undefined oder eine Aufräum-Funktion
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <div className="flex min-h-dvh flex-col">
