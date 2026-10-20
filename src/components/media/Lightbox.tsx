@@ -27,7 +27,7 @@ function distance(a: { clientX: number; clientY: number }, b: { clientX: number;
  * Vollbild erst beim Antippen laden (Abschnitt 11.2).
  * Pinch-to-Zoom mit zwei Fingern, Verschieben im vergrößerten Bild, Doppeltippen zum Ein- und Auszoomen.
  */
-export function Lightbox({ media, alt, onClose }: { media: MediaRef; alt: string; onClose: () => void }) {
+export function Lightbox({ media, alt, note, onClose }: { media: MediaRef; alt: string; note?: string; onClose: () => void }) {
   const { url, error } = useMediaUrl(media)
   const [view, setView] = useState<View>(RESET)
   const frame = useRef<HTMLDivElement>(null)
@@ -125,6 +125,9 @@ export function Lightbox({ media, alt, onClose }: { media: MediaRef; alt: string
       >
         <Icon name="close" />
       </button>
+      {note && (
+        <p className="absolute inset-x-0 bottom-3 z-10 text-center text-sm text-white/80">{note}</p>
+      )}
       {error && <p className="text-sm text-danger-soft">Bild konnte nicht geladen werden.</p>}
       {!error && !url && <p className="text-sm text-white/70">Lädt …</p>}
       {url && (

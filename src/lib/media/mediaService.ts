@@ -146,7 +146,11 @@ export function thumbRef(media: Pick<Media, 'provider' | 'bucket' | 'path' | 'th
   return { provider: media.provider, bucket: media.bucket, path: media.thumb_path ?? media.path }
 }
 
-export function fullRef(media: Pick<Media, 'provider' | 'bucket' | 'path'>): MediaRef {
+/** Vollbild; nach Ablauf der Aufbewahrungsfrist (archived_at) ist nur noch das Thumbnail da. */
+export function fullRef(
+  media: Pick<Media, 'provider' | 'bucket' | 'path'> & Partial<Pick<Media, 'thumb_path' | 'archived_at'>>,
+): MediaRef {
+  if (media.archived_at && media.thumb_path) return thumbRef({ ...media, thumb_path: media.thumb_path })
   return { provider: media.provider, bucket: media.bucket, path: media.path }
 }
 

@@ -12,7 +12,7 @@ export function MediaThumb({
   media,
   alt = 'Foto',
 }: {
-  media: Pick<Media, 'provider' | 'bucket' | 'path' | 'thumb_path'>
+  media: Pick<Media, 'provider' | 'bucket' | 'path' | 'thumb_path'> & Partial<Pick<Media, 'archived_at'>>
   alt?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -28,7 +28,14 @@ export function MediaThumb({
           </span>
         )}
       </button>
-      {open && <Lightbox media={fullRef(media)} alt={alt} onClose={() => setOpen(false)} />}
+      {open && (
+        <Lightbox
+          media={fullRef(media)}
+          alt={alt}
+          note={media.archived_at ? 'Vollbild nach Ablauf der Aufbewahrungsfrist gelöscht – Vorschau' : undefined}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   )
 }
