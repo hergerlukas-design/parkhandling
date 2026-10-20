@@ -5,6 +5,11 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.4.1 – 20.10.2026
+
+### Geändert
+- AGB Ziffer 12.2: Der Online-Widerruf verweist auf die Seite „Widerruf“ der Landingpage (`/widerruf`) statt auf `parkhandling.de/widerrufsrecht`. Die endgültige Domain der Landingpage ist noch offen
+
 ## 0.4.0 – 20.10.2026
 
 ### Neu
@@ -14,7 +19,7 @@ Die Version steht ausschließlich in `landing/package.json` und wird im Footer a
 - Tabelle `booking_withdrawals` (Migration `20261020000200_booking_withdrawals.sql`, Personal liest, Schreiben nur über die Edge Function)
 
 ### Offen vor Go-live
-- Die AGB verweisen auf `https://www.parkhandling.de/widerrufsrecht`. Diese Adresse muss auf das Formular zeigen oder der Link angepasst werden
+- Vollständige Adresse der Landingpage in den AGB: Der Text nennt bisher nur den Pfad `/widerruf`. Sobald die Domain feststeht, Text ergänzen und `scripts/build-legal.py` ausführen
 - Rückzahlung über PayPal und anteilige Abrechnung bei frühem Beginn passieren manuell
 
 ## 0.3.0 – 20.10.2026
