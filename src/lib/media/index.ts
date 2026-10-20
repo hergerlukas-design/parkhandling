@@ -20,7 +20,11 @@ export function getMediaStore(provider: MediaProvider = DEFAULT_PROVIDER): Media
   switch (provider) {
     case 'supabase':
       if (!supabase) throw new Error('Supabase ist nicht konfiguriert')
-      store = createSupabaseMediaStore(supabase, import.meta.env.VITE_SUPABASE_ANON_KEY ?? '')
+      store = createSupabaseMediaStore(
+        supabase,
+        import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+        import.meta.env.VITE_SUPABASE_URL ?? '',
+      )
       break
     case 'r2':
       throw new Error('R2-Speicher ist noch nicht eingerichtet')

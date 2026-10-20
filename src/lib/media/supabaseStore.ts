@@ -17,7 +17,18 @@ interface SignResponse {
   expires_at: string
 }
 
-export function createSupabaseMediaStore(client: SupabaseClient, anonKey: string): MediaStore {
+/**
+ * Signed Upload URLs aus media-sign auf die Supabase-Adresse der App beziehen. In Produktion ändert das
+ * nichts; im lokalen Stack liefert die Edge Function die Docker-interne Adresse (http://kong:8000), die
+ * der Browser nicht erreicht.
+ */
+export function rebaseUploadUrl(url: string, baseUrl: string): string {
+  if (!baseUrl) return url
+  const parsed = new URL(url)
+  return `${baseUrl.replace(/\/$/, '')}${parsed.pathname}${parsed.search}`
+}
+
+export function createSupabaseMediaStore(client: SupabaseClient, anonKey: string, baseUrl = ''): MediaStore {
   const urlCache = createSignedUrlCache({
     async signBatch(bucket, paths, expiresIn) {
       const { data, error } = await client.storage.from(bucket).createSignedUrls(paths, expiresIn)
@@ -28,7 +39,7 @@ export function createSupabaseMediaStore(client: SupabaseClient, anonKey: string
   })
 
   const target = (url: string, contentType: string): UploadTarget => ({
-    url,
+    url: rebaseUploadUrl(url, baseUrl),
     method: 'PUT',
     headers: {
       apikey: anonKey,

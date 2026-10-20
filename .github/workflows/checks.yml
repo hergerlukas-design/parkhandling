@@ -1,0 +1,61 @@
+name: Prüfungen
+
+# Läuft bei jedem Pull Request (und auf Wunsch): Datenbank-Tests und End-to-End-Tests gegen einen
+# lokalen Supabase-Stack im Runner. Keine Secrets, keine echten Daten. Der Deploy-Workflow prüft
+# zusätzlich Typecheck, Unit-Tests und Build vor jedem Ausliefern.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  db:
+    name: Datenbank-Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/db-test.sh
+
+  e2e:
+    name: End-to-End (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Supabase lokal starten (Migrationen, Stammdaten, Demo-Buchungen)
+        run: npx --yes supabase@2 start -x studio,imgproxy,logflare,vector,supavisor,mailpit,postgres-meta
+      - name: Chromium installieren
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

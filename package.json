@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "./scripts/db-test.sh"
+    "test:db": "./scripts/db-test.sh",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
@@ -25,6 +26,7 @@
     "read-excel-file": "^9.3.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.2",
     "@types/qrcode": "^1.5.6",
