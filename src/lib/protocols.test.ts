@@ -75,6 +75,11 @@ describe('formFromRow', () => {
     expect(f.vin).toBe('WVWZZZ1KZ6W000001')
     expect(f.location_text).toBe('Park & Fly Flughafen München → Erika Test')
   })
+
+  it('übernimmt bei der Übergabe den KM-Stand der Annahme', () => {
+    const intake = { mileage: 84213.5 } as never
+    expect(formFromRow(null, { type: 'handover', booking, inspectorName: 'M2', intake }).mileage).toBe('84213,5')
+  })
 })
 
 describe('validateForFinalize', () => {

@@ -21,6 +21,7 @@ import {
   EXTRA_SLOT,
   FUEL_SEGMENTS,
   finalizeProtocol,
+  formatMileage,
   formFromRow,
   getMedia,
   getOrCreateDraft,
@@ -28,6 +29,8 @@ import {
   getProtocolBooking,
   INSPECTION_CONDITIONS,
   listProtocolMedia,
+  MILEAGE_EXTRA_WARN_KM,
+  parseMileage,
   newDamageId,
   normalizeDamage,
   PDF_SLOT,
@@ -156,6 +159,33 @@ function ChargeInput({ value, disabled, onChange }: { value: number | null; disa
       />
       {invalid && <span className="text-xs text-danger">Bitte eine ganze Zahl von 1 bis 100 eingeben</span>}
     </Field>
+  )
+}
+
+/**
+ * Übergabe: Kilometerstand mit dem Stand der Annahme vorbelegt (meist kommen nur ein paar hundert Meter dazu),
+ * darunter Annahme-Stand und Zuwachs.
+ */
+function MileageSinceIntake({ intakeMileage, value, onChange }: { intakeMileage: number; value: string; onChange: (mileage: string) => void }) {
+  const current = parseMileage(value)
+  const diff = current != null ? Math.round((current - intakeMileage) * 10) / 10 : null
+  const warn = diff != null && (diff < 0 || diff > MILEAGE_EXTRA_WARN_KM)
+  return (
+    <div className="flex flex-col gap-1">
+      <Field label="Kilometerstand (Dezimalkomma möglich)">
+        <TextInput inputMode="decimal" value={value} placeholder="z. B. 84213,5" onChange={(e) => onChange(e.target.value)} />
+      </Field>
+      <p className={`text-xs ${warn ? 'text-warn-ink' : 'text-muted'}`}>
+        Annahme: {formatMileage(intakeMileage)} km
+        {diff != null && ` · ${diff >= 0 ? '+' : '−'}${formatMileage(Math.abs(diff))} km`}
+        {warn && ' – bitte prüfen'}
+      </p>
+      {current !== intakeMileage && (
+        <button type="button" className="self-start text-xs text-subtle underline" onClick={() => onChange(formatMileage(intakeMileage))}>
+          Annahme-Stand übernehmen
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -568,9 +598,13 @@ export function ProtocolPage() {
           </Section>
 
           <Section title="Zustand">
-            <Field label="Kilometerstand (Dezimalkomma möglich)">
-              <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
-            </Field>
+            {type === 'handover' && intake?.mileage != null ? (
+              <MileageSinceIntake intakeMileage={intake.mileage} value={form.mileage} onChange={(mileage) => update({ mileage })} />
+            ) : (
+              <Field label="Kilometerstand (Dezimalkomma möglich)">
+                <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
+              </Field>
+            )}
             {showsFuel(fuel) && (
               <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
             )}
