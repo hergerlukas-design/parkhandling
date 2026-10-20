@@ -5,6 +5,7 @@ import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
+import { ClientErrorsSettings } from '../components/settings/ClientErrorsSettings'
 import { RetentionSettings } from '../components/settings/RetentionSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { UserManagement } from '../components/users/UserManagement'
@@ -79,6 +80,11 @@ export function SettingsPage() {
         {profile?.role === 'admin' && (
           <Card title="Aufbewahrung: Fotos">
             <RetentionSettings />
+          </Card>
+        )}
+        {profile?.role === 'admin' && (
+          <Card title="Fehlerprotokoll">
+            <ClientErrorsSettings />
           </Card>
         )}
         <Card title="Betrieb">

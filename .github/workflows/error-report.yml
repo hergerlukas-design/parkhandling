@@ -1,0 +1,76 @@
+name: Täglicher Fehlerbericht
+
+# Fasst jeden Morgen zusammen, was in den letzten 24 Stunden schiefging, und schreibt es in ein
+# GitHub-Issue mit dem Label „fehlerbericht“ (ein offenes Issue wird ergänzt statt neu angelegt):
+#   * Fehler aus der App (public.client_errors)
+#   * fehlgeschlagene Läufe des Foto-Lösch-Jobs (public.media_retention_runs)
+#   * Erreichbarkeit der App (/version.json)
+# Ist die App nicht erreichbar, schlägt der Lauf zusätzlich fehl → GitHub schickt eine Mail.
+# Ohne Fehler passiert nichts. Voraussetzung: Secret SUPABASE_DB_URL (wie beim Backup).
+on:
+  schedule:
+    - cron: '10 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_URL: https://parkhandling.fly.dev
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: psql installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Erreichbarkeit prüfen
+        id: health
+        run: |
+          if body=$(curl -fsS --max-time 20 --retry 3 --retry-delay 10 "$APP_URL/version.json"); then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "App erreichbar: $body"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::error::$APP_URL/version.json nicht erreichbar"
+          fi
+      - name: Fehler der letzten 24 Stunden lesen
+        id: errors
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Secret SUPABASE_DB_URL fehlt (Dashboard → Connect → Session pooler)"
+            exit 1
+          fi
+          psql "$SUPABASE_DB_URL" -X -At -v ON_ERROR_STOP=1 -f scripts/monitoring/error-report.sql > report.md
+          echo "count=$(grep -c '^| ' report.md || true)" >> "$GITHUB_OUTPUT"
+          cat report.md
+      - name: Issue schreiben
+        if: steps.errors.outputs.count != '0' || steps.health.outputs.ok != 'true'
+        run: |
+          {
+            echo "## Fehlerbericht $(date -u +%d.%m.%Y)"
+            echo
+            if [ "${{ steps.health.outputs.ok }}" != "true" ]; then
+              echo "**App nicht erreichbar:** $APP_URL/version.json antwortete nicht."
+              echo
+            fi
+            cat report.md
+            echo
+            echo "Details: App → Einstellungen → Fehlerprotokoll (nur Admins)."
+          } > body.md
+          gh label create fehlerbericht --color D93F0B --description "Täglicher Fehlerbericht" 2>/dev/null || true
+          issue=$(gh issue list --label fehlerbericht --state open --limit 1 --json number --jq '.[0].number')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body-file body.md
+          else
+            gh issue create --title "Fehlerbericht: Fehler in Parkhandling" --label fehlerbericht --body-file body.md
+          fi
+      - name: Bei Ausfall rot werden
+        if: steps.health.outputs.ok != 'true'
+        run: exit 1
