@@ -107,12 +107,12 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Bis zum Go-live `noindex` (Meta-Tag, `X-Robots-Tag`, `robots.txt`). Automatisches Deployment vorbereitet, aber aus (`LANDING_DEPLOY_ENABLED`)
 - [ANNAHME] Edge Function `inquiry-submit` wird ohne JWT-Prüfung deployt (`--no-verify-jwt`), da die Seite anonym sendet
 
-## Landingpage Online-Buchung (Stufe 2, `landing/` 0.2.0)
+## Landingpage Online-Buchung (Stufe 2, `landing/` 0.3.0)
 - [BELEGT] Der Kunde landet über den Button „Jetzt buchen“ auf der Jimdo-Website auf der Buchungsseite der Landingpage, gibt Daten ein und bezahlt mit PayPal (auch Kreditkarte über PayPal)
 - [BELEGT] Die Buchung geht nach der Zahlung direkt in die Park Handling App (Tabelle `bookings`) und ist sofort bestätigt; die Bestätigungsmail geht sofort an den Kunden
 - [BELEGT] Preise: vier Tarife laut Preiskategorien-Vorlage, Dauerklassen 5–8 / 9–15 / 16–30 Tage. Unter 5 Tagen kein Preis (keine Online-Buchung), über 30 Tage ist der Monatstarif nicht vorgesehen
 - [BELEGT] Der Hol- & Bringservice ist als Rückgabe-Option wählbar, Shuttle ist im Tarif enthalten
-- [ANNAHME] Preise brutto in EUR (Kunde: „denke brutto, bin nicht komplett sicher“). Vor Go-live bestätigen
+- [BELEGT] Preise brutto in EUR inkl. Umsatzsteuer (AGB Ziffer 8.1, bestätigt durch den Entwurf). Vorher Kunde: „denke brutto, bin nicht komplett sicher“
 - [ANNAHME] Dauer = Kalendertage zwischen Anreise- und Abholdatum; Uhrzeiten werden als Berliner Ortszeit gespeichert
 - [ANNAHME] Stellplatzart der Buchung folgt dem Tarif: Economy → Außen ohne Plane, Space → Außen mit Abdeckplane, Business und Premium → Halle (Indoor)
 - [ANNAHME] Buchungsquelle `landing`, Zahlungsreferenz (PayPal-Order-ID) als `external_ref`, Buchungsnummer `PF-<erste 8 Zeichen der Buchungs-ID>`
@@ -120,7 +120,13 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Absender der Bestätigung: `booking@parkhandling.de` als Platzhalter (Einstellung `booking_confirmation_from`); tatsächlich versendet wird über die Secret-Adresse `MAIL_FROM`, bis die Absenderadresse feststeht
 - [ANNAHME] Sandbox-Zahlungen über `PAYPAL_ENV=sandbox`, Standard. Live erst nach Freigabe
 - [ANNAHME] Die bestehende Anfrage-Funktion und die Tabelle `inquiries` bleiben vorerst unverändert im Repo, werden aber nicht mehr genutzt
-- [OFFEN] AGB, Widerrufsbelehrung und Button-Text für Online-Verträge fachlich prüfen (Pflicht vor Go-live)
-- [OFFEN] Ob Preise brutto oder netto gelten (MwSt.-Angabe in der Vorlage fehlt)
+- [BELEGT] AGB und Widerrufsbelehrung umgesetzt (`/agb`, `/widerruf`, Stand 2026-10, aus `legal/AGB_2026-10.txt`, erzeugt mit `scripts/build-legal.py`). Der interne Abschnitt „Zusatzleistungen und Umsetzung“ steht nicht auf der Seite und nicht in der Mail
+- [BELEGT] Vertragsschluss mit Zugang der Buchungsbestätigung. Die Mail nimmt die Buchung ausdrücklich an und enthält AGB und Widerrufsbelehrung im Volltext (AGB Ziffer 2.2, 2.3)
+- [BELEGT] Zustimmung zur Pflicht-Checkbox für AGB und Kenntnis der Widerrufsbelehrung; Zustimmung zum frühen Leistungsbeginn nur bei Anreise innerhalb von 14 Tagen, nicht vorangekreuzt (AGB 12.2, Entwurf „Umsetzung“)
+- [BELEGT] Stornierung kostenlos bis 24 Stunden vor Leistungsbeginn in Textform, insbesondere per E-Mail (AGB 10.1). Kein Online-Storno-Button
+- [BELEGT] Shuttle: Flugnummern Hin- und Rückflug Pflicht; Kindersitze 0–3 und Gepäckstücke werden erfasst (AGB 4.1, 7.4). Die Angaben stehen in den Notizen der Buchung, nicht in eigenen Spalten
+- [OFFEN] Online-Widerruf (AGB 12.2 nennt eine Online-Widerrufsfunktion mit Eingangsbestätigung, § 356a BGB) ist noch nicht gebaut
+- [OFFEN] Rechtliche Prüfung durch einen Rechtsanwalt vor Go-live (der Entwurf verlangt sie selbst). Schlichtungsangabe fehlt im Entwurf
+- [OFFEN] Fahrzeugmaße werden nicht erfasst (AGB 4.1). Mechanische Parksysteme (AGB 5.3) sind nicht online buchbar
 - [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain
 - [OFFEN] Ob die Buchung mit Zahlung auch bei Park OS-Buchungen gilt; Park OS liefert eigene Buchungen (Schnittstelle/E-Mail noch offen)

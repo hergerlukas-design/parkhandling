@@ -1,6 +1,13 @@
 // Lädt das PayPal-JavaScript-SDK nur auf der Buchungsseite (nicht auf der Startseite).
 // Die Client-ID ist öffentlich (VITE_PAYPAL_CLIENT_ID); das Secret liegt ausschließlich in der Edge Function.
+export interface PayPalActions {
+  resolve(): Promise<void> | void
+  reject(): Promise<void> | void
+}
+
 export interface PayPalButtonsOptions {
+  /** Vor dem Bezahlfenster: resolve() lässt weiter, reject() bricht ab */
+  onClick?: (data: unknown, actions: PayPalActions) => unknown
   createOrder: () => Promise<string>
   onApprove: (data: { orderID: string }) => Promise<void>
   onError?: (err: unknown) => void

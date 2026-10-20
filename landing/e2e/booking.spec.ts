@@ -83,3 +83,43 @@ test('Impressum und Datenschutz sind Platzhalter, Seite ist noindex', async ({ p
   await expect(page.getByText('Diese Seite wird vor Go-live ergänzt.')).toBeVisible()
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
 })
+
+test('AGB und Widerrufsbelehrung sind vollständig, interne Freigabe-Hinweise fehlen', async ({ page }) => {
+  await page.goto('/agb')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Allgemeine Geschäftsbedingungen')
+  await expect(page.getByText('Stand: 2026-10')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '13 Schlussbestimmungen' })).toBeVisible()
+  await expect(page.getByText('Zusatzleistungen und Umsetzung')).toHaveCount(0)
+  await expect(page.getByText('Betriebsmodell')).toHaveCount(0)
+  await expectNoHorizontalScroll(page)
+
+  await page.goto('/widerruf')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Widerrufsbelehrung')
+  await expect(page.getByRole('heading', { name: 'Muster Widerrufsformular' })).toBeVisible()
+  await expectNoHorizontalScroll(page)
+})
+
+test('Zustimmungen sind Pflicht, die Zusatz-Zustimmung erscheint nur bei Anreise innerhalb von 14 Tagen', async ({ page }) => {
+  await page.goto('/anfrage?tarif=premium')
+  await expect(page.locator('#consent_agb')).not.toBeChecked()
+  await expect(page.locator('#consent_withdrawal')).not.toBeChecked()
+  await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(40))
+  await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(45))
+  await expect(page.locator('#consent_early_start')).toHaveCount(0)
+
+  await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(3))
+  await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(10))
+  await expect(page.locator('#consent_early_start')).toBeVisible()
+  await expect(page.locator('#consent_early_start')).not.toBeChecked()
+})
+
+test('Shuttle verlangt Flugnummern, bei Selbst-Rückgabe entfallen sie', async ({ page }) => {
+  await page.goto('/anfrage?tarif=premium')
+  await expect(page.getByLabel('Flugnummer Hinflug')).toBeVisible()
+  await expect(page.getByLabel('Flugnummer Rückflug')).toBeVisible()
+  await expect(page.getByLabel('Kindersitze')).toBeVisible()
+  await expect(page.getByLabel('Gepäckstücke')).toBeVisible()
+  await page.locator('select[name="return_mode"]').selectOption('self')
+  await expect(page.getByLabel('Flugnummer Hinflug')).toHaveCount(0)
+  await expectNoHorizontalScroll(page)
+})

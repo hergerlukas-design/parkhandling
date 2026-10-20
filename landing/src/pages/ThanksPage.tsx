@@ -22,11 +22,11 @@ export function ThanksPage() {
       </div>
       <h1 className="mt-5 text-3xl font-bold">Vielen Dank für Ihre Buchung!</h1>
       <p className="mt-3 text-lg text-ink-soft">
-        Die Zahlung ist eingegangen, Ihre Buchung ist bestätigt.
+        Die Zahlung ist eingegangen. Ihre Buchung ist angenommen.
         {state.email && (
           <>
             {' '}
-            Die Bestätigung geht an <strong className="break-all text-ink">{state.email}</strong>.
+            Die Buchungsbestätigung mit allen Angaben, den AGB und der Widerrufsbelehrung geht an <strong className="break-all text-ink">{state.email}</strong>.
           </>
         )}
       </p>

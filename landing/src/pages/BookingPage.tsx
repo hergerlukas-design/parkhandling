@@ -3,9 +3,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { usePageTitle } from '../components/usePageTitle'
 import { type FieldErrors, type Tariff, captureCheckout, createCheckout, fetchTariffs } from '../lib/api'
 import {
+  CHILD_SEAT_OPTIONS,
   EMPTY_FORM,
   FIELD_ORDER,
   FUEL_OPTIONS,
+  MAX_LUGGAGE,
+  earlyStartRelevant,
   type BookingForm,
   MAX_DAYS,
   MIN_DAYS,
@@ -17,7 +20,7 @@ import {
   tierForDays,
 } from '../lib/booking'
 import { addDays, formatDateLongDE, todayInBerlin } from '../lib/dates'
-import { loadPayPal, paypalClientId, type PayPalNamespace } from '../lib/paypal'
+import { type PayPalActions, loadPayPal, paypalClientId, type PayPalNamespace } from '../lib/paypal'
 
 const inputClass =
   'block h-12 w-full min-w-0 rounded-lg border bg-white px-3 text-base text-ink placeholder:text-ink-soft/60 aria-[invalid=true]:border-danger border-line focus:border-ink'
@@ -71,6 +74,54 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
+/** Fehler für fehlende Zustimmungen. Wird vor dem PayPal-Fenster geprüft. */
+function consentErrors(f: BookingForm): Errors {
+  const e: Errors = {}
+  if (!f.consent_privacy) e.consent_privacy = 'Bitte den Datenschutzhinweis bestätigen.'
+  if (!f.consent_agb) e.consent_agb = 'Bitte die AGB akzeptieren.'
+  if (!f.consent_withdrawal) e.consent_withdrawal = 'Bitte die Widerrufsbelehrung zur Kenntnis nehmen.'
+  if (earlyStartRelevant(f.arrival_date, todayInBerlin()) && !f.consent_early_start)
+    e.consent_early_start = 'Bitte der Leistung vor Ablauf der Widerrufsfrist ausdrücklich zustimmen.'
+  return e
+}
+
+function ConsentRow({
+  id,
+  checked,
+  error,
+  onChange,
+  children,
+}: {
+  id: keyof BookingForm
+  checked: boolean
+  error?: string
+  onChange: (v: boolean) => void
+  children: ReactNode
+}) {
+  return (
+    <div>
+      <label className="flex min-h-11 cursor-pointer items-start gap-3">
+        <input
+          type="checkbox"
+          id={id}
+          name={id}
+          checked={checked}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 size-6 shrink-0 accent-ink"
+        />
+        <span>{children}</span>
+      </label>
+      {error && (
+        <p id={`${id}-error`} className="mt-1 text-sm font-medium text-danger">
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
 function priceForTier(t: Tariff, tier: PriceTier): number {
   return tier === 'week' ? t.price_week : tier === 'holiday' ? t.price_holiday : t.price_month
 }
@@ -113,6 +164,14 @@ export function BookingPage() {
         return paypal
           .Buttons({
             style: { layout: 'vertical', shape: 'rect', height: 48, label: 'pay' },
+            onClick: (_data: unknown, actions: PayPalActions) => {
+              const missing = consentErrors(formRef.current)
+              if (Object.keys(missing).length === 0) return actions.resolve()
+              setSubmitted(true)
+              setErrors((prev) => ({ ...prev, ...missing }))
+              focusFirst(missing)
+              return actions.reject()
+            },
             createOrder: async () => {
               setServerError(null)
               const res = await createCheckout(formRef.current)
@@ -183,13 +242,14 @@ export function BookingPage() {
     el?.focus()
   }
 
+  const earlyStart = earlyStartRelevant(form.arrival_date, today)
   const errorCount = Object.keys(errors).filter((k) => errors[k as keyof BookingForm]).length
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-3xl font-bold">Jetzt buchen</h1>
       <p className="mt-2 text-ink-soft">
-        Zeitraum und Tarif wählen, Daten eingeben und mit PayPal bezahlen. Nach der Zahlung ist Ihre Buchung bestätigt.
+        Zeitraum und Tarif wählen, Daten eingeben und mit PayPal bezahlen. Die Buchungsbestätigung mit allen Angaben kommt per E-Mail.
       </p>
 
       <div ref={summaryRef} tabIndex={-1} className="outline-none" aria-live="assertive">
@@ -382,6 +442,55 @@ export function BookingPage() {
               </select>
             </Field>
           </div>
+          {form.return_mode === 'shuttle' && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="flight_outbound" label="Flugnummer Hinflug" error={errors.flight_outbound} hint="z. B. LH 1234">
+                <input
+                  type="text"
+                  {...a11y('flight_outbound', true)}
+                  className={inputClass}
+                  maxLength={20}
+                  placeholder="z. B. LH 1234"
+                  value={form.flight_outbound}
+                  onChange={(e) => set('flight_outbound', e.target.value)}
+                />
+              </Field>
+              <Field id="flight_return" label="Flugnummer Rückflug" error={errors.flight_return} hint="z. B. LH 1235">
+                <input
+                  type="text"
+                  {...a11y('flight_return', true)}
+                  className={inputClass}
+                  maxLength={20}
+                  placeholder="z. B. LH 1235"
+                  value={form.flight_return}
+                  onChange={(e) => set('flight_return', e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="child_seats" label="Kindersitze" error={errors.child_seats}>
+              <select {...a11y('child_seats')} className={inputClass} value={form.child_seats} onChange={(e) => set('child_seats', e.target.value)}>
+                {CHILD_SEAT_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="luggage" label="Gepäckstücke" error={errors.luggage} hint="Koffer und Taschen insgesamt">
+              <input
+                type="number"
+                {...a11y('luggage', true)}
+                className={inputClass}
+                min={0}
+                max={MAX_LUGGAGE}
+                inputMode="numeric"
+                value={form.luggage}
+                onChange={(e) => set('luggage', e.target.value)}
+              />
+            </Field>
+          </div>
         </Section>
 
         <Section title="Kontakt">
@@ -422,31 +531,55 @@ export function BookingPage() {
         </div>
 
         <div className="rounded-2xl border border-line bg-card p-4 shadow-sm md:p-6">
-          <label className="flex min-h-11 cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              {...a11y('consent_privacy')}
-              checked={form.consent_privacy}
-              onChange={(e) => set('consent_privacy', e.target.checked)}
-              className="mt-0.5 size-6 shrink-0 accent-ink"
-            />
-            <span>
+          <div className="space-y-4">
+            <ConsentRow id="consent_privacy" checked={form.consent_privacy} error={errors.consent_privacy} onChange={(v) => set('consent_privacy', v)}>
               Ich habe den{' '}
               <Link to="/datenschutz" target="_blank" className="font-medium underline">
                 Datenschutzhinweis
               </Link>{' '}
               gelesen. Meine Angaben werden zur Abwicklung meiner Buchung verwendet.
-            </span>
-          </label>
-          {errors.consent_privacy && (
-            <p id="consent_privacy-error" className="mt-1 text-sm font-medium text-danger">
-              {errors.consent_privacy}
-            </p>
-          )}
+            </ConsentRow>
+            <ConsentRow id="consent_agb" checked={form.consent_agb} error={errors.consent_agb} onChange={(v) => set('consent_agb', v)}>
+              Ich habe die{' '}
+              <Link to="/agb" target="_blank" className="font-medium underline">
+                Allgemeinen Geschäftsbedingungen
+              </Link>{' '}
+              gelesen und akzeptiere sie.
+            </ConsentRow>
+            <ConsentRow
+              id="consent_withdrawal"
+              checked={form.consent_withdrawal}
+              error={errors.consent_withdrawal}
+              onChange={(v) => set('consent_withdrawal', v)}
+            >
+              Ich habe die{' '}
+              <Link to="/widerruf" target="_blank" className="font-medium underline">
+                Widerrufsbelehrung
+              </Link>{' '}
+              zur Kenntnis genommen.
+            </ConsentRow>
+            {earlyStart && (
+              <ConsentRow
+                id="consent_early_start"
+                checked={form.consent_early_start}
+                error={errors.consent_early_start}
+                onChange={(v) => set('consent_early_start', v)}
+              >
+                Ich verlange ausdrücklich und stimme zu, dass ParkHandling vor Ablauf der Widerrufsfrist mit der vereinbarten
+                Dienstleistung beginnt. Mir ist bekannt, dass mein Widerrufsrecht mit vollständiger Vertragserfüllung durch
+                ParkHandling erlischt.
+                <span className="mt-1 block text-sm text-ink-soft">
+                  Wird das Widerrufsrecht danach ausgeübt, ist für die bis dahin erbrachten Leistungen ein anteiliger Betrag zu
+                  zahlen. Einzelheiten stehen in der Widerrufsbelehrung.
+                </span>
+              </ConsentRow>
+            )}
+          </div>
 
           <h2 className="mt-6 text-lg font-semibold">Zahlung mit PayPal</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Mit der Zahlung ist Ihre Buchung verbindlich und bestätigt.
+            Mit dem Klick auf PayPal geben Sie eine zahlungspflichtige, verbindliche Buchung ab. Der Vertrag kommt mit unserer
+            Buchungsbestätigung per E-Mail zustande.
           </p>
           <div className="mt-4 min-h-12" data-testid="paypal-area">
             {!clientId && <p className="text-sm text-danger">Die Online-Zahlung ist derzeit nicht verfügbar.</p>}

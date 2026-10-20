@@ -37,6 +37,12 @@ export function Layout() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-4">
           <span>© Park &amp; Fly München</span>
           <nav className="flex gap-4">
+            <Link to="/agb" className="inline-flex min-h-11 items-center hover:text-ink">
+              AGB
+            </Link>
+            <Link to="/widerruf" className="inline-flex min-h-11 items-center hover:text-ink">
+              Widerruf
+            </Link>
             <Link to="/impressum" className="inline-flex min-h-11 items-center hover:text-ink">
               Impressum
             </Link>

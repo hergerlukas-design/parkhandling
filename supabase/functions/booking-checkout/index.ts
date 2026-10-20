@@ -20,6 +20,7 @@ import {
   validateBooking,
 } from './logic.ts'
 import { PayPalClient, PayPalError, paypalConfigFromEnv } from './paypal.ts'
+import { AGB_PLAIN, AGB_VERSION, WIDERRUF_PLAIN } from './legal.ts'
 
 const RATE_LIMIT = 10
 const RATE_WINDOW_SECONDS = 60 * 60
@@ -181,7 +182,16 @@ async function handleCapture(body: { checkout_id?: string; paypal_order_id?: str
   const value = checkout.payload as NormalizedBooking
   const { data: tariff } = await admin.from('booking_tariffs').select('*').eq('code', checkout.tariff_code).single()
 
-  const notes = [`Tarif: ${tariff.label}`, value.notes].filter(Boolean).join('\n')
+  const notes = [
+    `Tarif: ${tariff.label}`,
+    value.return_mode === 'shuttle' ? `Flug Hinflug: ${value.flight_outbound ?? '–'} · Rückflug: ${value.flight_return ?? '–'}` : null,
+    `Kindersitze: ${value.child_seats} · Gepäckstücke: ${value.luggage}`,
+    `AGB ${AGB_VERSION} akzeptiert (${value.accepted_at}), Widerrufsbelehrung zur Kenntnis genommen`,
+    `Vorzeitiger Leistungsbeginn: ${value.early_start ? 'ausdrücklich zugestimmt' : 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'}`,
+    value.notes,
+  ]
+    .filter(Boolean)
+    .join('\n')
   const { data: booking, error: bookErr } = await admin
     .from('bookings')
     .insert({
@@ -257,6 +267,9 @@ async function sendConfirmation(bookingId: string, value: NormalizedBooking, tar
     booking: value,
     tariffLabel,
     parkingLabel: PARKING_LABEL[t?.parking_type ?? ''] ?? '',
+    agbText: AGB_PLAIN,
+    withdrawalText: WIDERRUF_PLAIN,
+    agbVersion: AGB_VERSION,
   })
   try {
     await mailer.send({ to: [to], subject: testMode ? `[TEST] ${mail.subject}` : mail.subject, text: mail.text })

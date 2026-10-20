@@ -4,8 +4,8 @@ Stand: 09.10.2026 · Fragen, die vor dem nächsten Schritt geklärt werden müss
 wandern als [BELEGT] nach `ANNAHMEN.md`.
 
 ## Landingpage (Stufe 2, Online-Buchung) – vor Go-live zu klären
-- [OFFEN] AGB, Widerrufsbelehrung, Button-Text „zahlungspflichtig buchen“ (Verbrauchervertrag)
-- [OFFEN] Preise brutto oder netto (Annahme: brutto)
+- [ERLEDIGT 20.10.] AGB und Widerrufsbelehrung umgesetzt (`/agb`, `/widerruf`). Button-Hinweis: „Mit dem Klick auf PayPal geben Sie eine zahlungspflichtige, verbindliche Buchung ab“. Offen: Anwaltsprüfung, Online-Widerruf nach § 356a BGB
+- [ERLEDIGT 20.10.] Preise brutto inkl. Umsatzsteuer (AGB Ziffer 8.1)
 - [OFFEN] PayPal-Konto: Client-ID (`VITE_PAYPAL_CLIENT_ID`), Secrets `PAYPAL_CLIENT_ID`/`PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV`
 - [OFFEN] Absenderadresse der Bestätigung (Platzhalter `booking@parkhandling.de`)
 - [OFFEN] Zusatzleistungen (Aufbereitung) online buchbar?

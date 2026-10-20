@@ -5,6 +5,25 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.3.0 – 20.10.2026
+
+### Neu (AGB und Widerruf umgesetzt, Entwurf `ParkHandling_AGB_Final`)
+- Seiten `/agb` (Stand 2026-10) und `/widerruf` (Widerrufsbelehrung mit Muster-Formular), aus `legal/AGB_2026-10.txt` mit `scripts/build-legal.py` erzeugt. Der interne Abschnitt „Zusatzleistungen und Umsetzung“ ist nicht enthalten. Links im Footer
+- Pflicht-Zustimmungen im Buchungsformular: AGB akzeptiert, Widerrufsbelehrung zur Kenntnis genommen. Die Prüfung läuft auch serverseitig und vor dem PayPal-Fenster
+- Zustimmung zum frühen Leistungsbeginn (Widerruf) erscheint nur, wenn die Anreise innerhalb von 14 Tagen liegt, und ist nicht vorangekreuzt
+- Shuttle-Buchungen verlangen Flugnummern (Hin- und Rückflug). Kindersitze (0–3) und Gepäckstücke werden erfasst
+- Bestätigungsmail nimmt die Buchung ausdrücklich an, nennt Storno-Regel (kostenlos bis 24 Stunden vorher, per E-Mail) und enthält AGB und Widerrufsbelehrung im Volltext
+- Notizen der Buchung dokumentieren AGB-Version, Zeitpunkt der Zustimmung und den Zustimmungsstatus zum frühen Beginn
+
+### Geändert
+- Danke-Seite und Buchungsseite sagen „angenommen“ statt „bestätigt“, weil der Vertrag mit der Bestätigungsmail zustande kommt
+- Brutto-Preise sind durch AGB Ziffer 8.1 bestätigt
+
+### Offen vor Go-live
+- Online-Widerruf nach § 356a BGB (im AGB-Text versprochen, noch nicht gebaut)
+- Rechtliche Prüfung durch Rechtsanwalt, Schlichtungsangabe
+- Fehlgeschlagener Mailversand: Die Buchung ist bezahlt, aber der Vertrag entsteht erst mit der Mail. Der Fehler wird bisher nur protokolliert
+
 ## 0.2.1 – 20.10.2026
 
 ### Behoben

@@ -43,6 +43,14 @@ export interface BookingForm {
   phone: string
   notes: string
   consent_privacy: boolean
+  consent_agb: boolean
+  consent_withdrawal: boolean
+  /** nur relevant, wenn die Anreise innerhalb der Widerrufsfrist liegt */
+  consent_early_start: boolean
+  flight_outbound: string
+  flight_return: string
+  child_seats: string
+  luggage: string
   /** Honeypot – bleibt bei Menschen leer */
   website: string
 }
@@ -65,7 +73,25 @@ export const EMPTY_FORM: BookingForm = {
   phone: '',
   notes: '',
   consent_privacy: false,
+  consent_agb: false,
+  consent_withdrawal: false,
+  consent_early_start: false,
+  flight_outbound: '',
+  flight_return: '',
+  child_seats: '0',
+  luggage: '',
   website: '',
+}
+
+/** Widerrufsfrist in Tagen (AGB Ziffer 12.2) */
+export const WITHDRAWAL_DAYS = 14
+export const CHILD_SEAT_OPTIONS = [0, 1, 2, 3] as const
+export const MAX_LUGGAGE = 30
+
+/** Anreise liegt innerhalb der Widerrufsfrist → ausdrückliche Zustimmung zum frühen Leistungsbeginn nötig */
+export function earlyStartRelevant(arrivalDate: string, today: string): boolean {
+  if (!isIsoDate(arrivalDate) || arrivalDate < today) return false
+  return daysBetween(today, arrivalDate) < WITHDRAWAL_DAYS
 }
 
 /** Kalendertage zwischen Anreise und Abholung, null wenn die Daten noch nicht stimmen */
@@ -104,5 +130,12 @@ export const FIELD_ORDER: (keyof BookingForm)[] = [
   'email',
   'phone',
   'notes',
+  'flight_outbound',
+  'flight_return',
+  'child_seats',
+  'luggage',
   'consent_privacy',
+  'consent_agb',
+  'consent_withdrawal',
+  'consent_early_start',
 ]

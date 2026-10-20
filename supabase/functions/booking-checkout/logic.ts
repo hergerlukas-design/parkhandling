@@ -8,6 +8,11 @@ export const TIME_ZONE = 'Europe/Berlin'
 export const MIN_DAYS = 5
 export const MAX_DAYS = 30
 export const MAX_ADVANCE_DAYS = 365
+/** Widerrufsfrist in Tagen (AGB Ziffer 12.2 / Belehrung) */
+export const WITHDRAWAL_DAYS = 14
+
+export const MAX_CHILD_SEATS = 3
+export const MAX_LUGGAGE = 30
 export const LIMITS = { plate: 15, name: 100, company: 100, email: 254, phone: 30, vehicle: 60, notes: 1000 }
 
 export const RETURN_MODES = ['shuttle', 'pickup_delivery', 'self'] as const
@@ -48,6 +53,16 @@ export interface BookingInput {
   return_mode: string
   notes: string
   consent_privacy: boolean
+  /** AGB gelesen und akzeptiert (Pflicht) */
+  consent_agb: boolean
+  /** Widerrufsbelehrung zur Kenntnis genommen (Pflicht) */
+  consent_withdrawal: boolean
+  /** Ausdrückliche Zustimmung zum Beginn der Leistung vor Ablauf der Widerrufsfrist (nur bei Anreise innerhalb von 14 Tagen) */
+  consent_early_start: boolean
+  flight_outbound: string
+  flight_return: string
+  child_seats: number | string
+  luggage: number | string
   /** Honeypot – muss leer sein */
   website: string
 }
@@ -73,6 +88,12 @@ export interface NormalizedBooking {
   days: number
   tier: Tier
   amount: number
+  early_start: boolean
+  flight_outbound: string | null
+  flight_return: string | null
+  child_seats: number
+  luggage: number
+  accepted_at: string
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -149,6 +170,7 @@ export function validateBooking(
   input: BookingInput,
   today: string,
   tariffs: TariffRow[],
+  acceptedAt: string = new Date().toISOString(),
 ): { errors: BookingErrors; value: NormalizedBooking | null } {
   const e: BookingErrors = {}
   const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
@@ -210,6 +232,33 @@ export function validateBooking(
   if (notes.length > LIMITS.notes) e.notes = `Höchstens ${LIMITS.notes} Zeichen.`
 
   if (input.consent_privacy !== true) e.consent_privacy = 'Bitte den Datenschutzhinweis bestätigen.'
+  if (input.consent_agb !== true) e.consent_agb = 'Bitte die AGB akzeptieren.'
+  if (input.consent_withdrawal !== true) e.consent_withdrawal = 'Bitte die Widerrufsbelehrung zur Kenntnis nehmen.'
+
+  // Anreise innerhalb der Widerrufsfrist: Leistungsbeginn nur mit ausdrücklicher Zustimmung
+  const earlyStart =
+    isIsoDate(input.arrival_date) && input.arrival_date >= today && daysBetween(today, input.arrival_date) < WITHDRAWAL_DAYS
+  if (earlyStart && input.consent_early_start !== true)
+    e.consent_early_start = 'Bitte der Leistung vor Ablauf der Widerrufsfrist ausdrücklich zustimmen.'
+
+  const flightOut = str(input.flight_outbound)
+  const flightBack = str(input.flight_return)
+  const flightRe = /^[A-Za-z0-9 \-]{2,20}$/
+  if (ret === 'shuttle') {
+    if (!flightRe.test(flightOut)) e.flight_outbound = 'Bitte die Flugnummer des Hinflugs angeben (z. B. LH 1234).'
+    if (!flightRe.test(flightBack)) e.flight_return = 'Bitte die Flugnummer des Rückflugs angeben (z. B. LH 1235).'
+  } else {
+    if (flightOut && !flightRe.test(flightOut)) e.flight_outbound = 'Bitte die Flugnummer des Hinflugs angeben (z. B. LH 1234).'
+    if (flightBack && !flightRe.test(flightBack)) e.flight_return = 'Bitte die Flugnummer des Rückflugs angeben (z. B. LH 1235).'
+  }
+
+  const childSeats = input.child_seats === '' || input.child_seats == null ? 0 : Number(input.child_seats)
+  if (!Number.isInteger(childSeats) || childSeats < 0 || childSeats > MAX_CHILD_SEATS)
+    e.child_seats = `Zwischen 0 und ${MAX_CHILD_SEATS} Kindersitze.`
+
+  const luggage = Number(input.luggage)
+  if (input.luggage === '' || input.luggage == null || !Number.isInteger(luggage) || luggage < 0 || luggage > MAX_LUGGAGE)
+    e.luggage = `Bitte die Anzahl der Gepäckstücke angeben (0 bis ${MAX_LUGGAGE}).`
 
   if (Object.keys(e).length > 0 || !tariff) return { errors: e, value: null }
 
@@ -237,8 +286,20 @@ export function validateBooking(
       days,
       tier,
       amount: priceFor(tariff, tier),
+      early_start: earlyStart,
+      flight_outbound: flightOut || null,
+      flight_return: flightBack || null,
+      child_seats: childSeats,
+      luggage,
+      accepted_at: acceptedAt,
     },
   }
+}
+
+const RETURN_LABEL: Record<ReturnMode, string> = {
+  shuttle: 'Shuttle zum Terminal',
+  pickup_delivery: 'Hol- & Bringservice',
+  self: 'Selbst',
 }
 
 export function formatEuro(amount: number): string {
@@ -255,12 +316,18 @@ export function confirmationMail(args: {
   booking: NormalizedBooking
   tariffLabel: string
   parkingLabel: string
+  agbText: string
+  withdrawalText: string
+  agbVersion: string
 }): { subject: string; text: string } {
   const b = args.booking
-  const text = [
+  const shuttle = b.return_mode === 'shuttle'
+  const lines = [
     `Hallo ${b.customer_name},`,
     '',
-    'vielen Dank für Ihre Buchung bei Park & Fly München. Die Zahlung ist eingegangen, die Buchung ist damit bestätigt.',
+    'vielen Dank für Ihre Buchung bei Park & Fly München.',
+    '',
+    'Hiermit nehmen wir Ihre Buchung verbindlich an. Der Vertrag kommt mit dieser Buchungsbestätigung zustande (AGB Ziffer 2.2).',
     '',
     `Buchungsnummer: ${args.bookingRef}`,
     `Tarif:          ${args.tariffLabel} (${args.parkingLabel})`,
@@ -268,12 +335,44 @@ export function confirmationMail(args: {
     `Abholung:       ${formatDateDE(b.pickup_date)} ${b.pickup_time} Uhr`,
     `Dauer:          ${b.days} Tage`,
     `Kennzeichen:    ${b.plate}`,
-    `Betrag:         ${formatEuro(b.amount)} (brutto)`,
+    `Rückgabe:       ${RETURN_LABEL[b.return_mode]}`,
+  ]
+  if (shuttle) {
+    lines.push(`Flug Hinflug:   ${b.flight_outbound ?? '–'}`)
+    lines.push(`Flug Rückflug:  ${b.flight_return ?? '–'}`)
+  }
+  lines.push(`Kindersitze:    ${b.child_seats}`)
+  lines.push(`Gepäckstücke:   ${b.luggage}`)
+  lines.push(`Betrag:         ${formatEuro(b.amount)} (brutto, inkl. Umsatzsteuer)`)
+  lines.push('Zahlung:        PayPal, bezahlt')
+  lines.push(
     '',
-    'Annahme und Übergabe werden mit einem Protokoll mit Unterschrift abgeschlossen.',
+    'Stornierung: kostenlos bis 24 Stunden vor Leistungsbeginn, in Textform, insbesondere per E-Mail an fly@parkhandling.com (AGB Ziffer 10.1).',
+  )
+  if (b.early_start) {
+    lines.push(
+      '',
+      'Sie haben ausdrücklich zugestimmt, dass wir vor Ablauf der Widerrufsfrist mit der vereinbarten Dienstleistung beginnen. Ihr Widerrufsrecht erlischt mit vollständiger Leistungserbringung durch uns.',
+    )
+  }
+  lines.push(
+    '',
+    `Die AGB (Stand ${args.agbVersion}) und die Widerrufsbelehrung finden Sie vollständig unten in dieser E-Mail. Sie haben beim Buchen bestätigt, dass Sie sie zur Kenntnis genommen haben.`,
     '',
     'Mit freundlichen Grüßen',
     'Park & Fly München',
-  ].join('\n')
-  return { subject: `Buchungsbestätigung ${args.bookingRef}`, text }
+    '',
+    '==================================================',
+    'WIDERRUFSBELEHRUNG',
+    '==================================================',
+    '',
+    args.withdrawalText,
+    '',
+    '==================================================',
+    `ALLGEMEINE GESCHÄFTSBEDINGUNGEN (Stand ${args.agbVersion})`,
+    '==================================================',
+    '',
+    args.agbText,
+  )
+  return { subject: `Buchungsbestätigung ${args.bookingRef}`, text: lines.join('\n') }
 }
