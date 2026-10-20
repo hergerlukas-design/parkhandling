@@ -200,6 +200,7 @@ export function BookingPage() {
                 replace: true,
                 state: {
                   bookingRef: res.data.booking_ref,
+                  confirmationSent: res.data.confirmation_sent,
                   arrival: f.arrival_date,
                   pickup: f.pickup_date,
                   email: f.email.trim(),

@@ -127,6 +127,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Shuttle: Flugnummern Hin- und Rückflug Pflicht; Kindersitze 0–3 und Gepäckstücke werden erfasst (AGB 4.1, 7.4). Die Angaben stehen in den Notizen der Buchung, nicht in eigenen Spalten
 - [BELEGT] Online-Widerruf auf `/widerruf` gebaut (Eingangsbestätigung, § 356a BGB). AGB-Text verweist auf „Widerruf“ der Landingpage, nicht mehr auf parkhandling.de
 - [OFFEN] Endgültige Domain der Landingpage für den vollständigen Link in den AGB
+- [BELEGT] Mailausfall nach Zahlung: Status am Zwischenspeicher, Hinweis an den Betrieb, erneute Anforderung durch den Kunden. Kein automatischer Wiederholversuch
 - [OFFEN] Rechtliche Prüfung durch einen Rechtsanwalt vor Go-live (der Entwurf verlangt sie selbst). Schlichtungsangabe fehlt im Entwurf
 - [OFFEN] Fahrzeugmaße werden nicht erfasst (AGB 4.1). Mechanische Parksysteme (AGB 5.3) sind nicht online buchbar
 - [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain

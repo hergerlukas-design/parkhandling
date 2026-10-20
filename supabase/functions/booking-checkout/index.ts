@@ -15,10 +15,12 @@ import {
   berlinToUtcIso,
   type BookingInput,
   bookingRefFor,
+  confirmationFailedMail,
   confirmationMail,
   type NormalizedBooking,
   type TariffRow,
   validateBooking,
+  validateLookup,
   validateWithdrawal,
   type WithdrawalInput,
   withdrawalMails,
@@ -246,41 +248,126 @@ async function handleCapture(body: { checkout_id?: string; paypal_order_id?: str
     .update({ status: 'captured', booking_id: booking.id, updated_at: new Date().toISOString() })
     .eq('id', checkoutId)
 
-  await sendConfirmation(booking.id, value, tariff.label, checkout.tariff_code)
+  const confirmationSent = await sendConfirmation(checkoutId, booking.id, value, tariff.label, tariff.parking_type)
 
-  return json({ booking_ref: await bookingRef(booking.id) })
+  return json({ booking_ref: await bookingRef(booking.id), confirmation_sent: confirmationSent })
 }
 
-async function sendConfirmation(bookingId: string, value: NormalizedBooking, tariffLabel: string, tariffCode: string) {
+/** Versendet die Buchungsbestätigung und speichert das Ergebnis am Zwischenspeicher. Liefert true bei Erfolg. */
+async function sendConfirmation(
+  checkoutId: string,
+  bookingId: string,
+  value: NormalizedBooking,
+  tariffLabel: string,
+  parkingType: string,
+): Promise<boolean> {
   const mailer = mailerFromEnv(Deno.env)
-  if (!mailer) {
-    console.warn('no mailer configured; confirmation not sent', bookingId)
-    return
+  const settings = await mailSettings()
+  const to = settings.testMode ? settings.testAddress : value.email
+
+  const fail = async (error: string) => {
+    console.error('confirmation not sent', bookingId, error)
+    await admin.from('booking_checkouts').update({ confirmation_error: error.slice(0, 300) }).eq('id', checkoutId)
+    if (mailer) {
+      const staffTo = settings.testMode ? settings.testAddress : (settings.notifyAddress ?? settings.testAddress)
+      const notice = confirmationFailedMail({
+        bookingRef: bookingRefFor(bookingId),
+        customerName: value.customer_name,
+        email: value.email,
+        amount: value.amount,
+        error,
+      })
+      try {
+        if (staffTo)
+          await mailer.send({
+            to: [staffTo],
+            subject: settings.testMode ? `[TEST] ${notice.subject}` : notice.subject,
+            text: notice.text,
+          })
+      } catch (err) {
+        console.error('staff notice for missing confirmation failed', bookingId, err instanceof Error ? err.message : err)
+      }
+    }
+    return false
   }
-  const { data: settings } = await admin
-    .from('settings')
-    .select('key, value')
-    .in('key', ['mail_mode', 'mail_test_address', 'booking_confirmation_from'])
-  const s = Object.fromEntries((settings ?? []).map((r) => [r.key, r.value]))
-  const testMode = s.mail_mode !== 'live'
-  const to = testMode ? (typeof s.mail_test_address === 'string' ? s.mail_test_address : null) : value.email
-  if (!to) return
-  const { data: t } = await admin.from('booking_tariffs').select('parking_type').eq('code', tariffCode).single()
+
+  if (!mailer) return fail('Mail-Dienst nicht eingerichtet')
+  if (!to) return fail('Kein Empfänger')
+
   const mail = confirmationMail({
-    bookingRef: `PF-${bookingId.slice(0, 8).toUpperCase()}`,
+    bookingRef: bookingRefFor(bookingId),
     booking: value,
     tariffLabel,
-    parkingLabel: PARKING_LABEL[t?.parking_type ?? ''] ?? '',
+    parkingLabel: PARKING_LABEL[parkingType] ?? '',
     agbText: AGB_PLAIN,
     withdrawalText: WIDERRUF_PLAIN,
     agbVersion: AGB_VERSION,
   })
   try {
-    await mailer.send({ to: [to], subject: testMode ? `[TEST] ${mail.subject}` : mail.subject, text: mail.text })
+    await mailer.send({ to: [to], subject: settings.testMode ? `[TEST] ${mail.subject}` : mail.subject, text: mail.text })
   } catch (err) {
-    // Die Buchung ist bezahlt und gültig. Ein Mailfehler wird nur protokolliert.
-    console.error('confirmation mail failed', bookingId, err instanceof Error ? err.message : err)
+    return fail(err instanceof Error ? err.message : String(err))
   }
+  await admin
+    .from('booking_checkouts')
+    .update({ confirmation_sent_at: new Date().toISOString(), confirmation_error: null })
+    .eq('id', checkoutId)
+  return true
+}
+
+/** Buchung über E-Mail und Buchungsnummer finden (nur Buchungen der Landingpage) */
+async function findLandingBooking(email: string, ref: string) {
+  const { data: candidates } = await admin
+    .from('bookings')
+    .select('id, customer_name, customer_email, received_at')
+    .eq('source', 'landing')
+    .ilike('customer_email', escapeLike(email))
+    .limit(50)
+  return (candidates ?? []).find((b) => bookingRefFor(b.id) === ref) ?? null
+}
+
+/** Erneute Anforderung der Bestätigung. Nur für bezahlte Buchungen ohne erfolgreichen Versand. */
+async function handleResend(req: Request, body: { form?: { booking_ref?: string; email?: string; website?: string } }) {
+  const ipHash = `resend:${await hashIp(clientIp(req))}`
+  const { data: allowed, error: rateErr } = await admin.rpc('inquiry_rate_check', {
+    p_ip_hash: ipHash,
+    p_limit: RATE_LIMIT,
+    p_window: `${RATE_WINDOW_SECONDS} seconds`,
+  })
+  if (rateErr) throw rateErr
+  if (allowed !== true) return json({ error: 'Zu viele Versuche. Bitte versuchen Sie es später erneut.' }, 429)
+
+  const ref = String(body.form?.booking_ref ?? '').trim().toUpperCase()
+  const email = String(body.form?.email ?? '').trim()
+  const website = String(body.form?.website ?? '')
+  const errors = validateLookup({ booking_ref: ref, email, website })
+  if (Object.keys(errors).length > 0) return json({ error: 'Bitte die markierten Felder prüfen.', fields: errors }, 422)
+
+  const booking = await findLandingBooking(email, ref)
+  if (!booking) return json({ error: 'Zu dieser Buchungsnummer und E-Mail-Adresse finden wir keine Buchung.' }, 404)
+
+  const { data: checkout } = await admin
+    .from('booking_checkouts')
+    .select('*')
+    .eq('booking_id', booking.id)
+    .eq('status', 'captured')
+    .maybeSingle()
+  if (!checkout) return json({ error: 'Zu dieser Buchung ist keine bezahlte Bestellung gespeichert.' }, 404)
+  if (checkout.confirmation_sent_at) return json({ sent: true, already_sent: true })
+
+  const { data: tariff } = await admin
+    .from('booking_tariffs')
+    .select('label, parking_type')
+    .eq('code', checkout.tariff_code)
+    .single()
+  const sent = await sendConfirmation(
+    checkout.id,
+    booking.id,
+    checkout.payload as NormalizedBooking,
+    tariff?.label ?? '',
+    tariff?.parking_type ?? '',
+  )
+  return json({ sent })
 }
 
 const WITHDRAWAL_PERIOD_MS = 14 * 24 * 60 * 60 * 1000
@@ -417,7 +504,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Methode nicht erlaubt' }, 405)
 
-  let body: { action?: string; form?: BookingInput & WithdrawalInput; checkout_id?: string; paypal_order_id?: string }
+  let body: {
+    action?: string
+    form?: BookingInput & WithdrawalInput & { booking_ref?: string; email?: string }
+    checkout_id?: string
+    paypal_order_id?: string
+  }
   try {
     body = await req.json()
   } catch {
@@ -434,6 +526,8 @@ Deno.serve(async (req) => {
         return await handleCapture(body)
       case 'withdraw':
         return await handleWithdraw(req, body)
+      case 'resend':
+        return await handleResend(req, body)
       default:
         return json({ error: 'Unbekannte Aktion' }, 400)
     }

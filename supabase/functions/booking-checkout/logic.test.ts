@@ -1,5 +1,5 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
-import { berlinToUtcIso, type BookingInput, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateWithdrawal, withdrawalMails } from './logic.ts'
+import { berlinToUtcIso, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
 
 const tariffs: TariffRow[] = [
   {
@@ -89,4 +89,15 @@ Deno.test('Widerruf: Zeitpunkt in Berliner Ortszeit und Mail mit Eingangsbestät
   if (!m.customer.text.includes('Eingegangen am: 20.10.2026, 18:05 Uhr')) throw new Error('Eingang fehlt')
   if (!m.customer.text.includes('Sie widerrufen den Vertrag')) throw new Error('Inhalt fehlt')
   if (!m.staff.subject.includes('PF-1A2B3C4D')) throw new Error('Betreff')
+})
+
+Deno.test('Bestätigung erneut anfordern: Prüfung der Eingaben', () => {
+  if (Object.keys(validateLookup({ booking_ref: 'PF-1A2B3C4D', email: 'a@b.de', website: '' })).length !== 0) throw new Error('gültig abgelehnt')
+  if (!validateLookup({ booking_ref: 'x', email: 'a@b.de', website: '' }).booking_ref) throw new Error('Ref')
+  if (!validateLookup({ booking_ref: 'PF-1A2B3C4D', email: 'nein', website: '' }).email) throw new Error('Mail')
+})
+
+Deno.test('Hinweis an den Betrieb nennt Buchung und Fehler', () => {
+  const m = confirmationFailedMail({ bookingRef: 'PF-1A2B3C4D', customerName: 'Max', email: 'a@b.de', amount: 148, error: 'Resend 500' })
+  if (!m.subject.includes('NICHT versendet') || !m.text.includes('Resend 500')) throw new Error('Inhalt')
 })

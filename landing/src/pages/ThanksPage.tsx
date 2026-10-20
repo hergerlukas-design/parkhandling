@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { usePageTitle } from '../components/usePageTitle'
+import { resendConfirmation } from '../lib/api'
 import { formatDateLongDE } from '../lib/dates'
 
 interface ThanksState {
   bookingRef?: string
+  confirmationSent?: boolean
   arrival?: string
   pickup?: string
   email?: string
@@ -12,6 +15,15 @@ interface ThanksState {
 export function ThanksPage() {
   usePageTitle('Buchung bestätigt')
   const state = (useLocation().state ?? {}) as ThanksState
+  const [resent, setResent] = useState<'idle' | 'busy' | 'sent' | 'failed'>('idle')
+  const canResend = state.confirmationSent === false && !!state.bookingRef && !!state.email
+
+  async function onResend() {
+    if (!state.bookingRef || !state.email) return
+    setResent('busy')
+    const res = await resendConfirmation(state.bookingRef, state.email)
+    setResent(res.ok && res.data.sent ? 'sent' : 'failed')
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 text-center">
@@ -34,6 +46,20 @@ export function ThanksPage() {
         <p className="mt-4 inline-block rounded-lg bg-card px-4 py-2 text-sm shadow-sm">
           Buchungsnummer: <strong data-testid="booking-ref">{state.bookingRef}</strong>
         </p>
+      )}
+      {canResend && (
+        <div role="alert" className="mx-auto mt-6 max-w-md rounded-xl border border-danger/40 bg-danger/5 p-4 text-left">
+          <p className="font-semibold text-danger">Ihre Bestätigung konnte nicht gesendet werden.</p>
+          <p className="mt-1 text-sm">Ihre Zahlung ist eingegangen. Der Betrieb wurde informiert. Sie können die Bestätigung hier erneut anfordern.</p>
+          {resent === 'idle' && (
+            <button type="button" onClick={onResend} className="mt-3 min-h-11 rounded-lg bg-ink px-4 font-semibold text-white">
+              Bestätigung erneut senden
+            </button>
+          )}
+          {resent === 'busy' && <p className="mt-3 text-sm">Wird gesendet …</p>}
+          {resent === 'sent' && <p className="mt-3 text-sm font-medium text-ok">Die Bestätigung ist unterwegs.</p>}
+          {resent === 'failed' && <p className="mt-3 text-sm font-medium text-danger">Auch das hat nicht geklappt. Bitte melden Sie sich bei uns.</p>}
+        </div>
       )}
       {state.arrival && state.pickup && (
         <p className="mt-2 block text-sm text-ink-soft">

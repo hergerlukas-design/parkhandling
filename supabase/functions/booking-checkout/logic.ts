@@ -480,3 +480,35 @@ export function withdrawalMails(args: {
     staff: { subject: `Widerruf ${args.bookingRef} eingegangen`, text: staffLines.join('\n') },
   }
 }
+
+/** Prüfung für „Bestätigung erneut senden“: nur Buchungsnummer und E-Mail, Honeypot leer */
+export function validateLookup(input: { booking_ref: string; email: string; website: string }): Record<string, string> {
+  const e: Record<string, string> = {}
+  if (input.website.trim()) e.website = 'Ungültige Anfrage.'
+  if (!BOOKING_REF_RE.test(input.booking_ref.trim().toUpperCase())) e.booking_ref = 'Bitte die Buchungsnummer angeben (Format PF-XXXXXXXX).'
+  const email = input.email.trim()
+  if (!email || email.length > LIMITS.email || !EMAIL_RE.test(email)) e.email = 'Bitte eine gültige E-Mail-Adresse angeben.'
+  return e
+}
+
+/** Hinweis an den Betrieb: bezahlte Buchung, aber die Bestätigung ist nicht versendet */
+export function confirmationFailedMail(args: {
+  bookingRef: string
+  customerName: string
+  email: string
+  amount: number
+  error: string
+}): { subject: string; text: string } {
+  return {
+    subject: `Bestätigung NICHT versendet: ${args.bookingRef}`,
+    text: [
+      `Die Buchung ${args.bookingRef} ist bezahlt (${formatEuro(args.amount)}), aber die Buchungsbestätigung konnte nicht versendet werden.`,
+      '',
+      `Kunde:  ${args.customerName} (${args.email})`,
+      `Fehler: ${args.error}`,
+      '',
+      'Bitte den Kunden direkt informieren. Der Vertrag entsteht erst mit der Bestätigung (AGB 2.2).',
+      'Der Kunde kann die Bestätigung über die Landingpage erneut anfordern, sobald der Mailversand wieder läuft.',
+    ].join('\n'),
+  }
+}

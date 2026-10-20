@@ -78,5 +78,17 @@ export function submitWithdrawal(form: WithdrawalForm) {
 }
 
 export function captureCheckout(checkoutId: string, paypalOrderId: string) {
-  return call<{ booking_ref: string }>({ action: 'capture', checkout_id: checkoutId, paypal_order_id: paypalOrderId })
+  return call<{ booking_ref: string; confirmation_sent: boolean }>({
+    action: 'capture',
+    checkout_id: checkoutId,
+    paypal_order_id: paypalOrderId,
+  })
+}
+
+/** Bestätigung erneut anfordern (nur wenn der erste Versand fehlgeschlagen ist) */
+export function resendConfirmation(bookingRef: string, email: string) {
+  return call<{ sent?: boolean; already_sent?: boolean }>({
+    action: 'resend',
+    form: { booking_ref: bookingRef, email, website: '' },
+  })
 }

@@ -5,6 +5,16 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.5.0 – 20.10.2026
+
+### Neu
+- Mailausfall nach bezahlter Buchung: Der Versandstatus steht am Zwischenspeicher (`booking_checkouts.confirmation_sent_at` bzw. `confirmation_error`, Migration `20261020000300_checkout_confirmation_state.sql`)
+- Der Betrieb erhält eine Mail „Bestätigung NICHT versendet“ mit Buchungsnummer und Fehler
+- Die Danke-Seite zeigt bei fehlgeschlagenem Versand einen Hinweis und die Schaltfläche „Bestätigung erneut senden“ (Aktion `resend`, nur für bezahlte Buchungen ohne erfolgreichen Versand, mit Rate-Limit)
+
+### Offen vor Go-live
+- Ein Fehlversand wird nicht automatisch wiederholt, sondern vom Kunden oder vom Betrieb ausgelöst
+
 ## 0.4.1 – 20.10.2026
 
 ### Geändert
