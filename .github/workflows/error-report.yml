@@ -6,6 +6,7 @@ name: Täglicher Fehlerbericht
 #   * fehlgeschlagene Läufe des Foto-Lösch-Jobs (public.media_retention_runs)
 #   * Erreichbarkeit der App (/version.json)
 # Ist die App nicht erreichbar, schlägt der Lauf zusätzlich fehl → GitHub schickt eine Mail.
+# Das Repository ist öffentlich: Issue und Log enthalten nur Anzahlen, keine Meldungstexte.
 # Ohne Fehler passiert nichts. Voraussetzung: Secret SUPABASE_DB_URL (wie beim Backup).
 on:
   schedule:
@@ -62,7 +63,7 @@ jobs:
             fi
             cat report.md
             echo
-            echo "Details: App → Einstellungen → Fehlerprotokoll (nur Admins)."
+            echo "Details (Meldungen, Ansicht, Gerät) nur in der App: Einstellungen → Fehlerprotokoll (Admins)."
           } > body.md
           gh label create fehlerbericht --color D93F0B --description "Täglicher Fehlerbericht" 2>/dev/null || true
           issue=$(gh issue list --label fehlerbericht --state open --limit 1 --json number --jq '.[0].number')

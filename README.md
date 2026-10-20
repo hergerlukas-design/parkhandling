@@ -8,6 +8,7 @@ Unterschrift und PDF, Tagesübersicht.
 - Umfang Phase 1: [`docs/PHASE1_Startauftrag.md`](docs/PHASE1_Startauftrag.md)
 - Platzhalterwerte und offene Fragen: [`ANNAHMEN.md`](ANNAHMEN.md)
 - Änderungen je Version: [`CHANGELOG.md`](CHANGELOG.md)
+- Backup, Wiederherstellung, Rollback: [`docs/NOTFALL.md`](docs/NOTFALL.md)
 - UI-Referenz (Klick-Prototyp): [`mockup/index.html`](mockup/index.html) im Browser öffnen
 
 Stack: React 19 · TypeScript · Vite · Tailwind CSS 4 · Supabase (Postgres, Auth, Storage, Realtime,
@@ -56,6 +57,16 @@ update public.profiles set active = true, role = 'admin' where id = (select id f
 ```bash
 supabase functions deploy media-sign      # Signed Upload URLs für Fotos/Unterschriften/PDFs
 supabase functions deploy protocol-mail   # Versand des Protokoll-PDFs
+supabase functions deploy user-invite     # Einladung neuer Konten (Admin)
+supabase functions deploy media-retention --no-verify-jwt   # Löschen alter Vollbild-Fotos (prüft selbst)
+```
+
+Für den täglichen Foto-Lösch-Job braucht pg_cron einmalig die Projekt-URL im Vault (das Geheimnis
+für den Aufruf legt die Migration selbst an). Der Job bleibt trotzdem aus, bis ein Admin ihn unter
+*Einstellungen → Aufbewahrung: Fotos* einschaltet:
+
+```sql
+select vault.create_secret('https://<projekt-ref>.supabase.co', 'project_url');
 ```
 
 Secrets (Dashboard → Edge Functions → Secrets), nur für den Mailversand nötig:
@@ -81,6 +92,15 @@ npm test                     # Unit-Tests (Vitest): Import, Regal-Logik, Protoko
 npm run test:db              # Datenbank-Tests gegen lokales Postgres 16 (Trigger, RLS-Helfer, Regal-Logik, Protokolle)
 npm run build                # Typecheck + Produktions-Build nach dist/
 ```
+
+```bash
+npx supabase start           # lokaler Supabase-Stack (Docker) mit Migrationen und Demo-Daten
+npm run test:e2e             # End-to-End-Tests (Playwright) gegen den lokalen Stack
+```
+
+Die End-to-End-Tests bauen die App und liefern sie mit denselben Security Headern wie nginx aus
+(`e2e/serve.mjs`); jeder CSP-Verstoß lässt einen Test fehlschlagen. Bei jedem Pull Request laufen
+Datenbank- und End-to-End-Tests automatisch (`.github/workflows/checks.yml`).
 
 `test:db` legt eine Wegwerf-Datenbank an, spielt Migrationen + Seed ein und führt
 `supabase/tests/*.test.sql` aus (läuft Postgres nicht: `pg_ctlcluster 16 main start`).
@@ -135,8 +155,23 @@ halten Updates zurück (`useUpdateBlocker`), Entwürfe liegen in IndexedDB (`use
 | `src/lib/media/` | Media-Service: Komprimierung im Worker, Upload-Queue, Signed URLs, austauschbarer Speicher |
 | `src/lib/pdf/` | PDF-Vorlage aus *fahrzeug-protokolle-v2* (pdf-lib) |
 | `supabase/migrations/` | Schema, Trigger, RLS, Views, Regal-Logik, Protokolle |
-| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail` |
+| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail`, `user-invite`, `media-retention` |
+| `e2e/` | End-to-End-Tests (Playwright) |
+| `scripts/backup/`, `scripts/monitoring/` | Datenbank-Sicherung, Wiederherstellungstest, täglicher Fehlerbericht |
 | `supabase/tests/` | Datenbank-Tests |
+
+## Betrieb: Backups, Fehlerbericht, Staging
+
+| Workflow | Wann | Braucht (Settings → Secrets → Actions) |
+|---|---|---|
+| `backup.yml` | täglich 02:40 UTC, sonntags mit Wiederherstellungstest | `SUPABASE_DB_URL` (Dashboard → Connect → Session pooler), `BACKUP_PASSPHRASE` (zusätzlich offline aufbewahren!) |
+| `error-report.yml` | täglich 05:10 UTC | `SUPABASE_DB_URL` |
+| `checks.yml` | jeder Pull Request | – |
+
+Das Repository ist öffentlich: Backups sind deshalb verschlüsselt, Fehlerbericht-Issues und Logs
+enthalten nur Anzahlen. Staging: Supabase-Projekt `parkhandling-staging` (Migrationen und
+Demo-Daten wie Produktion, Einrichtung noch nicht abgeschlossen) zum Ausprobieren von Änderungen,
+bevor sie in Produktion gehen.
 
 ## Deployment (Fly.io)
 
@@ -154,6 +189,8 @@ fly deploy
 ```
 
 Das Docker-Image baut das Frontend und liefert `dist/` über nginx aus (`deploy/nginx.conf`, `fly.toml`).
+Sicherheits-Header stehen in `deploy/security-headers.conf` (CSP, HSTS u. a.); neue externe Quellen
+(z. B. ein weiterer Dienst) müssen dort in der Content-Security-Policy ergänzt werden.
 `index.html`, `sw.js` und `version.json` werden nie gecacht, gehashte Assets dauerhaft.
 
 Hinweis Projekt `parkhandling`: Das Schema des ersten Anlaufs liegt unverändert im Schema `legacy_v1`

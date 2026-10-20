@@ -1,6 +1,6 @@
 # ANNAHMEN – Park & Fly Prototyp
 
-Stand: 08.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
+Stand: 20.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
 Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
@@ -46,6 +46,12 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Zahlungsstatus: offen, teilweise, bezahlt, erstattet (nur Anzeige, keine Zahlungsabwicklung)
 - [OFFEN] Anbindung des echten Buchungsportals
 
+## Betrieb & Sicherheit
+- [BELEGT] Fehler aus der App werden in der eigenen Supabase-Datenbank erfasst, kein externer Dienst (Entscheidung Lukas 20.10.2026); Aufbewahrung 90 Tage
+- [BELEGT] Staging-Projekt `parkhandling-staging` (Supabase, EU, Free-Plan) angelegt 20.10.2026
+- [ANNAHME] Datenbank-Backups 30 Tage als verschlüsseltes GitHub-Artefakt; Fotos/PDFs im Storage sind nicht Teil der Sicherung
+- [ANNAHME] Das Repository ist öffentlich: Backups nur verschlüsselt, Fehlerbericht-Issues nur mit Anzahlen
+
 ## Lageplan & Scannen
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
 - [ANNAHME] QR-Inhalte: Stellplatz und Fach `PF-LOC:<Code>`; reine Codes werden als Stellplatz erkannt, `PF-KEY:<Code>` aus 0.17.0 ebenfalls
@@ -76,7 +82,10 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
 - [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
-- [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
+- [BELEGT] Aufbewahrung (Entscheidung Lukas 20.10.2026, 0.22.0): nur Vollbild-Fotos werden gelöscht, Kundendaten der Buchungen bleiben unverändert. Thumbnails, Unterschriften und PDF-Protokolle bleiben immer
+- [ANNAHME] Frist für Vollbild-Fotos 365 Tage nach Buchungsende (`settings.media_retention_days`, in den Einstellungen änderbar), nur abgeschlossene oder stornierte Buchungen; auch Schadensfotos sind betroffen
+- [BELEGT] Lösch-Job standardmäßig aus, ein Admin schaltet ihn in den Einstellungen ein (Entscheidung Lukas 20.10.2026)
+- [OFFEN] Rechtliche Prüfung der Fristen (insbesondere Schadensfotos als Beweismittel, Löschung von Kundendaten nach Ablauf gesetzlicher Fristen)
 
 ## Nutzer & Geräte
 - [ANNAHME] Rollen: `staff` und `admin`

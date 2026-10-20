@@ -33,11 +33,11 @@ psql "$TARGET" -X -q -o /dev/null --single-transaction -v ON_ERROR_STOP=1 \
 
 psql "$TARGET" -X -At -v ON_ERROR_STOP=1 -f "$HERE/counts.sql" > "$WORK/restored_counts.txt"
 
-if diff -u "$DIR/counts.txt" "$WORK/restored_counts.txt"; then
-  echo "✓ Wiederherstellung vollständig ($(cat "$DIR/created_at.txt" 2>/dev/null || echo 'Zeitpunkt unbekannt')):"
-  cat "$WORK/restored_counts.txt"
+# Nur Tabellennamen ausgeben, keine Zahlen: das Actions-Log des Repositorys ist öffentlich
+if cmp -s "$DIR/counts.txt" "$WORK/restored_counts.txt"; then
+  echo "✓ Wiederherstellung vollständig: $(wc -l < "$WORK/restored_counts.txt") Tabellen mit gleicher Zeilenzahl ($(cat "$DIR/created_at.txt" 2>/dev/null || echo 'Zeitpunkt unbekannt'))"
 else
-  echo "::error::Zeilenzahlen nach der Wiederherstellung weichen ab"
+  echo "::error::Zeilenzahlen weichen ab in: $(diff "$DIR/counts.txt" "$WORK/restored_counts.txt" | grep '^[<>]' | cut -c3- | cut -d'|' -f1 | sort -u | tr '\n' ' ')"
   exit 1
 fi
 

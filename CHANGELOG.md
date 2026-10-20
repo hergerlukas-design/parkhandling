@@ -3,6 +3,29 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.22.0 – 20.10.2026
+
+### Neu
+- Einstellungen → „Aufbewahrung: Fotos“ (nur Admin): Vollbild-Fotos werden nach einer Frist (Standard 365 Tage nach Ende einer abgeschlossenen oder stornierten Buchung) gelöscht. Vorschaubilder, Unterschriften und PDF-Protokolle bleiben, Kundendaten werden nicht verändert
+  - Täglicher Lösch-Job ist **ausgeschaltet**, bis ein Admin ihn einschaltet; Vorschau zeigt vorher, wie viele Fotos fällig sind, „Jetzt löschen“ für einen sofortigen Lauf, Liste der letzten Läufe
+  - Bei gelöschtem Vollbild zeigt die Großansicht das Vorschaubild mit Hinweis
+- Einstellungen → „Fehlerprotokoll“ (nur Admin): Fehler aus der App werden gemeldet (gleiche Fehler zusammengefasst, Tokens und E-Mail-Adressen entfernt, 90 Tage aufbewahrt)
+- Stürzt eine Ansicht ab, erscheint „Etwas ist schiefgelaufen – Neu laden“ statt einer weißen Seite; Entwürfe bleiben erhalten
+
+### Sicherheit & Betrieb
+- Security Header für alle Antworten: Content-Security-Policy, HSTS, X-Frame-Options, Permissions-Policy (nur Kamera). Die bisherigen Header `X-Content-Type-Options` und `Referrer-Policy` wurden wegen einer nginx-Eigenheit nie ausgeliefert – behoben
+- Nächtliches, verschlüsseltes Datenbank-Backup über GitHub Actions (Free-Plan hat keine Backups), sonntags automatischer Wiederherstellungstest; Notfall-Anleitung `docs/NOTFALL.md`
+- Täglicher Fehlerbericht als GitHub-Issue (nur Anzahlen, keine Inhalte) und Prüfung der Erreichbarkeit
+- End-to-End-Tests (Playwright) für Buchung → Annahme → Einchecken → Auschecken → Übergabe, Anmeldung und Admin-Einstellungen; laufen mit Datenbank-Tests bei jedem Pull Request. Dependabot für Abhängigkeiten
+
+### Behoben
+- Lokale Entwicklung: Fotos und Unterschriften ließen sich mit dem lokalen Supabase-Stack nicht hochladen (Upload-Adresse zeigte auf eine Docker-interne Adresse)
+
+### Datenbank
+- Migration `20261020000100_media_retention.sql`: `media_retention_runs`, `media_retention_due/preview`, täglicher pg_cron-Aufruf der Edge Function `media-retention`
+- Migration `20261020000200_client_errors.sql`: `client_errors`, `log_client_error`, Bereinigung nach 90 Tagen
+- Neue Edge Function `media-retention` (Deploy ohne JWT-Prüfung, prüft selbst)
+
 ## 0.21.0 – 17.10.2026
 
 ### Neu

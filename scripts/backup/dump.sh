@@ -26,5 +26,5 @@ date -u +%Y-%m-%dT%H:%M:%SZ > "$OUT/created_at.txt"
 for f in roles.sql schema.sql data.sql; do
   [ -s "$OUT/$f" ] || { echo "::error::$f ist leer"; exit 1; }
 done
-echo "✓ Sicherung in $OUT:"
-cat "$OUT/counts.txt"
+# Zeilenzahlen nicht ins Log: Das Repository (und damit das Actions-Log) ist öffentlich
+echo "✓ Sicherung in $OUT ($(wc -l < "$OUT/counts.txt") Tabellen gezählt)"
