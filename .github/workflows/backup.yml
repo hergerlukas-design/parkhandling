@@ -1,0 +1,113 @@
+name: Datenbank-Backup
+
+# Der Supabase-Free-Plan hat keine abrufbaren Backups. Dieser Workflow sichert die Datenbank jede Nacht
+# (supabase db dump: Rollen, Schema, Daten), verschlüsselt sie und legt sie 30 Tage als Artefakt ab.
+# Sonntags (und bei manuellem Start) wird die frische Sicherung zusätzlich in eine Wegwerf-Datenbank
+# eingespielt und mit den Zeilenzahlen der Produktion verglichen (Wiederherstellungstest).
+#
+# Einmalig nötig (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL     Dashboard → Connect → „Session pooler“-URI mit Passwort (percent-encoded)
+#   BACKUP_PASSPHRASE   langes, zufälliges Passwort – ZUSÄTZLICH offline aufbewahren, sonst ist
+#                       keine Sicherung lesbar
+# Fotos und PDFs im Storage sind nicht enthalten (nur ihre Verweise), siehe docs/NOTFALL.md.
+on:
+  schedule:
+    # 02:40 UTC täglich (außerhalb des Betriebs, vor dem Lösch-Job um 03:15)
+    - cron: '40 2 * * *'
+  workflow_dispatch:
+    inputs:
+      restore_test:
+        description: 'Wiederherstellungstest ausführen'
+        type: boolean
+        default: true
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Sichern
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      artifact: ${{ steps.name.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Secrets vorhanden?
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          missing=0
+          [ -n "$SUPABASE_DB_URL" ] || { echo "::error::Secret SUPABASE_DB_URL fehlt (Dashboard → Connect → Session pooler)"; missing=1; }
+          [ -n "$BACKUP_PASSPHRASE" ] || { echo "::error::Secret BACKUP_PASSPHRASE fehlt"; missing=1; }
+          exit $missing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: psql installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Datenbank sichern
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: ./scripts/backup/dump.sh "$SUPABASE_DB_URL" backup
+      - name: Verschlüsseln
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          tar -czf backup.tar.gz -C backup .
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 -o backup.tar.gz.gpg backup.tar.gz <<< "$BACKUP_PASSPHRASE"
+          rm -rf backup backup.tar.gz
+      - id: name
+        run: echo "artifact=db-backup-$(date -u +%Y-%m-%d_%H%M)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.artifact }}
+          path: backup.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
+
+  restore-test:
+    name: Wiederherstellungstest
+    needs: backup
+    # sonntags automatisch, sonst nur auf Wunsch
+    if: github.event_name == 'schedule' || inputs.restore_test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Nur sonntags (geplanter Lauf)
+        id: day
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%u)" != "7" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Heute kein Wiederherstellungstest (nur sonntags)."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.day.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.day.outputs.skip != 'true'
+        with:
+          node-version: 22
+      - name: psql installieren
+        if: steps.day.outputs.skip != 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - uses: actions/download-artifact@v4
+        if: steps.day.outputs.skip != 'true'
+        with:
+          name: ${{ needs.backup.outputs.artifact }}
+      - name: Entschlüsseln
+        if: steps.day.outputs.skip != 'true'
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            -o backup.tar.gz -d backup.tar.gz.gpg <<< "$BACKUP_PASSPHRASE"
+          mkdir backup && tar -xzf backup.tar.gz -C backup
+      - name: In Wegwerf-Datenbank einspielen und prüfen
+        if: steps.day.outputs.skip != 'true'
+        run: ./scripts/backup/restore-test.sh backup
