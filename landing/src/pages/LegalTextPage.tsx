@@ -31,7 +31,7 @@ export function LegalTextPage({ kind }: { kind: keyof typeof TITLES }) {
   const blocks = kind === 'agb' ? AGB_BLOCKS : WIDERRUF_BLOCKS
 
   return (
-    <article className="mx-auto max-w-3xl px-4 py-10">
+    <article className="mx-auto max-w-3xl px-4 py-10" data-review={`rechtstext-${kind}`} data-review-label={TITLES[kind]}>
       <h1 className="text-3xl font-bold">{TITLES[kind]}</h1>
       <p className="mt-2 text-sm text-ink-soft">Stand: {AGB_VERSION}. Diese Fassung wird Ihnen auch per E-Mail übermittelt.</p>
       {kind === 'widerruf' && <WithdrawalForm />}

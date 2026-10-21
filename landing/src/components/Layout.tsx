@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
+import { ReviewPanel } from './ReviewPanel'
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -53,6 +54,7 @@ export function Layout() {
           <span data-testid="app-version">Version {__APP_VERSION__}</span>
         </div>
       </footer>
+      <ReviewPanel />
     </div>
   )
 }

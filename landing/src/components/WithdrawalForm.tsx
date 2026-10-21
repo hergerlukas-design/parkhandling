@@ -52,7 +52,12 @@ export function WithdrawalForm() {
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-line bg-card p-5 shadow-sm" aria-labelledby="widerruf-online">
+    <section
+      className="mt-8 rounded-2xl border border-line bg-card p-5 shadow-sm"
+      aria-labelledby="widerruf-online"
+      data-review="widerruf-formular"
+      data-review-label="Widerruf: Online-Formular"
+    >
       <h2 id="widerruf-online" className="text-lg font-semibold">
         Widerruf online erklären
       </h2>

@@ -160,3 +160,18 @@ test('Online-Widerruf: ohne Bestätigung und bei unbekannter Buchung wird es erk
   await page.getByRole('button', { name: 'Widerruf absenden' }).click()
   await expect(page.getByText('keine Buchung')).toBeVisible()
 })
+
+test('Review-Modus: Kommentare nur mit Token sichtbar, Abschnitte sind markiert', async ({ page }) => {
+  await page.route('**/functions/v1/review-notes', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notes: [] }) }),
+  )
+  await page.goto('/anfrage')
+  await expect(page.getByRole('button', { name: /^Kommentare/ })).toHaveCount(0)
+  await expect(page.locator('[data-review="tarif"]')).toHaveCount(1)
+
+  await page.goto('/anfrage?review=test-token')
+  await expect(page.getByRole('button', { name: /^Kommentare/ })).toBeVisible()
+  await page.getByRole('button', { name: /^Kommentare/ }).click()
+  await expect(page.getByRole('button', { name: 'Neuer Kommentar' })).toBeVisible()
+  await expectNoHorizontalScroll(page)
+})

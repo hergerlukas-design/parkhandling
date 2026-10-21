@@ -1,7 +1,7 @@
 {
   "name": "parkhandling-landing",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Park & Fly München – öffentliche Landingpage mit Online-Buchung und PayPal-Zahlung (Stufe 2)",
   "type": "module",
   "scripts": {

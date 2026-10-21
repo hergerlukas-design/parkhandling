@@ -65,9 +65,13 @@ function Field({
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, review, children }: { title: string; review: string; children: ReactNode }) {
   return (
-    <fieldset className="min-w-0 rounded-2xl border border-line bg-card p-4 shadow-sm md:p-6">
+    <fieldset
+      className="min-w-0 rounded-2xl border border-line bg-card p-4 shadow-sm md:p-6"
+      data-review={review}
+      data-review-label={title}
+    >
       <legend className="float-left mb-4 w-full text-lg font-semibold">{title}</legend>
       <div className="clear-both space-y-4">{children}</div>
     </fieldset>
@@ -263,7 +267,7 @@ export function BookingPage() {
       </div>
 
       <form noValidate onSubmit={(e) => e.preventDefault()} className="mt-6 space-y-5">
-        <Section title="Reisezeitraum">
+        <Section title="Reisezeitraum" review="zeitraum">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               id="arrival_date"
@@ -332,7 +336,7 @@ export function BookingPage() {
           )}
         </Section>
 
-        <Section title="Tarif">
+        <Section title="Tarif" review="tarif">
           {tariffError && <p className="text-sm font-medium text-danger">{tariffError}</p>}
           {!tariffs && !tariffError && <p className="text-sm text-ink-soft">Tarife werden geladen …</p>}
           {tariffs && (
@@ -385,7 +389,7 @@ export function BookingPage() {
           )}
         </Section>
 
-        <Section title="Fahrzeug">
+        <Section title="Fahrzeug" review="fahrzeug">
           <Field id="plate" label="Kennzeichen" error={errors.plate}>
             <input
               type="text"
@@ -494,7 +498,7 @@ export function BookingPage() {
           </div>
         </Section>
 
-        <Section title="Kontakt">
+        <Section title="Kontakt" review="kontakt">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="first_name" label="Vorname" error={errors.first_name}>
               <input type="text" {...a11y('first_name')} className={inputClass} maxLength={100} autoComplete="given-name" value={form.first_name} onChange={(e) => set('first_name', e.target.value)} />
@@ -531,7 +535,11 @@ export function BookingPage() {
           <input type="text" id="website" name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => set('website', e.target.value)} />
         </div>
 
-        <div className="rounded-2xl border border-line bg-card p-4 shadow-sm md:p-6">
+        <div
+          className="rounded-2xl border border-line bg-card p-4 shadow-sm md:p-6"
+          data-review="zustimmungen"
+          data-review-label="Zustimmungen"
+        >
           <div className="space-y-4">
             <ConsentRow id="consent_privacy" checked={form.consent_privacy} error={errors.consent_privacy} onChange={(v) => set('consent_privacy', v)}>
               Ich habe den{' '}
@@ -582,7 +590,7 @@ export function BookingPage() {
             Mit dem Klick auf PayPal geben Sie eine zahlungspflichtige, verbindliche Buchung ab. Der Vertrag kommt mit unserer
             Buchungsbestätigung per E-Mail zustande.
           </p>
-          <div className="mt-4 min-h-12" data-testid="paypal-area">
+          <div className="mt-4 min-h-12" data-testid="paypal-area" data-review="paypal" data-review-label="PayPal-Zahlung">
             {!clientId && <p className="text-sm text-danger">Die Online-Zahlung ist derzeit nicht verfügbar.</p>}
             {clientId && paypalState === 'loading' && <p className="text-sm text-ink-soft">Zahlung wird geladen …</p>}
             {clientId && paypalState === 'unavailable' && (

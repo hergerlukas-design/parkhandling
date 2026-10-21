@@ -5,6 +5,16 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.6.0 – 21.10.2026
+
+### Neu
+- Review-Modus für die Vorschau: Mit `?review=<Token>` erscheint ein Kommentarfenster. Abschnitte und Buttons sind markiert (`data-review`), per „Neuer Kommentar“ wird der Abschnitt angeklickt und kommentiert
+- Kommentare landen in der Tabelle `review_notes` (Migration `20261021000100_review_notes.sql`) über die Edge Function `review-notes`. Zugriff nur mit dem Secret `REVIEW_TOKEN`
+- Kommentare lassen sich als erledigt markieren und wieder öffnen
+
+### Hinweis
+- Ohne Token ist der Review-Modus nicht sichtbar, und die Seite lädt keine Kommentare
+
 ## 0.5.0 – 20.10.2026
 
 ### Neu

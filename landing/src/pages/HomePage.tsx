@@ -73,7 +73,7 @@ export function HomePage() {
 
   return (
     <>
-      <section className="bg-ink text-white">
+      <section className="bg-ink text-white" data-review="startseite-hero" data-review-label="Startseite: Hero">
         <div className="mx-auto max-w-5xl px-4 pb-12 pt-8 md:pb-16 md:pt-12">
           <p className="text-sm font-semibold uppercase tracking-wider text-accent">Flughafen München</p>
           <h1 className="mt-2 max-w-2xl text-3xl font-bold leading-tight md:text-5xl">
@@ -95,7 +95,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-10" aria-labelledby="tarife">
+      <section className="mx-auto max-w-5xl px-4 py-10" aria-labelledby="tarife" data-review="startseite-tarife" data-review-label="Startseite: Tarife">
         <h2 id="tarife" className="text-2xl font-bold">
           Unsere Tarife
         </h2>
@@ -115,7 +115,7 @@ export function HomePage() {
         </p>
       </section>
 
-      <section className="border-y border-line bg-card" aria-labelledby="ablauf">
+      <section className="border-y border-line bg-card" aria-labelledby="ablauf" data-review="startseite-ablauf" data-review-label="Startseite: So funktioniert's">
         <div className="mx-auto max-w-5xl px-4 py-10">
           <h2 id="ablauf" className="text-2xl font-bold">
             So funktioniert&apos;s
@@ -136,7 +136,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 py-12 text-center">
+      <section className="mx-auto max-w-5xl px-4 py-12 text-center" data-review="startseite-cta" data-review-label="Startseite: Abschluss">
         <h2 className="text-2xl font-bold">Jetzt Zeitraum wählen</h2>
         <p className="mt-1 text-ink-soft">Buchbar für 5 bis 30 Tage.</p>
         <Link
