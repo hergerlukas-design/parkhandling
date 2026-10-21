@@ -24,6 +24,8 @@ jobs:
         with:
           # Auth: eins der beiden Secrets muss im Repo gesetzt sein
           # (CLAUDE_CODE_OAUTH_TOKEN via `claude setup-token`, oder ANTHROPIC_API_KEY)
+          # TEMPORÄR zur Fehlersuche – vor dem Merge wieder entfernen (Repo ist öffentlich)
+          show_full_output: true
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Ohne Freigabe darf der Agent weder APIs abfragen noch Issues anlegen
