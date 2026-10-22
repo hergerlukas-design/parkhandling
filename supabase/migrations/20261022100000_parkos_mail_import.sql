@@ -57,16 +57,13 @@ create index if not exists booking_imports_status_idx on public.booking_imports 
 create index if not exists booking_imports_ref_idx on public.booking_imports (source, external_ref);
 create index if not exists booking_imports_booking_idx on public.booking_imports (booking_id);
 
-drop trigger if exists set_updated_at on public.booking_imports;
 create trigger set_updated_at before update on public.booking_imports
   for each row execute function public.set_updated_at();
 
 alter table public.booking_imports enable row level security;
 
-drop policy if exists staff_select on public.booking_imports;
 create policy staff_select on public.booking_imports
   for select to authenticated using ((select public.is_staff()));
-drop policy if exists admin_all on public.booking_imports;
 create policy admin_all on public.booking_imports
   for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 
@@ -406,20 +403,25 @@ revoke execute on function public.resolve_booking_import(uuid, text) from public
 grant execute on function public.resolve_booking_import(uuid, text) to authenticated;
 
 -- -----------------------------------------------------------------------------
--- Fahrzeugliste mit den neuen Buchungsspalten (b.* wird neu aufgelöst)
+-- Fahrzeugliste: neue Buchungsspalten hinten anhängen (create or replace, kein drop;
+-- bisherige Spalten bleiben in derselben Reihenfolge)
 -- -----------------------------------------------------------------------------
-drop view if exists public.booking_list;
-create view public.booking_list
+create or replace view public.booking_list
 with (security_invoker = true)
 as
 select
-  b.*,
+  b.id, b.source, b.external_ref, b.received_at, b.customer_name, b.company, b.customer_email,
+  b.customer_phone, b.plate, b.plate_normalized, b.vehicle_model, b.fuel_type, b.persons,
+  b.start_at, b.end_at, b.parking_type, b.return_mode, b.status, b.current_location_id,
+  b.price_total, b.payment_status, b.portal_token, b.notes, b.created_at, b.updated_at,
   l.code as location_code,
   l.area as location_area,
   l.level as location_level,
   coalesce(t.open_count, 0) as open_task_count,
   coalesce(t.open_charge_fuel_count, 0) as open_charge_fuel_count,
-  coalesce(t.chips, '[]'::jsonb) as task_chips
+  coalesce(t.chips, '[]'::jsonb) as task_chips,
+  b.flight_out, b.flight_return, b.return_flight_at, b.customer_language, b.transfer_note,
+  b.portal_payout, b.import_flags
 from public.bookings b
 left join public.locations l on l.id = b.current_location_id
 left join lateral (
