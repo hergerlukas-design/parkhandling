@@ -7,6 +7,7 @@ import {
   type ManualBookingForm,
 } from '../../booking-adapters'
 import { listActiveServices, upsertBooking } from '../../lib/bookings'
+import { loadParkosOptions } from '../../lib/imports'
 import { useDraft } from '../../lib/update/drafts'
 import {
   FUEL_TYPE_LABEL,
@@ -41,6 +42,13 @@ export function BookingFormDialog({
   const [catalog, setCatalog] = useState<Service[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [bufferMinutes, setBufferMinutes] = useState(DEFAULT_RETURN_BUFFER_MINUTES)
+
+  useEffect(() => {
+    loadParkosOptions()
+      .then((o) => setBufferMinutes(o.bufferMinutes))
+      .catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     listActiveServices()
@@ -67,7 +75,7 @@ export function BookingFormDialog({
     }))
   }
 
-  const pickupSuggestion = suggestPickupFromLanding(form.return_flight_date ?? '', form.return_flight_time ?? '')
+  const pickupSuggestion = suggestPickupFromLanding(form.return_flight_date ?? '', form.return_flight_time ?? '', bufferMinutes)
   const pickupDiffers =
     !!pickupSuggestion && (pickupSuggestion.date !== form.end_date || pickupSuggestion.time !== form.end_time)
 
@@ -248,7 +256,7 @@ export function BookingFormDialog({
         {pickupDiffers && pickupSuggestion && (
           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-dark">
             <span>
-              Abholung laut Landung + {DEFAULT_RETURN_BUFFER_MINUTES} min:{' '}
+              Abholung laut Landung + {bufferMinutes} min:{' '}
               {pickupSuggestion.date.split('-').reverse().join('.')} {pickupSuggestion.time}
             </span>
             <Button onClick={applyPickupSuggestion}>Übernehmen</Button>

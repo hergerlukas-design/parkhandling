@@ -373,8 +373,13 @@ export function createTabularAdapter(options: TabularAdapterOptions): BookingAda
   }
 }
 
-/** Anzahl Tage wie in der Vorlage (angebrochene Tage zählen voll), nur zur Anzeige. */
+const berlinDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' })
+
+/**
+ * Anzahl Tage wie bei Parkos und in der Vorlage: Kalendertage in Europe/Berlin inklusive
+ * Anreise- und Abholtag (23.–28.10. = 6 Tage), nur zur Anzeige.
+ */
 export function countDays(startIso: string, endIso: string): number {
-  const ms = Date.parse(endIso) - Date.parse(startIso)
-  return Math.max(1, Math.ceil(ms / 86400000))
+  const day = (iso: string) => Date.parse(`${berlinDay.format(new Date(iso))}T00:00:00Z`)
+  return Math.max(1, Math.round((day(endIso) - day(startIso)) / 86400000) + 1)
 }

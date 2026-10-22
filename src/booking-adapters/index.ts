@@ -22,3 +22,17 @@ export {
   type Table,
   type TargetField,
 } from './tabular'
+export { normalizePlate } from './plate'
+export { decodeMail, type DecodedMail } from './mail/decode'
+export {
+  IMPORT_FLAG_LABEL,
+  MAIL_TYPE_LABEL,
+  PARKOS_SOURCE,
+  parseParkosMail,
+  toImportPayload,
+  type ImportFlag,
+  type MailType,
+  type ParkosOptions,
+  type ParkosParseResult,
+  type ParkosProduct,
+} from './parkos-email'

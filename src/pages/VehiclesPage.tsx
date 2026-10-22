@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
+import { IMPORT_FLAG_LABEL, type ImportFlag } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { ImportDialog } from '../components/bookings/ImportDialog'
+import { ImportReviewDialog } from '../components/bookings/ImportReviewDialog'
+import { ParkosImportDialog } from '../components/bookings/ParkosImportDialog'
+import { countOpenImports } from '../lib/imports'
 import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
 import {
@@ -53,6 +57,28 @@ function PickupCell({ b }: { b: BookingListItem }) {
   )
 }
 
+/** Kleine Hinweise neben dem Kennzeichen: Portal-Quelle und offene Import-Prüfung */
+function SourceBadges({ b }: { b: BookingListItem }) {
+  const flags = b.import_flags ?? []
+  return (
+    <>
+      {b.source === 'parkos' && (
+        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
+          Parkos
+        </span>
+      )}
+      {flags.length > 0 && (
+        <span
+          title={flags.map((f) => IMPORT_FLAG_LABEL[f as ImportFlag] ?? f).join(', ')}
+          className="ml-1 rounded bg-warn-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-warn-ink"
+        >
+          prüfen
+        </span>
+      )}
+    </>
+  )
+}
+
 export function VehiclesPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -67,7 +93,8 @@ export function VehiclesPage() {
   const [next, setNext] = useState<BookingCursor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [dialog, setDialog] = useState<'new' | 'import' | null>(null)
+  const [dialog, setDialog] = useState<'new' | 'import' | 'parkos' | 'review' | null>(null)
+  const [openImports, setOpenImports] = useState(0)
   const requestId = useRef(0)
 
   useEffect(() => {
@@ -97,6 +124,7 @@ export function VehiclesPage() {
   const reload = useCallback(() => {
     void load(null)
     countByChip(debounced).then(setCounts).catch(() => undefined)
+    countOpenImports().then(setOpenImports).catch(() => undefined)
   }, [load, debounced])
 
   useEffect(() => {
@@ -117,10 +145,18 @@ export function VehiclesPage() {
             className="touch-target w-full rounded-xl border border-line-strong bg-surface py-2 pr-3 pl-10 text-base md:text-sm"
           />
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {openImports > 0 && (
+            <Button className="flex-1 border-warn bg-warn-soft text-warn-ink md:flex-none" onClick={() => setDialog('review')}>
+              {openImports} prüfen
+            </Button>
+          )}
+          <Button className="flex-1 md:flex-none" onClick={() => setDialog('parkos')}>
+            Parkos-Mail
+          </Button>
           <Button className="flex-1 md:flex-none" onClick={() => setDialog('import')}>
-            <span className="md:hidden">Import</span>
-            <span className="hidden md:inline">Buchungen importieren</span>
+            <span className="md:hidden">Excel</span>
+            <span className="hidden md:inline">Excel/CSV</span>
           </Button>
           <Button variant="primary" className="flex-1 md:flex-none" onClick={() => setDialog('new')}>
             + <span className="md:hidden">Buchung</span>
@@ -169,7 +205,10 @@ export function VehiclesPage() {
                 onClick={() => navigate(`/fahrzeuge/${b.id}`)}
                 className="cursor-pointer border-t border-line first:border-0 hover:bg-ground/60"
               >
-                <td className="px-4 py-3 font-mono font-semibold whitespace-nowrap">{b.plate}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className="font-mono font-semibold">{b.plate}</span>
+                  <SourceBadges b={b} />
+                </td>
                 <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   {hasKeySlot(b.location_code) ? (
@@ -205,7 +244,10 @@ export function VehiclesPage() {
                 <span className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar}`} aria-hidden="true" />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-mono text-base font-semibold">{b.plate}</span>
+                    <span>
+                      <span className="font-mono text-base font-semibold">{b.plate}</span>
+                      <SourceBadges b={b} />
+                    </span>
                     <span className="text-sm text-subtle">
                       {hasKeySlot(b.location_code) ? b.location_code : b.location_code ? whereabouts(b.location_code) : ''}
                     </span>
@@ -247,6 +289,8 @@ export function VehiclesPage() {
         <BookingFormDialog onClose={() => setDialog(null)} onSaved={(id) => navigate(`/fahrzeuge/${id}`)} />
       )}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} onDone={reload} />}
+      {dialog === 'parkos' && <ParkosImportDialog onClose={() => setDialog(null)} onDone={reload} />}
+      {dialog === 'review' && <ImportReviewDialog onClose={() => setDialog(null)} onChanged={reload} />}
     </div>
   )
 }

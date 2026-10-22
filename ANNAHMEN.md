@@ -55,10 +55,16 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] ⚠ ABWEICHUNG: Kennzeichen kommt mit Leerzeichen (`M MM 3839`) statt `M-AB 1234` → Normalisierung; Suche über `plate_normalized`
 - [BELEGT] Parkos-Rückgabezeit = Landung am Flughafen, nicht Abholung am Platz
 - [BELEGT] Felder `flight_out`, `flight_return`, `return_flight_at`, `customer_language`, `transfer_note` an Buchungen (0.22.0)
-- [ANNAHME] `end_at` = Landung + 60 min (`settings.return_buffer_minutes`, bis zum Parkos-Import Standardwert im Code); das Formular schlägt die Abholung aus der Landung vor
-- [ANNAHME] Prototyp: Mail einfügen oder `.eml` hochladen; automatischer Eingang (Edge Function `booking-inbound`) nur vorbereitet
-- [ANNAHME] Änderungs-/Stornomails bis zum Vorliegen von Beispielen nur als `needs_review`
-- [OFFEN] Kunden-E-Mail in der Parkos-Mail? Aussehen von Änderungs-/Stornomails? Partner-API/Export? Weitere Portale? Postfach-Anbieter für Auto-Import?
+- [ANNAHME] `end_at` = Landung + 60 min (`settings.return_buffer_minutes`, ab 0.23.0 in den Einstellungen); Formular und Parkos-Import nutzen denselben Wert
+- [BELEGT] Postfach `fly@parkhandling.com` enthält nur Buchungsmails (Reservierung, Umbuchung, Storno)
+- [BELEGT] Kein zusätzlicher Drittanbieter für den Mail-Eingang (Entscheidung Lukas 22.10.2026) → automatischer Import später per IMAP-Abruf, nicht per Weiterleitung an einen Inbound-Dienst
+- [ANNAHME] Import 0.23.0: Mail einfügen oder `.eml` hochladen (Fahrzeuge → Parkos-Mail). Parser (`src/booking-adapters/parkos-email.ts`, ohne DOM) und Datenbankfunktion `import_booking_mail` werden vom IMAP-Abruf unverändert mitbenutzt
+- [ANNAHME] IMAP-Abruf (folgt): Edge Function per Cron alle 5 min, IMAPS, Passwort nur als Supabase-Secret, nur Mails von `@parkos.com`, Ordner „Importiert“/„Prüfen“
+- [ANNAHME] Bei `.eml` muss der Absender auf `parkos.com` enden, sonst nur Prüfliste (`sender_unverified`); eingefügter Text hat keinen Absender und gilt als vom Mitarbeiter geprüft
+- [ANNAHME] ⚠ ABWEICHUNG vom Issue: Unbekannte Parkform legt keine Buchung mit leerer Parkart an (Spalte ist Pflicht), sondern landet in der Prüfliste; im Import-Dialog kann die Parkart von Hand gewählt werden (Hinweis `parking_type_manual`)
+- [ANNAHME] Notizen werden beim Import nicht überschrieben; Parkform und Rohtext stehen im Import-Protokoll (`booking_imports`)
+- [ANNAHME] Änderungs-/Stornomails bis zum Vorliegen von Beispielen nur als `needs_review` (Prüfliste unter Fahrzeuge → „n prüfen“)
+- [OFFEN] Kunden-E-Mail in der Parkos-Mail? Aussehen von Änderungs-/Stornomails? Partner-API/Export? Weitere Portale? Postfach-Anbieter, IMAP-Zugang und Freigabe für Auto-Import?
 
 ## Lageplan & Scannen
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal

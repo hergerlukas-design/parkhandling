@@ -93,6 +93,9 @@ Am besten mit einem Tablet (Querformat) und einem Smartphone parallel, angemelde
    (Vorlage „ParkHandling_Buchungsliste“, Blatt „Buchungseingänge“). Erwartung: 5 neu angelegt.
    Dieselbe Datei erneut importieren → 5 unverändert, keine Duplikate. In der Datei Abholung einer Zeile
    ändern und importieren → 1 aktualisiert, Änderung im Buchungsverlauf sichtbar.
+   **Parkos-Mail:** *Fahrzeuge → Parkos-Mail*, Inhalt von [`docs/testdaten/Parkos_Testmail_anonymisiert.html`](docs/testdaten/Parkos_Testmail_anonymisiert.html)
+   einfügen (oder die Datei hochladen) → Vorschau mit Abholung 28.10. 13:00 (Landung + Puffer) → „Buchung übernehmen“.
+   Erneut importieren → „Unverändert“. Umbuchungs-/Stornomails landen unter „n prüfen“.
 2. **Drei Testfahrzeuge** (je eines Halle, Außen mit Plane, Außen; eines davon Elektro) – für jedes:
    1. *Fahrzeug öffnen → Protokolle → Annahme starten.* KM, Tank/Akku, Fotos, ggf. Schaden mit Foto,
       Unterschrift Kunde + Mitarbeiter, *Abschließen & PDF senden*. PDF über *PDF teilen / herunterladen* prüfen.
