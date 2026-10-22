@@ -1,5 +1,13 @@
 export type { BookingAdapter, BookingInput, NormalizeResult, ServiceInput } from './types'
-export { manualAdapter, emptyManualForm, formFromBooking, type ManualBookingForm } from './manual'
+export {
+  DEFAULT_RETURN_BUFFER_MINUTES,
+  emptyManualForm,
+  formFromBooking,
+  manualAdapter,
+  normalizeFlightNo,
+  suggestPickupFromLanding,
+  type ManualBookingForm,
+} from './manual'
 export {
   countDays,
   createTabularAdapter,

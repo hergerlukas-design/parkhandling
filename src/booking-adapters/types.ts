@@ -24,6 +24,13 @@ export interface BookingInput {
   parking_type: ParkingType
   return_mode?: ReturnMode | null
   notes?: string | null
+  flight_out?: string | null
+  flight_return?: string | null
+  /** Landung Rückflug, ISO 8601 mit Zeitzone */
+  return_flight_at?: string | null
+  /** ISO 639-1 */
+  customer_language?: string | null
+  transfer_note?: string | null
   price_total?: number | null
   payment_status?: PaymentStatus | null
   /** Leistungscodes oder Einträge mit individuellem Preis; Grundreinigung wird automatisch gebucht */

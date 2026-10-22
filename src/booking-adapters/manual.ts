@@ -32,6 +32,39 @@ export interface ManualBookingForm {
   price_total: string
   payment_status: PaymentStatus
   notes: string
+  /** Flug & Transfer (optional, z. B. aus Parkos) */
+  flight_out: string
+  flight_return: string
+  return_flight_date: string // JJJJ-MM-TT
+  return_flight_time: string // HH:MM
+  customer_language: string // ISO 639-1 oder leer
+  transfer_note: string
+}
+
+/**
+ * Puffer zwischen Landung und Abholung am Platz. Wandert mit dem Parkos-Import nach
+ * `settings.return_buffer_minutes`; bis dahin Standardwert (ANNAHMEN.md: 60 min).
+ */
+export const DEFAULT_RETURN_BUFFER_MINUTES = 60
+
+/** Flugnummer vereinheitlichen: Großbuchstaben, ohne Leerzeichen ("lh 123" → "LH123"). */
+export function normalizeFlightNo(value: string): string {
+  return value.toUpperCase().replace(/\s+/g, '')
+}
+
+/**
+ * Abholung am Platz aus der Landung vorschlagen (Datum/Zeit als Berliner Ortszeit).
+ * Gibt null zurück, wenn Datum oder Uhrzeit der Landung fehlen.
+ */
+export function suggestPickupFromLanding(
+  date: string,
+  time: string,
+  bufferMinutes = DEFAULT_RETURN_BUFFER_MINUTES,
+): { date: string; time: string } | null {
+  if (!date || !time) return null
+  const landing = parseDateTime(date, time)
+  if (!landing) return null
+  return berlinParts(new Date(new Date(landing).getTime() + bufferMinutes * 60_000).toISOString())
 }
 
 export const emptyManualForm = (): ManualBookingForm => ({
@@ -55,6 +88,12 @@ export const emptyManualForm = (): ManualBookingForm => ({
   price_total: '',
   payment_status: 'open',
   notes: '',
+  flight_out: '',
+  flight_return: '',
+  return_flight_date: '',
+  return_flight_time: '',
+  customer_language: '',
+  transfer_note: '',
 })
 
 const berlinParts = (iso: string) => {
@@ -84,6 +123,7 @@ export function formFromBooking(
 ): ManualBookingForm {
   const start = berlinParts(b.start_at)
   const end = berlinParts(b.end_at)
+  const landing = b.return_flight_at ? berlinParts(b.return_flight_at) : null
   return {
     id: b.id,
     external_ref: b.external_ref ?? '',
@@ -109,6 +149,12 @@ export function formFromBooking(
     price_total: moneyText(b.price_total),
     payment_status: b.payment_status,
     notes: b.notes ?? '',
+    flight_out: b.flight_out ?? '',
+    flight_return: b.flight_return ?? '',
+    return_flight_date: landing?.date ?? '',
+    return_flight_time: landing?.time ?? '',
+    customer_language: b.customer_language ?? '',
+    transfer_note: b.transfer_note ?? '',
   }
 }
 
@@ -130,6 +176,14 @@ export const manualAdapter: BookingAdapter<ManualBookingForm> = {
     if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errors.push('E-Mail-Adresse ungültig')
     const persons = Number(form.persons || 1)
     if (!Number.isInteger(persons) || persons < 0 || persons > 50) errors.push('Personenzahl ungültig')
+    // Entwürfe aus älteren Versionen kennen die Flugfelder noch nicht → leer behandeln
+    const landingDate = form.return_flight_date ?? ''
+    const landingTime = form.return_flight_time ?? ''
+    let return_flight_at: string | null = null
+    if (landingDate || landingTime) {
+      return_flight_at = landingDate ? parseDateTime(landingDate, landingTime || '00:00') : null
+      if (!return_flight_at) errors.push('Landung Rückflug ungültig (Datum fehlt?)')
+    }
     const price_total = parseMoney(form.price_total)
     if (form.price_total.trim() && price_total === null) errors.push('Gesamtpreis ungültig')
 
@@ -163,6 +217,11 @@ export const manualAdapter: BookingAdapter<ManualBookingForm> = {
         price_total,
         payment_status: form.payment_status,
         notes: form.notes.trim() || null,
+        flight_out: normalizeFlightNo(form.flight_out ?? '') || null,
+        flight_return: normalizeFlightNo(form.flight_return ?? '') || null,
+        return_flight_at,
+        customer_language: (form.customer_language ?? '').trim().toLowerCase() || null,
+        transfer_note: cleanText(form.transfer_note ?? '') || null,
       },
     }
   },

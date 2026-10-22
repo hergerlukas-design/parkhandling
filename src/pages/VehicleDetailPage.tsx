@@ -15,6 +15,7 @@ import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
   FUEL_TYPE_LABEL,
+  LANGUAGE_LABEL,
   PARKING_TYPE_LABEL,
   RETURN_MODE_LABEL,
   type LocationArea,
@@ -39,6 +40,11 @@ const FIELD_LABEL: Record<string, string> = {
   external_ref: 'Buchungs-Nr.',
   price_total: 'Preis',
   payment_status: 'Zahlung',
+  flight_out: 'Flug hin',
+  flight_return: 'Flug zurück',
+  return_flight_at: 'Landung Rückflug',
+  customer_language: 'Sprache',
+  transfer_note: 'Transfer',
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -46,6 +52,7 @@ const SOURCE_LABEL: Record<string, string> = {
   excel: 'Excel-Import',
   csv: 'CSV-Import',
   demo: 'Demo-Daten',
+  parkos: 'Parkos',
 }
 
 function fmtValue(key: string, v: unknown): string {
@@ -229,6 +236,18 @@ export function VehicleDetailPage() {
               <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
               {b.fuel_type && <Row label="Antrieb">{FUEL_TYPE_LABEL[b.fuel_type]}</Row>}
               <Row label="Personen">{b.persons}</Row>
+              {(b.flight_out || b.flight_return) && (
+                <Row label="Flüge">
+                  {[b.flight_out && `Hin ${b.flight_out}`, b.flight_return && `Zurück ${b.flight_return}`]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </Row>
+              )}
+              {b.return_flight_at && <Row label="Landung">{formatDateTime(b.return_flight_at)}</Row>}
+              {b.transfer_note && <Row label="Transfer">{b.transfer_note}</Row>}
+              {b.customer_language && (
+                <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
+              )}
               <Row label="Preis">{b.price_total != null ? formatMoney(Number(b.price_total)) : '–'}</Row>
               <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
               {b.notes && <Row label="Notizen">{b.notes}</Row>}
