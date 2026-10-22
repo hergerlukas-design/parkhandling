@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.22.0 – 22.10.2026
+
+### Neu
+- Buchungen haben Flug- und Transferangaben: Flug hin, Flug zurück, Landung Rückflug, Sprache, Transfer (erste Quelle: Parkos-Testbuchung #494PHBR)
+- Fahrzeug-Detail zeigt Flüge, Landung, Transfer und Sprache; Quelle „Parkos“ wird benannt
+- Formular „Buchung anlegen/bearbeiten“: neuer Abschnitt „Flug & Transfer“. Ist eine Landung eingetragen, schlägt die App die Abholung am Platz vor (Landung + 60 min) und übernimmt sie auf Tippen
+- Flugnummern werden vereinheitlicht („lh 123“ → „LH123“), Änderungen an den neuen Feldern erscheinen in der Buchungshistorie
+
+### Datenbank
+- Migration `20261022083159_booking_flight_fields.sql`: Spalten `flight_out`, `flight_return`, `return_flight_at`, `customer_language`, `transfer_note` (additiv, bereits auf Prod und Staging angewendet)
+- Migration `20261022083534_booking_flight_fields_upsert.sql`: `upsert_booking` speichert die neuen Felder, `after_booking_update_history` protokolliert sie
+
 ## 0.21.0 – 17.10.2026
 
 ### Neu

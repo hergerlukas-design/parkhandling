@@ -58,6 +58,16 @@ export interface Booking extends Row {
   payment_status: PaymentStatus
   portal_token: string
   notes: string | null
+  /** Flugnummer Hinreise (z. B. LH123) */
+  flight_out: string | null
+  /** Flugnummer Rückreise */
+  flight_return: string | null
+  /** Landung Rückflug; end_at = Landung + Puffer */
+  return_flight_at: string | null
+  /** ISO 639-1, z. B. "de" */
+  customer_language: string | null
+  /** Transfer-Typ laut Portal, Freitext */
+  transfer_note: string | null
 }
 
 export interface Service extends Row {
@@ -186,4 +196,16 @@ export const FUEL_TYPE_LABEL: Record<FuelType, string> = {
   combustion: 'Verbrenner',
   electric: 'Elektro',
   hybrid: 'Hybrid',
+}
+
+/** Kundensprachen (ISO 639-1). Unbekannte Codes werden als Code angezeigt. */
+export const LANGUAGE_LABEL: Record<string, string> = {
+  de: 'Deutsch',
+  en: 'Englisch',
+  fr: 'Französisch',
+  it: 'Italienisch',
+  es: 'Spanisch',
+  nl: 'Niederländisch',
+  pl: 'Polnisch',
+  tr: 'Türkisch',
 }

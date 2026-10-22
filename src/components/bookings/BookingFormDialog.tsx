@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
-import { emptyManualForm, manualAdapter, type ManualBookingForm } from '../../booking-adapters'
+import {
+  DEFAULT_RETURN_BUFFER_MINUTES,
+  emptyManualForm,
+  manualAdapter,
+  suggestPickupFromLanding,
+  type ManualBookingForm,
+} from '../../booking-adapters'
 import { listActiveServices, upsertBooking } from '../../lib/bookings'
 import { useDraft } from '../../lib/update/drafts'
 import {
   FUEL_TYPE_LABEL,
+  LANGUAGE_LABEL,
   PARKING_TYPE_LABEL,
   PAYMENT_STATUS_LABEL,
   RETURN_MODE_LABEL,
@@ -58,6 +65,15 @@ export function BookingFormDialog({
       ...prev,
       services: { ...prev.services, [code]: { ...prev.services[code], [field]: value } },
     }))
+  }
+
+  const pickupSuggestion = suggestPickupFromLanding(form.return_flight_date ?? '', form.return_flight_time ?? '')
+  const pickupDiffers =
+    !!pickupSuggestion && (pickupSuggestion.date !== form.end_date || pickupSuggestion.time !== form.end_time)
+
+  function applyPickupSuggestion() {
+    if (!pickupSuggestion) return
+    draft.setValue((prev) => ({ ...prev, end_date: pickupSuggestion.date, end_time: pickupSuggestion.time }))
   }
 
   async function save() {
@@ -189,6 +205,56 @@ export function BookingFormDialog({
           </Field>
         </div>
       </div>
+
+      <fieldset className="mt-5">
+        <legend className="mb-2 text-sm font-semibold">Flug &amp; Transfer</legend>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Flug hin">
+              <TextInput value={form.flight_out ?? ''} autoCapitalize="characters" placeholder="LH123"
+                onChange={(e) => set('flight_out', e.target.value)} />
+            </Field>
+            <Field label="Flug zurück">
+              <TextInput value={form.flight_return ?? ''} autoCapitalize="characters" placeholder="LH234"
+                onChange={(e) => set('flight_return', e.target.value)} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-[1fr_7rem] gap-2">
+            <Field label="Landung Rückflug">
+              <TextInput type="date" value={form.return_flight_date ?? ''}
+                onChange={(e) => set('return_flight_date', e.target.value)} />
+            </Field>
+            <Field label="Uhrzeit">
+              <TextInput type="time" value={form.return_flight_time ?? ''}
+                onChange={(e) => set('return_flight_time', e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Sprache">
+            <Select value={form.customer_language ?? ''} onChange={(e) => set('customer_language', e.target.value)}>
+              <option value="">–</option>
+              {Object.entries(LANGUAGE_LABEL).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+              {form.customer_language && !LANGUAGE_LABEL[form.customer_language] && (
+                <option value={form.customer_language}>{form.customer_language}</option>
+              )}
+            </Select>
+          </Field>
+          <Field label="Transfer">
+            <TextInput value={form.transfer_note ?? ''} placeholder="z. B. Inklusive Transfer (16 Minuten)"
+              onChange={(e) => set('transfer_note', e.target.value)} />
+          </Field>
+        </div>
+        {pickupDiffers && pickupSuggestion && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-dark">
+            <span>
+              Abholung laut Landung + {DEFAULT_RETURN_BUFFER_MINUTES} min:{' '}
+              {pickupSuggestion.date.split('-').reverse().join('.')} {pickupSuggestion.time}
+            </span>
+            <Button onClick={applyPickupSuggestion}>Übernehmen</Button>
+          </div>
+        )}
+      </fieldset>
 
       <fieldset className="mt-5">
         <legend className="mb-2 text-sm font-semibold">Leistungen</legend>

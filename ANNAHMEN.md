@@ -1,10 +1,10 @@
 # ANNAHMEN – Park & Fly Prototyp
 
-Stand: 08.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
+Stand: 22.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
 Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
-Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md` (Nachtrag hat bei Widersprüchen Vorrang).
+Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md` und `docs/ARBEITSANWEISUNG_Nachtrag_22-10-2026.md` (Nachträge haben bei Widersprüchen Vorrang, der jüngere zuerst).
 
 Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne Code-Änderung anpassbar.
 
@@ -44,7 +44,21 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Felder laut Excel: Buchungs-Nr., Eingang am, Status, Kunde/Firma, Telefon, E-Mail, Kennzeichen, Leistung, Anreise, Abholung, Anzahl Tage, Parkplatz, Aufbereitung, Hol- & Bringservice, Transfer, Preis, Zahlungsstatus, Notizen
 - [ANNAHME] Buchungsquelle im Prototyp: manuelles Anlegen + Excel-/CSV-Import im Format der Vorlage „ParkHandling_Buchungsliste" + Demo-Daten
 - [ANNAHME] Zahlungsstatus: offen, teilweise, bezahlt, erstattet (nur Anzeige, keine Zahlungsabwicklung)
-- [OFFEN] Anbindung des echten Buchungsportals
+- [BELEGT] ⚠ ABWEICHUNG (22.10.2026): Erstes Portal ist Parkos (vorher [OFFEN]), siehe Abschnitt „Buchungsportal Parkos“
+- [BELEGT] „Anzahl Tage“ zählt Kalendertage inklusive (23.–28.10. = 6 Tage, wie bei Parkos)
+
+## Buchungsportal Parkos (neu 22.10.2026)
+- [BELEGT] Eingang als HTML-Mail von `support@parkos.com` an `fly@parkhandling.com`, Betreff `Reservierung bei Parkos #<Nr>`; Reservierungsnummer alphanumerisch (z. B. `494PHBR`) → `external_ref`, `source = parkos`
+- [BELEGT] Mail enthält: Name, Mobilnummer, Sprache, Fahrzeugmodell, Kennzeichen, Anzahl Personen, Parkform, Transfer-Typ, Flugnummer Hin/Rück, Ankunft am Parkplatz, Rückkehr am Flughafen, Positionen, Gesamtumsatz ParkHandling, Gesamtbetrag Kunde
+- [BELEGT] Im Abschnitt „Parkplatz“ steht die eigene Betriebs-Telefonnummer (nicht mit der Kundennummer verwechseln)
+- [BELEGT] Parkos-Kunden zahlen im Voraus bei Parkos → `payment_status = paid`
+- [BELEGT] ⚠ ABWEICHUNG: Kennzeichen kommt mit Leerzeichen (`M MM 3839`) statt `M-AB 1234` → Normalisierung; Suche über `plate_normalized`
+- [BELEGT] Parkos-Rückgabezeit = Landung am Flughafen, nicht Abholung am Platz
+- [BELEGT] Felder `flight_out`, `flight_return`, `return_flight_at`, `customer_language`, `transfer_note` an Buchungen (0.22.0)
+- [ANNAHME] `end_at` = Landung + 60 min (`settings.return_buffer_minutes`, bis zum Parkos-Import Standardwert im Code); das Formular schlägt die Abholung aus der Landung vor
+- [ANNAHME] Prototyp: Mail einfügen oder `.eml` hochladen; automatischer Eingang (Edge Function `booking-inbound`) nur vorbereitet
+- [ANNAHME] Änderungs-/Stornomails bis zum Vorliegen von Beispielen nur als `needs_review`
+- [OFFEN] Kunden-E-Mail in der Parkos-Mail? Aussehen von Änderungs-/Stornomails? Partner-API/Export? Weitere Portale? Postfach-Anbieter für Auto-Import?
 
 ## Lageplan & Scannen
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
@@ -59,7 +73,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Nachtrag 08.10.2026: „Hol- & Bringservice“ (`return_mode` `pickup_delivery`) ersetzt den Vallet-Service; umgesetzt in 0.14.0. Bestehende Buchungen mit `vallet` werden umgeschrieben, ein Trigger schreibt auch Eingaben älterer Tablets um
 - [OFFEN] Hol- & Bringservice nur Kundenabholung/Rückbringen oder auch Transfer zum Terminal? Umgesetzt (0.14.0): nur Kundenabholung/Rückbringen. Die Transfer-Spalte „Vallet/Terminal“ aus der Excel-Vorlage wird ebenfalls als Hol- & Bringservice übernommen, bis die Frage geklärt ist
 - [ENTFALLEN] Vallet als eigene Leistung und als Shuttle-Fahrtart (`transport_jobs.type = vallet`, entfernt in 0.14.0)
-- [OFFEN] Flugstatus-Abfrage
+- [OFFEN] Flugstatus-Abfrage (Flugnummern liegen seit 0.22.0 vor)
 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2
