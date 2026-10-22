@@ -68,6 +68,10 @@ export interface Booking extends Row {
   customer_language: string | null
   /** Transfer-Typ laut Portal, Freitext */
   transfer_note: string | null
+  /** Auszahlung an ParkHandling laut Portal */
+  portal_payout: number | null
+  /** Hinweise aus dem Import, z. B. plate_unverified */
+  import_flags: string[]
 }
 
 export interface Service extends Row {

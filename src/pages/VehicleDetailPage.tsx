@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
-import { formFromBooking } from '../booking-adapters'
+import { formFromBooking, IMPORT_FLAG_LABEL, type ImportFlag } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
@@ -249,6 +249,14 @@ export function VehicleDetailPage() {
                 <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
               )}
               <Row label="Preis">{b.price_total != null ? formatMoney(Number(b.price_total)) : '–'}</Row>
+              {b.portal_payout != null && <Row label="Auszahlung">{formatMoney(Number(b.portal_payout))}</Row>}
+              {(b.import_flags ?? []).length > 0 && (
+                <Row label="Import">
+                  <span className="text-warn-ink">
+                    {b.import_flags.map((f) => IMPORT_FLAG_LABEL[f as ImportFlag] ?? f).join(', ')}
+                  </span>
+                </Row>
+              )}
               <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
               {b.notes && <Row label="Notizen">{b.notes}</Row>}
             </dl>

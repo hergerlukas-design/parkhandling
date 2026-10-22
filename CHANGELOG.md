@@ -3,6 +3,26 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.23.0 – 22.10.2026
+
+### Neu
+- Parkos-Mail importieren (*Fahrzeuge → Parkos-Mail*): Mailtext einfügen oder `.eml`/`.html` hochladen, Vorschau mit allen Feldern und Hinweisen, dann „Buchung übernehmen“
+  - liest Reservierungsnummer, Name, Telefon (nicht die Betriebsnummer aus dem Abschnitt „Parkplatz“), Sprache, Fahrzeug, Kennzeichen, Personen, Parkform, Transfer, Flüge, Ankunft, Landung, Preis, Auszahlung und „im Voraus bezahlt“
+  - Abholung = Landung + Puffer aus den Einstellungen (60 min), korrekt über die Zeitumstellung
+  - Kennzeichen „M MM 3839“ wird zu „M-MM 3839“; nicht eindeutige Kennzeichen werden markiert
+  - erneuter Import derselben Reservierung aktualisiert statt zu duplizieren (Änderungen in der Buchungshistorie)
+  - Umbuchungen, Stornos, unbekannte Mails, unbekannte Parkformen und fremde Absender werden nicht automatisch übernommen, sondern zur Prüfung abgelegt
+- Prüfliste „n prüfen“ in der Fahrzeugliste: eingelesene Mails mit Status, Rohtext und „Als erledigt markieren“
+- Fahrzeugliste: Hinweis „Parkos“ und „prüfen“ am Kennzeichen; Fahrzeug-Detail zeigt Auszahlung und Import-Hinweise
+- Buchungsformular nutzt den Puffer aus den Einstellungen
+
+### Geändert
+- „Anzahl Tage“ zählt Kalendertage inklusive (wie Parkos), nicht mehr angefangene 24-Stunden-Blöcke
+
+### Datenbank
+- Migration `20261022100000_parkos_mail_import.sql`: Tabelle `booking_imports` (Rohtext, Parse-Ergebnis, Status, RLS), Spalten `bookings.portal_payout` und `bookings.import_flags`, Einstellungen `return_buffer_minutes` und `parkos_product_map`, Funktionen `import_booking_mail` und `resolve_booking_import`; `upsert_booking` auch für den Service-Zugang (späterer IMAP-Abruf); Fahrzeugliste mit neuen Spalten
+- Gemeinsamer Unterbau für den späteren automatischen IMAP-Abruf: derselbe Parser (ohne Browser-Funktionen) und dieselbe Datenbankfunktion
+
 ## 0.22.0 – 22.10.2026
 
 ### Neu
