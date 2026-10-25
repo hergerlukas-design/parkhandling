@@ -77,7 +77,15 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Shuttle stündlich innerhalb von Betriebszeiten, Premium auf Abruf
 - [ANNAHME] Betriebszeiten 05:00–23:00, Takt 60 min, 1 Bus mit 8 Plätzen
 - [BELEGT] Nachtrag 08.10.2026: „Hol- & Bringservice“ (`return_mode` `pickup_delivery`) ersetzt den Vallet-Service; umgesetzt in 0.14.0. Bestehende Buchungen mit `vallet` werden umgeschrieben, ein Trigger schreibt auch Eingaben älterer Tablets um
-- [OFFEN] Hol- & Bringservice nur Kundenabholung/Rückbringen oder auch Transfer zum Terminal? Umgesetzt (0.14.0): nur Kundenabholung/Rückbringen. Die Transfer-Spalte „Vallet/Terminal“ aus der Excel-Vorlage wird ebenfalls als Hol- & Bringservice übernommen, bis die Frage geklärt ist
+- [BELEGT] ⚠ ABWEICHUNG: Hol- & Bringservice = Übergabe am Terminal (Entscheidung Lukas 25.10.2026). Der Kunde gibt das Auto am Terminal ab, der Fahrer bringt es auf den Platz; zur Rückkehr steht es am Terminal bereit. Ersetzt die Annahme „nur Kundenabholung/Rückbringen“ aus 0.14.0. Die Transfer-Spalte „Vallet/Terminal“ der Excel-Vorlage passt damit
+- [ANNAHME] Hol- & Bringservice (0.26.0): je Fahrzeug zwei eigene Aufträge (`transport_jobs.type = pickup_delivery`), kein Sammel-Slot und keine Busplätze
+- [ANNAHME] Übernahme am Terminal zur Ankunftszeit der Buchung (`start_at` = Ankunft am Flughafen statt am Platz)
+- [BELEGT] Treffpunkt = Terminal, an dem der Gast ankommt, ermittelt aus der Flugnummer (Lukas, 25.10.2026): Übernahme am Terminal des Hinflugs, Rückgabe am Terminal des Rückflugs
+- [ANNAHME] Terminal über den Airline-Code der Flugnummer (`settings.airport_terminal_map`): Lufthansa-Gruppe und Star Alliance → T2, alle anderen → T1. Zuordnung ohne Gewähr (Codeshares, Änderungen am Flughafen), in den Einstellungen änderbar
+- [BELEGT] Fahrer fährt mit dem Shuttle: nach der Rückgabe mit dem nächsten Shuttle zurück (Lukas, 25.10.2026)
+- [ANNAHME] Zur Übernahme fährt der Fahrer mit dem letzten Shuttle hin, der vor der Übergabe am Terminal ist (Fahrzeit 16 min, `settings.shuttle_transfer_minutes`); Übergabe dauert 15 min (`settings.valet_handover_minutes`)
+- [ANNAHME] Der Fahrer zählt noch nicht zur Buskapazität (8 Plätze)
+- [BELEGT] Rückgabe am Terminal 30 min nach der Landung (`settings.valet_return_after_landing_minutes`), bestätigt von Lukas 25.10.2026; ohne Landezeit ab Abholung − Puffer
 - [ENTFALLEN] Vallet als eigene Leistung und als Shuttle-Fahrtart (`transport_jobs.type = vallet`, entfernt in 0.14.0)
 - [OFFEN] Flugstatus-Abfrage (Flugnummern liegen seit 0.22.0 vor)
 - [ANNAHME] Shuttle-Dispo (0.24.0): Fahrten entstehen automatisch aus jeder aktiven Buchung mit `return_mode = shuttle`, je eine Hin- und Rückfahrt
@@ -88,7 +96,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Kapazität 8 wird nur geprüft und gewarnt (Dispo, Dashboard), nicht automatisch auf andere Slots verteilt, damit niemand einen Flug verpasst
 - [ANNAHME] Von der Dispo umgesetzte Fahrgäste und laufende/erledigte Fahrten plant die App nicht mehr um; Umbuchung, Storno und Personenzahl planen sonst automatisch neu
 - [ANNAHME] Fahrer = beliebiges aktives Personal, keine eigene Rolle; wer ohne Einteilung „Losfahren“ tippt, wird Fahrer der Fahrt
-- [OFFEN] Hol- & Bringservice-Planung (Fahrten zum Kunden) folgt, sobald Frage 8 geklärt ist; Buchungen mit `pickup_delivery` bekommen noch keine Fahrt
 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2

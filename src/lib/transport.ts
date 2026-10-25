@@ -9,7 +9,7 @@ function db() {
 }
 
 export type TransportDirection = 'to_airport' | 'from_airport'
-export type TransportType = 'shuttle_slot' | 'premium_on_demand'
+export type TransportType = 'shuttle_slot' | 'premium_on_demand' | 'pickup_delivery'
 export type TransportStatus = 'planned' | 'assigned' | 'underway' | 'done' | 'cancelled'
 
 export const DIRECTION_LABEL: Record<TransportDirection, string> = {
@@ -26,6 +26,24 @@ export const DIRECTION_ROUTE: Record<TransportDirection, string> = {
 export const TRANSPORT_TYPE_LABEL: Record<TransportType, string> = {
   shuttle_slot: 'Shuttle',
   premium_on_demand: 'Auf Abruf',
+  pickup_delivery: 'Hol- & Bring',
+}
+
+/** Hol- & Bringservice: Auto wird am Terminal übernommen bzw. übergeben, ein Auftrag je Fahrzeug */
+export function isValet(job: Pick<TransportJob, 'type'>): boolean {
+  return job.type === 'pickup_delivery'
+}
+
+/** Bezeichnung einer Fahrt: Shuttle nach Richtung, Hol- & Bring nach Übernahme/Rückgabe */
+export function tripLabel(job: Pick<TransportJob, 'type' | 'direction'>): string {
+  if (isValet(job)) return job.direction === 'from_airport' ? 'Übernahme am Terminal' : 'Rückgabe am Terminal'
+  return DIRECTION_LABEL[job.direction]
+}
+
+/** Route für die Fahreransicht */
+export function routeLabel(job: Pick<TransportJob, 'type' | 'direction'>): string {
+  if (isValet(job)) return job.direction === 'from_airport' ? 'Terminal: Auto übernehmen → Platz' : 'Platz → Terminal: Auto übergeben'
+  return DIRECTION_ROUTE[job.direction]
 }
 
 export const TRANSPORT_STATUS_LABEL: Record<TransportStatus, string> = {
@@ -47,6 +65,8 @@ export interface TransportPassenger {
   customer_phone: string | null
   customer_language: string | null
   flight: string | null
+  /** Terminal aus der Flugnummer (settings.airport_terminal_map) */
+  terminal: string | null
   start_at: string
   return_flight_at: string | null
   end_at: string
@@ -67,6 +87,8 @@ export interface TransportJob {
   persons: number
   capacity: number
   passengers: TransportPassenger[]
+  /** Hol- & Bring: Shuttle, mit dem der Fahrer zum Terminal bzw. zurück fährt */
+  driver_shuttle_at?: string | null
 }
 
 export interface BookingTrip {
@@ -101,15 +123,30 @@ export function nextStatus(status: TransportStatus): { to: TransportStatus; labe
   return null
 }
 
+/** Hol- & Bring: wie der Fahrer zum Terminal kommt bzw. zurückfährt */
+export function driverShuttleHint(job: Pick<TransportJob, 'type' | 'direction' | 'driver_shuttle_at'>): string | null {
+  if (!isValet(job)) return null
+  const hin = job.direction === 'from_airport'
+  if (!job.driver_shuttle_at) return hin ? 'Fahrer: kein Shuttle zum Terminal – selbst organisieren' : 'Fahrer: kein Shuttle zurück – selbst organisieren'
+  return hin ? `Fahrer hin mit Shuttle ${formatTime(job.driver_shuttle_at)}` : `Fahrer zurück mit Shuttle ${formatTime(job.driver_shuttle_at)}`
+}
+
+/** Treffpunkt einer Hol- & Bring-Fahrt: Terminal des Gasts */
+export function meetingTerminal(job: Pick<TransportJob, 'passengers'>): string | null {
+  return job.passengers.find((p) => p.terminal)?.terminal ?? null
+}
+
 /** Wartezeit des Kunden am Terminal nach der Landung (Rückfahrt), in Minuten */
-export function waitAfterLanding(job: Pick<TransportJob, 'scheduled_at' | 'direction'>, p: Pick<TransportPassenger, 'return_flight_at'>): number | null {
-  if (job.direction !== 'from_airport' || !p.return_flight_at) return null
+export function waitAfterLanding(job: Pick<TransportJob, 'scheduled_at' | 'direction' | 'type'>, p: Pick<TransportPassenger, 'return_flight_at'>): number | null {
+  const returnTrip = isValet(job) ? job.direction === 'to_airport' : job.direction === 'from_airport'
+  if (!returnTrip || !p.return_flight_at) return null
   return Math.round((Date.parse(job.scheduled_at) - Date.parse(p.return_flight_at)) / 60000)
 }
 
 /** Zeitangabe je Fahrgast: Ankunft am Platz (hin) bzw. Landung (zurück) */
-export function passengerTimeHint(job: Pick<TransportJob, 'direction'>, p: TransportPassenger): string {
-  if (job.direction === 'to_airport') return `Ankunft Platz ${formatTime(p.start_at)}`
+export function passengerTimeHint(job: Pick<TransportJob, 'direction' | 'type'>, p: TransportPassenger): string {
+  if (isValet(job) && job.direction === 'from_airport') return `Übergabe ${formatTime(p.start_at)}`
+  if (!isValet(job) && job.direction === 'to_airport') return `Ankunft Platz ${formatTime(p.start_at)}`
   return p.return_flight_at ? `Landung ${formatTime(p.return_flight_at)}` : `Abholung Platz ${formatTime(p.end_at)}`
 }
 
@@ -127,7 +164,7 @@ export function summarize(jobs: TransportJob[]): DispoSummary {
     trips: active.length,
     persons: active.reduce((s, j) => s + j.persons, 0),
     open: active.filter((j) => j.status !== 'done').length,
-    over: active.filter((j) => capacityState(j) === 'over').length,
+    over: active.filter((j) => !isValet(j) && capacityState(j) === 'over').length,
     unassigned: active.filter((j) => j.status !== 'done' && !j.driver_id).length,
   }
 }
@@ -149,10 +186,13 @@ export function driverOrder(jobs: TransportJob[], onlyDriver?: string | null): T
     .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.scheduled_at.localeCompare(b.scheduled_at))
 }
 
-/** Ziel-Fahrten zum Umsetzen: gleiche Richtung, noch offen, nicht die aktuelle */
+/** Ziel-Fahrten zum Umsetzen: gleiche Richtung und Art, noch offen, nicht die aktuelle */
 export function moveTargets(jobs: TransportJob[], current: TransportJob): TransportJob[] {
+  // Hol- & Bring: ein Auftrag je Fahrzeug, nur die Uhrzeit lässt sich ändern
+  if (isValet(current)) return []
   return jobs
-    .filter((j) => j.id !== current.id && j.direction === current.direction && (j.status === 'planned' || j.status === 'assigned'))
+    .filter((j) => j.id !== current.id && j.direction === current.direction && isValet(j) === isValet(current))
+    .filter((j) => j.status === 'planned' || j.status === 'assigned')
     .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
 }
 

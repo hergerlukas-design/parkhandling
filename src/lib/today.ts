@@ -3,7 +3,7 @@ import { formatDate, formatTime } from './format'
 import { loadBoard, type BoardSlot } from './siteplan'
 import { loadTaskBoard, type BoardTask } from './tasks'
 import { supabase } from './supabase'
-import { capacityState, DIRECTION_LABEL, loadTransportBoard, type TransportJob } from './transport'
+import { capacityState, DIRECTION_LABEL, isValet, loadTransportBoard, type TransportJob } from './transport'
 import { PARKING_TYPE_LABEL, RETURN_MODE_LABEL } from '../types/domain'
 
 function db() {
@@ -195,7 +195,7 @@ export function buildToday(
     alerts.push({ tone: 'warn', title: `${e.plate} · Zahlung offen`, text: `Abholung ${formatTime(e.at)} – Zahlung vor Übergabe klären.`, href: `/fahrzeuge/${e.bookingId}` })
   }
   // Shuttle heute/morgen überbucht
-  for (const j of shuttle.filter((x) => x.status !== 'done' && x.status !== 'cancelled' && capacityState(x) === 'over')) {
+  for (const j of shuttle.filter((x) => x.status !== 'done' && x.status !== 'cancelled' && !isValet(x) && capacityState(x) === 'over')) {
     const today = j.scheduled_at < range.tomorrow
     alerts.push({
       tone: 'danger',

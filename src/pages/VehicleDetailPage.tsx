@@ -11,7 +11,7 @@ import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
 import { hasKeySlot, whereabouts } from '../lib/siteplan'
-import { DIRECTION_LABEL, loadBookingTrips, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LABEL, type BookingTrip } from '../lib/transport'
+import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LABEL, type BookingTrip } from '../lib/transport'
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
@@ -245,11 +245,11 @@ export function VehicleDetailPage() {
                 {formatPickup(b.end_at)} · {RETURN_MODE_LABEL[b.return_mode]}
               </Row>
               {trips.length > 0 && (
-                <Row label="Shuttle">
+                <Row label={trips.some((t) => t.type === 'pickup_delivery') ? 'Hol- & Bring' : 'Shuttle'}>
                   <span className="flex flex-col">
                     {trips.map((t) => (
                       <Link key={t.passenger_id} to={`/shuttle${tripDayParam(t.scheduled_at)}`} className="text-accent underline-offset-2 hover:underline">
-                        {DIRECTION_LABEL[t.direction]}: {formatDate(t.scheduled_at).slice(0, 6)} {formatTime(t.scheduled_at)} · {TRANSPORT_TYPE_LABEL[t.type]}
+                        {tripLabel(t)}: {formatDate(t.scheduled_at).slice(0, 6)} {formatTime(t.scheduled_at)}{t.type === 'pickup_delivery' ? '' : ` · ${TRANSPORT_TYPE_LABEL[t.type]}`}
                         {t.status !== 'planned' ? ` · ${TRANSPORT_STATUS_LABEL[t.status]}` : ''}
                       </Link>
                     ))}
