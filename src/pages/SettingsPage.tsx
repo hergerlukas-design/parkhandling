@@ -5,6 +5,8 @@ import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
+import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
+import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { UserManagement } from '../components/users/UserManagement'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
@@ -65,6 +67,14 @@ export function SettingsPage() {
             Abmelden
           </button>
         </Card>
+        <Card title="Benachrichtigungen auf diesem Gerät">
+          <NotificationSettings />
+        </Card>
+        {profile?.role === 'admin' && (
+          <Card title="Benachrichtigungen: Einstellungen & Geräte">
+            <NotificationAdmin />
+          </Card>
+        )}
         {profile?.role === 'admin' && (
           <Card title="Personal">
             <UserManagement />

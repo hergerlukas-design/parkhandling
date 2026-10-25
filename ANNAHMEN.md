@@ -4,7 +4,7 @@ Stand: 25.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklä
 
 Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
-Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md` und `docs/ARBEITSANWEISUNG_Nachtrag_22-10-2026.md` (Nachträge haben bei Widersprüchen Vorrang, der jüngere zuerst).
+Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md`, `docs/ARBEITSANWEISUNG_Nachtrag_22-10-2026.md` und `docs/ARBEITSANWEISUNG_Nachtrag_25-10-2026.md` (Nachträge haben bei Widersprüchen Vorrang, der jüngere zuerst).
 
 Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne Code-Änderung anpassbar.
 
@@ -106,6 +106,19 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
 - [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
 - [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
+
+## Benachrichtigungen (neu 25.10.2026, 0.25.0)
+- [BELEGT] Push-Benachrichtigungen für das Personal bei: neuer Buchung, Umbuchung/Storno, Import prüfen, Regal-Konflikt/Umsetzen, Ankunft bald, Abholung bald, Fahrzeug bereit, Shuttle fällig (Entscheidung Lukas 25.10.2026)
+- [BELEGT] Neue App-Version wird **nicht** per Push gemeldet, nur per Banner
+- [ANNAHME] Web Push (VAPID) über Edge Function `push-send`, Auslösung per Trigger und `pg_cron`, Zustellung per `pg_net`, kein Drittanbieter
+- [ANNAHME] Empfänger (`settings.notifications`): Import prüfen → nur Admins; alle anderen Ereignisse → gesamtes Personal inkl. Admins; Shuttle → eingeteilter Fahrer, ohne Fahrer alle. Jedes Gerät kann Ereignisse abbestellen
+- [ANNAHME] Vorlauf: Ankunft 60 min, Abholung 60 min, Umsetz-Erinnerung 60 min vor Fälligkeit, Shuttle 15 min
+- [ANNAHME] Wer eine Buchung selbst anlegt/ändert, bekommt dazu keine Meldung; Umsetz-Konflikte gehen auch an den Auslöser
+- [ANNAHME] Push-Inhalt ohne Kundennamen und Kontaktdaten (nur Kennzeichen, Zeiten, Platz, Status)
+- [ANNAHME] Keine Ruhezeiten; Demo-Daten lösen keine Meldungen aus
+- [ANNAHME] Bei geöffneter App Hinweis in der App statt Systembenachrichtigung; iPhone/iPad zeigen trotzdem die Systembenachrichtigung (Safari entzieht sonst die Berechtigung)
+- [BELEGT] iPhone/iPad: Push nur in der installierten App (Home-Bildschirm, ab iOS/iPadOS 16.4)
+- [OFFEN] Endgültige Rollenzuordnung, Ruhezeiten nachts, eigene Rolle `driver`
 
 ## Nutzer & Geräte
 - [ANNAHME] Rollen: `staff` und `admin`

@@ -73,6 +73,40 @@ eingerichtet“. Im Prototyp gehen **alle** Mails nur an `settings.mail_test_add
 update public.settings set value = '"ihre-test@adresse.de"' where key = 'mail_test_address';
 ```
 
+### 5. Push-Benachrichtigungen (einmalig)
+
+Web Push ohne Drittanbieter: Trigger und `pg_cron` legen Meldungen in `public.notifications` an,
+`pg_net` stößt die Edge Function `push-send` an, die verschlüsselt (RFC 8291) an die Geräte sendet.
+
+1. Schlüssel erzeugen: `npm run push:keys` (gibt `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_SEND_SECRET` aus)
+2. Edge Function **ohne JWT-Prüfung** ausliefern (Aufruf kommt aus der Datenbank, geschützt per Secret-Header):
+   ```bash
+   supabase functions deploy push-send --no-verify-jwt
+   ```
+3. Secrets der Edge Functions setzen:
+
+   | Secret | Inhalt |
+   |---|---|
+   | `VAPID_PUBLIC_KEY` | öffentlicher Schlüssel aus Schritt 1 |
+   | `VAPID_PRIVATE_KEY` | privater Schlüssel aus Schritt 1 (**nie ins Repo**) |
+   | `VAPID_SUBJECT` | Kontakt für die Push-Dienste, z. B. `mailto:betrieb@ihre-domain.de` |
+   | `PUSH_SEND_SECRET` | Zufallswert aus Schritt 1 |
+
+4. In der Datenbank (SQL-Editor), Werte aus Schritt 1:
+   ```sql
+   update public.settings set value = to_jsonb('<VAPID_PUBLIC_KEY>'::text) where key = 'push_vapid_public_key';
+   select vault.create_secret('https://<projekt>.supabase.co/functions/v1/push-send', 'push_send_url');
+   select vault.create_secret('<PUSH_SEND_SECRET>', 'push_send_secret');
+   ```
+5. Die Migration richtet die Cron-Jobs `push-due-notifications` (alle 5 min: Ankunft/Abholung/Umsetzen/Shuttle)
+   und `push-dispatch` (jede Minute: liegengebliebene Meldungen) ein, sofern `pg_cron` verfügbar ist.
+
+Danach auf jedem Gerät *Einstellungen → Benachrichtigungen aktivieren* und *Testbenachrichtigung senden*.
+iPhone/iPad: nur in der installierten App (Safari → Teilen → „Zum Home-Bildschirm“, ab iOS 16.4).
+Ereignisse, Empfänger und Vorlaufzeiten stellen Admins unter *Einstellungen → Benachrichtigungen* ein;
+dort stehen auch die angemeldeten Geräte und die letzten 50 Meldungen mit Status. Ohne Schritt 1–4 läuft
+die App unverändert, Meldungen bleiben dann nur in der Outbox liegen.
+
 ## Prüfen
 
 ```bash
@@ -112,6 +146,10 @@ Am besten mit einem Tablet (Querformat) und einem Smartphone parallel, angemelde
    Protokoll offen → Banner zeigt „Nach Abschluss aktualisieren“ und lädt nicht neu; nach Abschluss bzw.
    Verlassen des Protokolls lässt sich aktualisieren. Entwürfe bleiben erhalten.
 5. **Heute-Ansicht:** Ankünfte/Abholungen, Hinweise und Belegung stimmen mit Fahrzeugliste und Lageplan überein.
+6. **Benachrichtigungen:** Auf Android-Tablet (Chrome) und iPad (installierte App) aktivieren, Testbenachrichtigung
+   bei geschlossener App senden, Tippen öffnet die App. Auf dem zweiten Gerät eine Buchung anlegen bzw. umbuchen →
+   „Neue Buchung“/„Umbuchung“ kommt an, auf dem auslösenden Gerät nicht. Bei geöffneter App erscheint ein Hinweis
+   unten statt einer Systembenachrichtigung (iPhone/iPad zeigen zusätzlich die Systembenachrichtigung).
 
 Fotos, Unterschriften und PDFs werden im Browser komprimiert und direkt in den privaten Storage geladen
 (Signed URLs); Listen zeigen nur Thumbnails. Ohne Netz landen sie in der Upload-Warteschlange (Banner oben)
@@ -138,7 +176,8 @@ halten Updates zurück (`useUpdateBlocker`), Entwürfe liegen in IndexedDB (`use
 | `src/lib/media/` | Media-Service: Komprimierung im Worker, Upload-Queue, Signed URLs, austauschbarer Speicher |
 | `src/lib/pdf/` | PDF-Vorlage aus *fahrzeug-protokolle-v2* (pdf-lib) |
 | `supabase/migrations/` | Schema, Trigger, RLS, Views, Regal-Logik, Protokolle |
-| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail` |
+| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail`, `user-invite`, `push-send` (Web Push, `_shared/webpush.ts`) |
+| `src/lib/push/`, `public/push-handler.js` | Push-Abo des Geräts, Ereignisse, Empfang im Service Worker |
 | `supabase/tests/` | Datenbank-Tests |
 
 ## Deployment (Fly.io)
@@ -157,7 +196,7 @@ fly deploy
 ```
 
 Das Docker-Image baut das Frontend und liefert `dist/` über nginx aus (`deploy/nginx.conf`, `fly.toml`).
-`index.html`, `sw.js` und `version.json` werden nie gecacht, gehashte Assets dauerhaft.
+`index.html`, `sw.js`, `push-handler.js` und `version.json` werden nie gecacht, gehashte Assets dauerhaft.
 
 Hinweis Projekt `parkhandling`: Das Schema des ersten Anlaufs liegt unverändert im Schema `legacy_v1`
 (nicht über die API erreichbar) und kann bei Bedarf entfernt werden: `drop schema legacy_v1 cascade;`

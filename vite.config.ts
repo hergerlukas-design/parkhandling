@@ -77,6 +77,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/version\.json$/, /^\/CHANGELOG\.md$/],
         cleanupOutdatedCaches: true,
+        // Push-Empfang (public/push-handler.js); der Update-Flow bleibt im erzeugten Service Worker
+        importScripts: ['push-handler.js'],
         // Schrift (IBM Plex) nach dem ersten Laden auch offline verfügbar
         runtimeCaching: [
           {
