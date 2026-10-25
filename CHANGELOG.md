@@ -3,6 +3,21 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.26.0 – 25.10.2026
+
+### Neu
+- Hol- & Bringservice in der Dispo (*Shuttle*): Übergabe am Terminal
+  - je Fahrzeug zwei Aufträge: „Übernahme am Terminal“ zur Ankunftszeit und „Rückgabe am Terminal“ 30 min nach der Landung
+  - eigene Aufträge statt Sammel-Slot, ohne Platzanzeige; „Zeit ändern“ statt „Umsetzen“
+  - Fahreransicht zeigt „Terminal: Auto übernehmen → Platz“ bzw. „Platz → Terminal: Auto übergeben“
+  - Umbuchung, Storno und Wechsel zwischen Shuttle und Hol- & Bring planen automatisch neu
+- Fahrzeug-Detail zeigt Übernahme und Rückgabe am Terminal
+- Terminal aus der Flugnummer (Lufthansa-Gruppe und Star Alliance → T2, sonst T1), angezeigt bei jedem Fahrgast und als Treffpunkt der Hol- & Bring-Aufträge; Zuordnung in den Einstellungen (`airport_terminal_map`)
+- Hol- & Bring-Aufträge zeigen, mit welchem Shuttle der Fahrer zum Terminal und wieder zurück fährt
+
+### Datenbank
+- Migration `20261025000300_valet_terminal.sql` (additiv): Auftragsart `pickup_delivery`, Einstellungen `valet_return_after_landing_minutes`, `valet_handover_minutes`, `shuttle_transfer_minutes`, `airport_terminal_map`, Funktionen `terminal_for_flight`, `shuttle_slot_before`, `valet_driver_shuttle_at`, `transport_board` mit Terminal und Fahrer-Shuttle, `plan_booking_transport` und `move_transport_passenger` erweitert; bestehende Hol- & Bring-Buchungen werden eingeplant
+
 ## 0.25.0 – 25.10.2026
 
 ### Neu

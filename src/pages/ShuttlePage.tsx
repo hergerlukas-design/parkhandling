@@ -8,7 +8,11 @@ import {
   capacityState,
   dayRange,
   DIRECTION_LABEL,
-  DIRECTION_ROUTE,
+  driverShuttleHint,
+  isValet,
+  meetingTerminal,
+  routeLabel,
+  tripLabel,
   driverOrder,
   listDrivers,
   loadTransportBoard,
@@ -104,6 +108,7 @@ function PassengerRow({ job, p, onMove, onReset, compact }: {
         {p.persons} {p.persons === 1 ? 'Person' : 'Personen'}
       </span>
       {p.flight && <span className="font-mono text-xs">{p.flight}</span>}
+      {p.terminal && <span className="rounded-md bg-ink px-1.5 py-0.5 text-xs font-bold text-white">{p.terminal}</span>}
       <span className="text-xs text-subtle">{passengerTimeHint(job, p)}</span>
       {wait != null && wait > 45 && <span className="text-xs text-warn-ink">wartet {wait} min</span>}
       {!compact && <span className="min-w-0 flex-1 truncate text-subtle">{p.customer_name}</span>}
@@ -122,7 +127,7 @@ function PassengerRow({ job, p, onMove, onReset, compact }: {
       )}
       {onMove && (job.status === 'planned' || job.status === 'assigned') && (
         <button type="button" onClick={() => onMove(p)} className="touch-target rounded-lg border border-line-strong px-3 text-xs font-semibold hover:bg-ground">
-          Umsetzen
+          {isValet(job) ? 'Zeit ändern' : 'Umsetzen'}
         </button>
       )}
     </li>
@@ -148,7 +153,13 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
           {TRANSPORT_TYPE_LABEL[job.type]}
         </span>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[job.status]}`}>{TRANSPORT_STATUS_LABEL[job.status]}</span>
-        <CapacityBar job={job} />
+        {isValet(job) ? (
+          <span className="text-sm font-semibold">
+            {tripLabel(job)}{meetingTerminal(job) ? ` ${meetingTerminal(job)}` : ''}
+          </span>
+        ) : (
+          <CapacityBar job={job} />
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Select aria-label="Fahrer" value={job.driver_id ?? ''} disabled={busy || job.status === 'done'}
             onChange={(e) => onDriver(job, e.target.value || null)} className="w-auto min-w-36">
@@ -162,6 +173,7 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
         </div>
       </header>
       {job.note && <p className="border-t border-line bg-ground px-3 py-1.5 text-xs text-subtle">{job.note}</p>}
+      {driverShuttleHint(job) && <p className="border-t border-line bg-ground px-3 py-1.5 text-xs text-subtle">{driverShuttleHint(job)}</p>}
       <ul>
         {job.passengers.map((p) => (
           <PassengerRow key={p.id} job={job} p={p} onMove={(x) => onMove(job, x)} onReset={onReset} />
@@ -179,7 +191,9 @@ function DriverCard({ job, busy, onStatus }: { job: TransportJob; busy: boolean;
       <header className="flex items-center gap-3 px-4 py-3">
         <span className="font-mono text-3xl font-bold tabular-nums">{formatTime(job.scheduled_at)}</span>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="font-semibold">{DIRECTION_ROUTE[job.direction]}</span>
+          <span className="font-semibold">
+            {routeLabel(job)}{isValet(job) && meetingTerminal(job) ? ` · ${meetingTerminal(job)}` : ''}
+          </span>
           <span className="text-sm text-subtle">
             {job.persons} {job.persons === 1 ? 'Person' : 'Personen'} · {TRANSPORT_TYPE_LABEL[job.type]}
             {job.driver_name ? ` · ${job.driver_name}` : ''}
@@ -191,6 +205,7 @@ function DriverCard({ job, busy, onStatus }: { job: TransportJob; busy: boolean;
           <span className={`rounded-full px-3 py-1 text-sm font-semibold ${STATUS_STYLE[job.status]}`}>{TRANSPORT_STATUS_LABEL[job.status]}</span>
         )}
       </header>
+      {driverShuttleHint(job) && <p className="border-t border-line bg-ground px-4 py-1.5 text-sm">{driverShuttleHint(job)}</p>}
       <ul>
         {job.passengers.map((p) => <PassengerRow key={p.id} job={job} p={p} compact />)}
       </ul>
@@ -206,6 +221,7 @@ function MoveDialog({ job, passenger, jobs, onClose, onDone }: {
   onDone: () => void
 }) {
   const targets = moveTargets(jobs, job)
+  const valet = isValet(job)
   const [time, setTime] = useState(formatTime(job.scheduled_at))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -234,14 +250,14 @@ function MoveDialog({ job, passenger, jobs, onClose, onDone }: {
   }
 
   return (
-    <Dialog title={`${passenger.plate} umsetzen`} onClose={onClose}>
+    <Dialog title={`${passenger.plate} ${valet ? '– Uhrzeit ändern' : 'umsetzen'}`} onClose={onClose}>
       <p className="mb-3 text-sm text-subtle">
-        {DIRECTION_LABEL[job.direction]} · bisher {formatTime(job.scheduled_at)} · {passenger.persons} {passenger.persons === 1 ? 'Person' : 'Personen'}.
-        Umgesetzte Fahrgäste plant die App nicht mehr automatisch um.
+        {tripLabel(job)} · bisher {formatTime(job.scheduled_at)} · {passenger.persons} {passenger.persons === 1 ? 'Person' : 'Personen'}.
+        {valet ? ' Eine von Hand geänderte Zeit plant die App nicht mehr automatisch um.' : ' Umgesetzte Fahrgäste plant die App nicht mehr automatisch um.'}
       </p>
       {error && <p className="mb-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-ink">{error}</p>}
-      <h3 className="mb-2 text-sm font-semibold">In bestehende Fahrt</h3>
-      {targets.length === 0 ? (
+      {!valet && <h3 className="mb-2 text-sm font-semibold">In bestehende Fahrt</h3>}
+      {valet ? null : targets.length === 0 ? (
         <p className="mb-4 text-sm text-muted">Keine andere offene Fahrt in diese Richtung an diesem Tag.</p>
       ) : (
         <ul className="mb-4 flex flex-col gap-2">
@@ -262,12 +278,12 @@ function MoveDialog({ job, passenger, jobs, onClose, onDone }: {
           })}
         </ul>
       )}
-      <h3 className="mb-2 text-sm font-semibold">Neue Fahrt auf Abruf</h3>
+      {!valet && <h3 className="mb-2 text-sm font-semibold">Neue Fahrt auf Abruf</h3>}
       <div className="flex items-end gap-2">
         <Field label="Uhrzeit" className="w-32">
           <TextInput inputMode="numeric" value={time} onChange={(e) => setTime(e.target.value)} placeholder="HH:MM" />
         </Field>
-        <Button variant="primary" disabled={busy} onClick={onDemand}>Anlegen</Button>
+        <Button variant="primary" disabled={busy} onClick={onDemand}>{valet ? 'Übernehmen' : 'Anlegen'}</Button>
       </div>
     </Dialog>
   )
@@ -402,6 +418,8 @@ export function ShuttlePage() {
           <p className="text-xs text-muted">
             Fahrten entstehen automatisch aus Buchungen mit Shuttle: Hinfahrt im nächsten Slot nach Ankunft am Platz,
             Rückfahrt im nächsten Slot nach der Landung. Halle und Zeiten außerhalb der Betriebszeiten werden Fahrten auf Abruf.
+            Hol- & Bringservice: Übernahme am Terminal zur Ankunftszeit, Rückgabe am Terminal 30 min nach der Landung;
+            Terminal aus der Flugnummer, der Fahrer fährt mit dem Shuttle hin bzw. zurück.
           </p>
         </>
       )}
