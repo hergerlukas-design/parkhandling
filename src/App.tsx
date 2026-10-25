@@ -7,6 +7,7 @@ import { CheckinPage } from './pages/CheckinPage'
 import { KeySlotsPage } from './pages/KeySlotsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ScanPage } from './pages/ScanPage'
+import { ShuttlePage } from './pages/ShuttlePage'
 import { SitePlanPage } from './pages/SitePlanPage'
 import { TasksPage } from './pages/TasksPage'
 import { ProtocolPage } from './pages/ProtocolPage'
@@ -29,6 +30,7 @@ export function App() {
               <Route path="fahrzeuge" element={<VehiclesPage />} />
               <Route path="fahrzeuge/:id" element={<VehicleDetailPage />} />
               <Route path="aufgaben" element={<TasksPage />} />
+              <Route path="shuttle" element={<ShuttlePage />} />
               <Route path="scan" element={<ScanPage />} />
               <Route path="einchecken" element={<CheckinPage />} />
               <Route path="protokoll/:type/:bookingId" element={<ProtocolPage />} />

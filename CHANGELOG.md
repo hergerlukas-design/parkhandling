@@ -3,6 +3,24 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.24.0 – 25.10.2026
+
+### Neu
+- Shuttle-Dispo (*Shuttle* in der Navigation, am Smartphone in der unteren Leiste)
+  - Fahrten entstehen automatisch aus Buchungen mit Shuttle: Hinfahrt im nächsten Slot nach Ankunft am Platz (+15 min Annahme), Rückfahrt im nächsten Slot nach der Landung (+30 min Gepäck)
+  - Halle (Premium) und Zeiten außerhalb der Betriebszeiten (05:00–23:00) werden Fahrten „auf Abruf“ zur genauen Uhrzeit
+  - Umbuchung, Storno, geänderte Personenzahl oder geänderte Einstellungen planen automatisch neu; leere Fahrten verschwinden
+  - Tagesansicht Heute/Morgen mit Vor/Zurück, getrennt nach „Zum Flughafen“ und „Vom Flughafen“
+  - Pro Fahrt: Uhrzeit, Personen/Plätze mit Warnung „überbucht“, Fahrer einteilen, Losfahren → Erledigt
+  - Pro Fahrgast: Kennzeichen (zum Fahrzeug), Personen, Flugnummer, Ankunft bzw. Landung, Wartezeit am Terminal, Anrufen
+  - Umsetzen in eine andere Fahrt oder eine neue Fahrt auf Abruf; „von Hand ↺“ gibt den Fahrgast wieder an die Automatik
+  - Fahreransicht: nur Uhrzeit, Route, Kennzeichen, Personen und der nächste Schritt; „Nur meine Fahrten“
+- Fahrzeug-Detail zeigt die Shuttle-Fahrten der Buchung mit Link in die Dispo
+- Dashboard warnt, wenn ein Shuttle heute oder morgen überbucht ist
+
+### Datenbank
+- Migration `20261025000100_shuttle_planning.sql` (additiv): Spalte `transport_passengers.manual`, Einstellungen `shuttle_checkin_minutes` und `shuttle_pickup_after_landing_minutes`, Funktionen `plan_booking_transport`, `shuttle_slot_at`, `replan_transport`, `move_transport_passenger`, `reset_transport_passenger`, `transport_board`, `booking_transport`, `list_drivers`, Trigger auf Buchungen und Einstellungen; bestehende Shuttle-Buchungen werden eingeplant
+
 ## 0.23.0 – 22.10.2026
 
 ### Neu

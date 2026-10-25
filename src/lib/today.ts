@@ -3,6 +3,7 @@ import { formatDate, formatTime } from './format'
 import { loadBoard, type BoardSlot } from './siteplan'
 import { loadTaskBoard, type BoardTask } from './tasks'
 import { supabase } from './supabase'
+import { capacityState, DIRECTION_LABEL, loadTransportBoard, type TransportJob } from './transport'
 import { PARKING_TYPE_LABEL, RETURN_MODE_LABEL } from '../types/domain'
 
 function db() {
@@ -112,6 +113,7 @@ export function buildToday(
   slots: BoardSlot[],
   range: PeriodRange,
   now: Date = new Date(),
+  shuttle: TransportJob[] = [],
 ): TodayData {
   const inDay = (iso: string, from: string, to: string) => iso >= from && iso < to
   const live = bookings.filter((b) => b.status !== 'cancelled')
@@ -192,6 +194,16 @@ export function buildToday(
   for (const e of events.filter((x) => x.kind === 'out' && x.unpaid && x.at >= nowIso)) {
     alerts.push({ tone: 'warn', title: `${e.plate} · Zahlung offen`, text: `Abholung ${formatTime(e.at)} – Zahlung vor Übergabe klären.`, href: `/fahrzeuge/${e.bookingId}` })
   }
+  // Shuttle heute/morgen überbucht
+  for (const j of shuttle.filter((x) => x.status !== 'done' && x.status !== 'cancelled' && capacityState(x) === 'over')) {
+    const today = j.scheduled_at < range.tomorrow
+    alerts.push({
+      tone: 'danger',
+      title: `Shuttle ${today ? '' : 'morgen '}${formatTime(j.scheduled_at)} überbucht`,
+      text: `${DIRECTION_LABEL[j.direction]}: ${j.persons} Personen bei ${j.capacity} Plätzen – Fahrgäste umsetzen.`,
+      href: today ? '/shuttle' : '/shuttle?tag=1',
+    })
+  }
   alerts.sort((a, b) => (a.tone === b.tone ? 0 : a.tone === 'danger' ? -1 : 1))
 
   const openTasks = tasks.filter((t) => t.status !== 'done' && t.type !== 'relocate')
@@ -231,7 +243,7 @@ export function buildToday(
 export async function loadToday(period: DashboardPeriod = { view: 'tag', offset: 0 }): Promise<TodayData> {
   const range = periodRange(period)
   const weekAgo = berlinDayStart(-7)
-  const [day, overdue, tasks, slots] = await Promise.all([
+  const [day, overdue, tasks, slots, shuttle] = await Promise.all([
     db()
       .from('booking_list')
       .select('*')
@@ -250,10 +262,11 @@ export async function loadToday(period: DashboardPeriod = { view: 'tag', offset:
       .limit(100),
     loadTaskBoard(),
     loadBoard(),
+    loadTransportBoard(range.today, range.dayAfter).catch(() => [] as TransportJob[]),
   ])
   const failed = [day, overdue].find((r) => r.error)
   if (failed?.error) throw new Error(failed.error.message)
   const unique = new Map<string, BookingListItem>()
   for (const b of [...(day.data ?? []), ...(overdue.data ?? [])] as BookingListItem[]) unique.set(b.id, b)
-  return buildToday([...unique.values()], tasks, slots, range)
+  return buildToday([...unique.values()], tasks, slots, range, new Date(), shuttle)
 }
