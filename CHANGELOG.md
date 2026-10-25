@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.26.1 – 25.10.2026
+
+### Behoben
+- Auslieferung auf Fly.io schlug seit 0.25.0 fehl: Der Docker-Build schloss den ganzen Ordner `supabase` aus, das Frontend importiert aber `supabase/functions/_shared/webpush.ts` (Web Push). Ausgeschlossen werden jetzt nur Migrationen, Tests und Seeds
+
 ## 0.26.0 – 25.10.2026
 
 ### Neu
