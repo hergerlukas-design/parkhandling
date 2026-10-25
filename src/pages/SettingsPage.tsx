@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Card, Page } from '../components/Page'
-import { signOut, useAuth } from '../lib/auth'
+import { isAdminProfile, isDriverOnly, profileRoles, signOut, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -9,6 +9,7 @@ import { NotificationAdmin } from '../components/notifications/NotificationAdmin
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { UserManagement } from '../components/users/UserManagement'
+import { rolesLabel } from '../lib/users'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -23,6 +24,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function SettingsPage() {
   const update = useStore(updateStore)
   const { session, profile } = useAuth()
+  const admin = isAdminProfile(profile)
+  const driverOnly = isDriverOnly(profile)
 
   return (
     <Page title="Einstellungen">
@@ -57,7 +60,7 @@ export function SettingsPage() {
         <Card title="Konto">
           <dl>
             <Row label="Angemeldet als">{session?.user.email ?? '–'}</Row>
-            <Row label="Rolle">{profile?.role === 'admin' ? 'Admin' : 'Personal'}</Row>
+            <Row label="Rollen">{rolesLabel(profileRoles(profile))}</Row>
           </dl>
           <button
             type="button"
@@ -70,22 +73,22 @@ export function SettingsPage() {
         <Card title="Benachrichtigungen auf diesem Gerät">
           <NotificationSettings />
         </Card>
-        {profile?.role === 'admin' && (
+        {admin && (
           <Card title="Benachrichtigungen: Einstellungen & Geräte">
             <NotificationAdmin />
           </Card>
         )}
-        {profile?.role === 'admin' && (
+        {admin && (
           <Card title="Personal">
             <UserManagement />
           </Card>
         )}
-        {profile?.role === 'admin' && (
+        {admin && (
           <Card title="Stellplätze: Halle & Außenfläche">
             <SiteLayoutSettings />
           </Card>
         )}
-        <Card title="Betrieb">
+        {!driverOnly && <Card title="Betrieb">
           <p className="text-sm text-subtle">
             Jeder Stellplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
           </p>
@@ -96,7 +99,7 @@ export function SettingsPage() {
             Stellplätze/QR-Codes
           </Link>
           <p className="mt-3 text-sm text-subtle">Leistungskatalog und Mail-Testadresse folgen in Phase 1.</p>
-        </Card>
+        </Card>}
       </div>
     </Page>
   )

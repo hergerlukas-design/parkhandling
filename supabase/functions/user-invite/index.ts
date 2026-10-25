@@ -1,17 +1,20 @@
 // Edge Function user-invite
 // Legt ein internes Konto per Einladung an (Supabase Auth inviteUserByEmail) und
-// setzt Rolle, Anzeigename und Freischaltung im Profil. Selbstregistrierung ist deaktiviert.
+// setzt Rollen, Anzeigename und Freischaltung im Profil. Selbstregistrierung ist deaktiviert.
 //
 // Berechtigung: nur aktive Admins (serverseitig über RLS-Funktion is_admin geprüft).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/cors.ts'
 
-const ROLES = ['staff', 'admin'] as const
+const ROLES = ['admin', 'staff', 'driver'] as const
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 interface InviteRequest {
   email?: string
+  /** veraltet: eine Rolle */
   role?: string
+  /** Rollen, beliebig kombinierbar */
+  roles?: string[]
   display_name?: string
 }
 
@@ -39,10 +42,12 @@ Deno.serve(async (req) => {
   }
 
   const email = (body.email ?? '').trim().toLowerCase()
-  const role = body.role ?? 'staff'
+  const requested = Array.isArray(body.roles) && body.roles.length ? body.roles : [body.role ?? 'staff']
+  const roles = ROLES.filter((r) => requested.includes(r))
   const displayName = (body.display_name ?? '').trim().slice(0, 100)
   if (!EMAIL.test(email) || email.length > 254) return json({ error: 'E-Mail-Adresse ungültig' }, 400)
-  if (!ROLES.includes(role as never)) return json({ error: 'Rolle ungültig' }, 400)
+  if (!roles.length || roles.length !== new Set(requested).size) return json({ error: 'Rolle ungültig' }, 400)
+  const role = roles.includes('admin') ? 'admin' : 'staff'
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
@@ -63,6 +68,7 @@ Deno.serve(async (req) => {
       email,
       display_name: displayName || email,
       role,
+      roles,
       active: true,
       must_change_password: true,
       invited_at: now,
@@ -72,5 +78,5 @@ Deno.serve(async (req) => {
   )
   if (profileError) return json({ error: 'Profil konnte nicht angelegt werden' }, 500)
 
-  return json({ ok: true, id: invited.user.id, email, role })
+  return json({ ok: true, id: invited.user.id, email, role, roles })
 })

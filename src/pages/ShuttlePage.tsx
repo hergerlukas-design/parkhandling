@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { Link, useSearchParams } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, Field, Select, TextInput } from '../components/ui'
-import { useAuth } from '../lib/auth'
+import { isDriverOnly, useAuth } from '../lib/auth'
 import { formatDate, formatTime } from '../lib/format'
 import {
   capacityState,
@@ -101,9 +101,13 @@ function PassengerRow({ job, p, onMove, onReset, compact }: {
   const cancelled = p.booking_status === 'cancelled'
   return (
     <li className={`flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-2 text-sm ${cancelled ? 'opacity-50 line-through' : ''}`}>
-      <Link to={`/fahrzeuge/${p.booking_id}`} className="font-mono font-semibold text-accent underline-offset-2 hover:underline">
-        {p.plate}
-      </Link>
+      {compact ? (
+        <span className="font-mono font-semibold">{p.plate}</span>
+      ) : (
+        <Link to={`/fahrzeuge/${p.booking_id}`} className="font-mono font-semibold text-accent underline-offset-2 hover:underline">
+          {p.plate}
+        </Link>
+      )}
       <span className="inline-flex items-center gap-1 rounded-full bg-chip px-2 py-0.5 text-xs font-semibold">
         {p.persons} {p.persons === 1 ? 'Person' : 'Personen'}
       </span>
@@ -304,10 +308,12 @@ function Column({ direction, jobs, children }: { direction: TransportDirection; 
 
 export function ShuttlePage() {
   const [params, setParams] = useSearchParams()
-  const mode: Mode = params.get('ansicht') === 'fahrer' ? 'fahrer' : 'dispo'
-  const offset = Number(params.get('tag') ?? 0) || 0
   const { profile } = useAuth()
-  const [onlyMine, setOnlyMine] = useState(false)
+  const driverOnly = isDriverOnly(profile)
+  // Reiner Fahrer sieht nur die Fahreransicht
+  const mode: Mode = driverOnly || params.get('ansicht') === 'fahrer' ? 'fahrer' : 'dispo'
+  const offset = Number(params.get('tag') ?? 0) || 0
+  const [onlyMine, setOnlyMine] = useState(driverOnly)
   const [jobs, setJobs] = useState<TransportJob[] | null>(null)
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -376,14 +382,14 @@ export function ShuttlePage() {
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Shuttle</h1>
-          <div className="flex gap-1.5" role="group" aria-label="Ansicht">
+          {!driverOnly && <div className="flex gap-1.5" role="group" aria-label="Ansicht">
             {(['dispo', 'fahrer'] as const).map((m) => (
               <button key={m} type="button" aria-pressed={mode === m} onClick={() => update({ ansicht: m === 'dispo' ? null : m })}
                 className={`touch-target rounded-full px-4 text-sm font-semibold ${mode === m ? 'bg-ink text-white' : 'bg-chip text-subtle hover:bg-line'}`}>
                 {m === 'dispo' ? 'Dispo' : 'Fahrer'}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
         <DayBar offset={offset} onChange={(n) => update({ tag: n === 0 ? null : String(n) })} label={dayLabel(offset, range.from)} />
       </header>
@@ -429,7 +435,7 @@ export function ShuttlePage() {
           {profile && (
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" className="size-5" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
-              Nur meine Fahrten
+              Nur meine und noch offene Fahrten
             </label>
           )}
           {driverOrder(visible, onlyMine ? profile?.id : null).length === 0 ? (

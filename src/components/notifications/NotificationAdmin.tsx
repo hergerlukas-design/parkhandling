@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { formatDateTime } from '../../lib/format'
 import {
+  EVENT_ROLE_LABEL,
+  EVENT_ROLES,
   LEAD_FIELDS,
   PUSH_EVENT_LABEL,
   PUSH_EVENTS,
+  type EventRole,
   type NotificationConfig,
   type PushEvent,
 } from '../../lib/push/events'
@@ -16,7 +19,7 @@ import {
   type DeviceSubscription,
   type NotificationLogEntry,
 } from '../../lib/push/pushClient'
-import { Button, ErrorList, Select, TextInput } from '../ui'
+import { Button, ErrorList, TextInput } from '../ui'
 
 const STATUS_LABEL: Record<NotificationLogEntry['status'], { text: string; className: string }> = {
   pending: { text: 'wartet', className: 'bg-chip text-subtle' },
@@ -56,7 +59,7 @@ export function NotificationAdmin() {
     void reload()
   }, [])
 
-  function patchEvent(event: PushEvent, patch: { enabled?: boolean; roles?: Array<'staff' | 'admin'> }) {
+  function patchEvent(event: PushEvent, patch: { enabled?: boolean; roles?: EventRole[] }) {
     if (!config) return
     setConfig({ ...config, events: { ...config.events, [event]: { ...config.events[event], ...patch } } })
     setDirty(true)
@@ -94,14 +97,15 @@ export function NotificationAdmin() {
       <section>
         <h3 className="mb-1 text-sm font-semibold">Ereignisse</h3>
         <p className="mb-2 text-xs text-muted">
-          Ausgeschaltete Ereignisse werden an kein Gerät gesendet. „Alle“ = gesamtes Personal inkl. Admins.
-          Jedes Gerät kann einzelne Ereignisse zusätzlich abbestellen.
+          Ausgeschaltete Ereignisse werden an kein Gerät gesendet. Empfänger mehrfach wählbar:
+          „Personal“ schließt Admins ein, „Fahrer“ erreicht auch reine Fahrer. Jedes Gerät kann einzelne
+          Ereignisse zusätzlich abbestellen.
         </p>
         <ul className="divide-y divide-line">
           {PUSH_EVENTS.map((event) => {
             const cfg = config.events[event] ?? {}
             const enabled = cfg.enabled !== false
-            const onlyAdmin = (cfg.roles ?? ['staff']).every((r) => r === 'admin')
+            const roles: EventRole[] = cfg.roles?.length ? cfg.roles : ['staff']
             return (
               <li key={event} className="flex flex-wrap items-center gap-3 py-2">
                 <label className="touch-target flex min-w-0 flex-1 cursor-pointer items-center gap-3">
@@ -113,16 +117,21 @@ export function NotificationAdmin() {
                   />
                   <span className="text-sm font-medium">{PUSH_EVENT_LABEL[event].title}</span>
                 </label>
-                <Select
-                  aria-label={`Empfänger ${PUSH_EVENT_LABEL[event].title}`}
-                  className="!w-auto"
-                  value={onlyAdmin ? 'admin' : 'staff'}
-                  disabled={!enabled}
-                  onChange={(e) => patchEvent(event, { roles: [e.target.value as 'staff' | 'admin'] })}
-                >
-                  <option value="staff">Alle</option>
-                  <option value="admin">Nur Admins</option>
-                </Select>
+<div className="flex flex-wrap gap-1.5" role="group" aria-label={`Empfänger ${PUSH_EVENT_LABEL[event].title}`}>
+                  {EVENT_ROLES.map((role) => {
+                    const on = roles.includes(role)
+                    return (
+                      <button key={role} type="button" aria-pressed={on} disabled={!enabled}
+                        onClick={() => {
+                          const next = EVENT_ROLES.filter((r) => (r === role ? !on : roles.includes(r)))
+                          if (next.length) patchEvent(event, { roles: next })
+                        }}
+                        className={`touch-target rounded-full px-3 text-xs font-semibold disabled:opacity-50 ${on ? 'bg-ink text-white' : 'bg-chip text-subtle hover:bg-line'}`}>
+                        {EVENT_ROLE_LABEL[role]}
+                      </button>
+                    )
+                  })}
+                </div>
               </li>
             )
           })}

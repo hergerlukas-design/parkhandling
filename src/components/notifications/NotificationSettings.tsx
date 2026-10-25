@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../lib/auth'
+import { profileRoles, useAuth } from '../../lib/auth'
 import { availableEvents, PUSH_EVENT_LABEL, toggleEvent, type NotificationConfig, type PushEvent } from '../../lib/push/events'
 import {
   browserSubscription,
@@ -30,7 +30,7 @@ const HINT: Record<Exclude<PushAvailability, { ok: true }>['reason'], string> = 
 
 export function NotificationSettings() {
   const { profile } = useAuth()
-  const role = profile?.role ?? 'staff'
+  const roles = profileRoles(profile)
   const [availability, setAvailability] = useState<PushAvailability | null>(null)
   const [config, setConfig] = useState<NotificationConfig>({ events: {} })
   const [device, setDevice] = useState<DeviceSubscription | null>(null)
@@ -77,7 +77,7 @@ export function NotificationSettings() {
     }
   }
 
-  const events = availableEvents(config, role)
+  const events = availableEvents(config, roles.length ? roles : ['staff'])
 
   if (!availability) return <p className="text-sm text-muted">Lädt …</p>
 
