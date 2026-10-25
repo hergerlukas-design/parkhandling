@@ -126,4 +126,14 @@ describe('periodRange', () => {
     expect(periodRange({ view: 'woche', offset: 0 })).toMatchObject({ from: '2026-10-04T22:00:00.000Z', to: '2026-10-11T22:00:00.000Z', multiDay: true })
     expect(periodRange({ view: 'woche', offset: 1 })).toMatchObject({ from: '2026-10-11T22:00:00.000Z', to: '2026-10-18T22:00:00.000Z' })
   })
+
+  it('warnt bei überbuchtem Shuttle heute', () => {
+    const job = {
+      id: 'j1', type: 'shuttle_slot' as const, direction: 'from_airport' as const,
+      scheduled_at: '2026-10-06T15:00:00Z', status: 'planned' as const, driver_id: null, driver_name: null,
+      meeting_point: null, note: null, persons: 10, capacity: 8, passengers: [],
+    }
+    const data = buildToday([], [], [], range, now, [job])
+    expect(data.alerts[0]).toMatchObject({ tone: 'danger', title: 'Shuttle 17:00 überbucht', href: '/shuttle' })
+  })
 })

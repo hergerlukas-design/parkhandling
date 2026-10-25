@@ -1,6 +1,6 @@
 # ANNAHMEN – Park & Fly Prototyp
 
-Stand: 22.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
+Stand: 25.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
 Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
@@ -80,6 +80,15 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [OFFEN] Hol- & Bringservice nur Kundenabholung/Rückbringen oder auch Transfer zum Terminal? Umgesetzt (0.14.0): nur Kundenabholung/Rückbringen. Die Transfer-Spalte „Vallet/Terminal“ aus der Excel-Vorlage wird ebenfalls als Hol- & Bringservice übernommen, bis die Frage geklärt ist
 - [ENTFALLEN] Vallet als eigene Leistung und als Shuttle-Fahrtart (`transport_jobs.type = vallet`, entfernt in 0.14.0)
 - [OFFEN] Flugstatus-Abfrage (Flugnummern liegen seit 0.22.0 vor)
+- [ANNAHME] Shuttle-Dispo (0.24.0): Fahrten entstehen automatisch aus jeder aktiven Buchung mit `return_mode = shuttle`, je eine Hin- und Rückfahrt
+- [ANNAHME] Hinfahrt = nächster Slot ab Ankunft am Platz + 15 min für Annahme und Protokoll (`settings.shuttle_checkin_minutes`)
+- [ANNAHME] Rückfahrt = nächster Slot ab Landung + 30 min für Gepäck (`settings.shuttle_pickup_after_landing_minutes`); ohne Landezeit ab Abholung − Puffer
+- [ANNAHME] Slots im Takt ab Beginn der Betriebszeit (05:00, 06:00, …); liegt die Fahrt außerhalb 05:00–23:00, wird sie eine Fahrt „auf Abruf“
+- [ANNAHME] „Premium“ = Halle (`parking_type = indoor`): immer Fahrt auf Abruf zur genauen Uhrzeit statt Slot
+- [ANNAHME] Kapazität 8 wird nur geprüft und gewarnt (Dispo, Dashboard), nicht automatisch auf andere Slots verteilt, damit niemand einen Flug verpasst
+- [ANNAHME] Von der Dispo umgesetzte Fahrgäste und laufende/erledigte Fahrten plant die App nicht mehr um; Umbuchung, Storno und Personenzahl planen sonst automatisch neu
+- [ANNAHME] Fahrer = beliebiges aktives Personal, keine eigene Rolle; wer ohne Einteilung „Losfahren“ tippt, wird Fahrer der Fahrt
+- [OFFEN] Hol- & Bringservice-Planung (Fahrten zum Kunden) folgt, sobald Frage 8 geklärt ist; Buchungen mit `pickup_delivery` bekommen noch keine Fahrt
 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2

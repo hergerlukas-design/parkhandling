@@ -8,9 +8,10 @@ import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
 import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/bookings'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
-import { formatDate, formatDateTime, formatMoney } from '../lib/format'
+import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
 import { hasKeySlot, whereabouts } from '../lib/siteplan'
+import { DIRECTION_LABEL, loadBookingTrips, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LABEL, type BookingTrip } from '../lib/transport'
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
@@ -121,6 +122,14 @@ function TaskRow({ task, onOpen }: { task: Task; onOpen: (id: string) => void })
   )
 }
 
+/** Link-Parameter für den Shuttle-Tag (Versatz in Tagen ab heute, Europe/Berlin) */
+function tripDayParam(at: string): string {
+  const day = (iso: string | Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso))
+  const diff = Math.round((Date.parse(day(at)) - Date.parse(day(new Date()))) / 86400000)
+  return diff === 0 ? '' : `?tag=${diff}`
+}
+
 export function VehicleDetailPage() {
   const { id } = useParams()
   const [data, setData] = useState<BookingDetail | null>(null)
@@ -132,11 +141,13 @@ export function VehicleDetailPage() {
   const [openTask, setOpenTask] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [protocols, setProtocols] = useState<ProtocolRow[]>([])
+  const [trips, setTrips] = useState<BookingTrip[]>([])
 
   const load = useCallback(() => {
     if (!id) return
     getBookingDetail(id).then(setData).catch((e: Error) => setError(e.message))
     listProtocols(id).then(setProtocols).catch(() => undefined)
+    loadBookingTrips(id).then(setTrips).catch(() => setTrips([]))
   }, [id])
 
   useEffect(load, [load])
@@ -233,6 +244,18 @@ export function VehicleDetailPage() {
               <Row label="Abholung">
                 {formatPickup(b.end_at)} · {RETURN_MODE_LABEL[b.return_mode]}
               </Row>
+              {trips.length > 0 && (
+                <Row label="Shuttle">
+                  <span className="flex flex-col">
+                    {trips.map((t) => (
+                      <Link key={t.passenger_id} to={`/shuttle${tripDayParam(t.scheduled_at)}`} className="text-accent underline-offset-2 hover:underline">
+                        {DIRECTION_LABEL[t.direction]}: {formatDate(t.scheduled_at).slice(0, 6)} {formatTime(t.scheduled_at)} · {TRANSPORT_TYPE_LABEL[t.type]}
+                        {t.status !== 'planned' ? ` · ${TRANSPORT_STATUS_LABEL[t.status]}` : ''}
+                      </Link>
+                    ))}
+                  </span>
+                </Row>
+              )}
               <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
               {b.fuel_type && <Row label="Antrieb">{FUEL_TYPE_LABEL[b.fuel_type]}</Row>}
               <Row label="Personen">{b.persons}</Row>

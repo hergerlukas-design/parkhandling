@@ -90,7 +90,7 @@ export function AppShell() {
 
       {/* Bottom-Bar (Smartphone) mit zentralem Scan-Button */}
       <nav aria-label="Hauptnavigation" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        <ul className="grid grid-cols-5 items-end">
+        <ul className="grid grid-cols-6 items-end">
           {BOTTOM_ITEMS.map((item) =>
             item === 'scan' ? (
               <li key="scan" className="flex justify-center">
