@@ -33,6 +33,26 @@ describe('Ereignisse je Rolle', () => {
   })
 })
 
+describe('Mehrfachrollen und Fahrer', () => {
+  const cfg: NotificationConfig = {
+    events: {
+      booking_new: { roles: ['staff'] },
+      booking_review: { roles: ['admin'] },
+      shuttle_due: { roles: ['driver', 'staff'] },
+      booking_ready: { roles: ['driver'] },
+    },
+  }
+
+  it('reiner Fahrer bekommt nur Fahrer-Ereignisse', () => {
+    expect(availableEvents(cfg, ['driver'])).toEqual(['booking_ready', 'shuttle_due'])
+  })
+
+  it('Admin zählt als Personal, Rollen addieren sich', () => {
+    expect(availableEvents(cfg, ['admin'])).toEqual(['booking_new', 'booking_review', 'shuttle_due'])
+    expect(availableEvents(cfg, ['staff', 'driver'])).toEqual(['booking_new', 'booking_ready', 'shuttle_due'])
+  })
+})
+
 describe('Geräteerkennung', () => {
   const IPAD_OS = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15'
   const ANDROID_TAB = 'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'

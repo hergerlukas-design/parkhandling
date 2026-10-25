@@ -95,7 +95,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] „Premium“ = Halle (`parking_type = indoor`): immer Fahrt auf Abruf zur genauen Uhrzeit statt Slot
 - [ANNAHME] Kapazität 8 wird nur geprüft und gewarnt (Dispo, Dashboard), nicht automatisch auf andere Slots verteilt, damit niemand einen Flug verpasst
 - [ANNAHME] Von der Dispo umgesetzte Fahrgäste und laufende/erledigte Fahrten plant die App nicht mehr um; Umbuchung, Storno und Personenzahl planen sonst automatisch neu
-- [ANNAHME] Fahrer = beliebiges aktives Personal, keine eigene Rolle; wer ohne Einteilung „Losfahren“ tippt, wird Fahrer der Fahrt
+- [BELEGT] ⚠ ABWEICHUNG: Eigene Rolle „Fahrer“ (Lukas, 25.10.2026), ersetzt „Fahrer = beliebiges Personal“. Fahrerauswahl in der Dispo zeigt Konten mit Rolle Fahrer (gibt es noch keine: alle aktiven Konten); wer ohne Einteilung „Losfahren“ tippt, wird Fahrer der Fahrt
 
 ## Protokolle & Mails
 - [BELEGT] Unterschrift bei Annahme und Übergabe, Layout aus Vehicle Protocol Pro V2
@@ -118,19 +118,23 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Push-Benachrichtigungen für das Personal bei: neuer Buchung, Umbuchung/Storno, Import prüfen, Regal-Konflikt/Umsetzen, Ankunft bald, Abholung bald, Fahrzeug bereit, Shuttle fällig (Entscheidung Lukas 25.10.2026)
 - [BELEGT] Neue App-Version wird **nicht** per Push gemeldet, nur per Banner
 - [ANNAHME] Web Push (VAPID) über Edge Function `push-send`, Auslösung per Trigger und `pg_cron`, Zustellung per `pg_net`, kein Drittanbieter
-- [ANNAHME] Empfänger (`settings.notifications`): Import prüfen → nur Admins; alle anderen Ereignisse → gesamtes Personal inkl. Admins; Shuttle → eingeteilter Fahrer, ohne Fahrer alle. Jedes Gerät kann Ereignisse abbestellen
+- [BELEGT] Empfänger je Ereignis als Mehrfachauswahl aus Personal, Admins, Fahrer (Lukas, 25.10.2026); „Personal“ schließt Admins ein
+- [ANNAHME] Vorbelegung (`settings.notifications`): Import prüfen → Admins; Shuttle fällig → Fahrer + Personal (eingeteilter Fahrer direkt); alle anderen → Personal. Jedes Gerät kann Ereignisse abbestellen
 - [ANNAHME] Vorlauf: Ankunft 60 min, Abholung 60 min, Umsetz-Erinnerung 60 min vor Fälligkeit, Shuttle 15 min
 - [ANNAHME] Wer eine Buchung selbst anlegt/ändert, bekommt dazu keine Meldung; Umsetz-Konflikte gehen auch an den Auslöser
 - [ANNAHME] Push-Inhalt ohne Kundennamen und Kontaktdaten (nur Kennzeichen, Zeiten, Platz, Status)
 - [ANNAHME] Keine Ruhezeiten; Demo-Daten lösen keine Meldungen aus
 - [ANNAHME] Bei geöffneter App Hinweis in der App statt Systembenachrichtigung; iPhone/iPad zeigen trotzdem die Systembenachrichtigung (Safari entzieht sonst die Berechtigung)
 - [BELEGT] iPhone/iPad: Push nur in der installierten App (Home-Bildschirm, ab iOS/iPadOS 16.4)
-- [OFFEN] Endgültige Rollenzuordnung, Ruhezeiten nachts, eigene Rolle `driver`
+- [OFFEN] Ruhezeiten nachts
 
 ## Nutzer & Geräte
-- [ANNAHME] Rollen: `staff` und `admin`
+- [BELEGT] ⚠ ABWEICHUNG: Rollen Admin, Personal, Fahrer, beliebig kombinierbar (Lukas, 25.10.2026; vorher nur `staff`/`admin`). Gespeichert in `profiles.roles`, `profiles.role` bleibt für ältere App-Versionen synchron
+- [BELEGT] Reiner Fahrer (ohne Personal/Admin) sieht nur die Shuttle-Ansicht (Fahreransicht) und die Einstellungen; Buchungen, Lageplan und Aufgaben sind für ihn gesperrt (RLS)
+- [ANNAHME] Admin umfasst alle Rechte von Personal; Fahrer darf Fahrten starten/abschließen und sich eintragen, aber nicht umsetzen oder Zeiten ändern
+- [ANNAHME] Reiner Fahrer sieht Kennzeichen, Personen, Flug, Terminal und Telefon (Anrufen), aber keine Buchungsdetails
 - [ANNAHME] Login per E-Mail + Passwort (Supabase Auth), PIN-Login später
-- [ANNAHME] Keine Selbstregistrierung. Eingeladene müssen beim ersten Login ihr Passwort festlegen (bestätigt). Konten legt nur ein Admin per Einladung an (E-Mail + Rolle, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen).
+- [ANNAHME] Keine Selbstregistrierung. Eingeladene müssen beim ersten Login ihr Passwort festlegen (bestätigt). Konten legt nur ein Admin per Einladung an (E-Mail + Rollen, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen).
 - [ANNAHME] Profile werden nur deaktiviert, nicht gelöscht. Der letzte aktive Admin lässt sich nicht deaktivieren oder herabstufen.
 - [ANNAHME] Geräte: Android-/iOS-Tablets quer und Smartphones, Chrome/Safari aktuell
 

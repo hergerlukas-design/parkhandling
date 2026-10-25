@@ -3,13 +3,27 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
-## 0.26.2 – 25.10.2026
+## 0.27.1 – 25.10.2026
 
 ### Geändert
 - Push-Benachrichtigungen brauchen keine eigenen Secrets an der Edge Function mehr: privater VAPID-Schlüssel und Aufruf-Secret liegen im Supabase Vault (`push_vapid_private_key`, `push_send_secret`), `push-send` liest sie mit dem Service-Zugang über `push_send_config()`. Gesetzte Function-Secrets haben weiter Vorrang
 
 ### Datenbank
 - Migration `20261025000400_push_config_vault.sql` (additiv): Funktion `push_send_config()` (nur service_role), Einstellung `push_vapid_subject`
+
+## 0.27.0 – 25.10.2026
+
+### Neu
+- Rolle **Fahrer** neben Admin und Personal; Rollen sind frei kombinierbar (z. B. Personal + Fahrer)
+  - *Einstellungen → Personal*: Rollen je Person per Mehrfachauswahl, ebenso beim Einladen
+  - Reiner Fahrer sieht nur *Shuttle* (Fahreransicht mit „Nur meine und noch offene Fahrten“) und die Einstellungen; alle anderen Seiten leiten zur Shuttle-Ansicht
+  - Fahrerauswahl in der Dispo zeigt Konten mit Rolle Fahrer
+- Benachrichtigungen: Empfänger je Ereignis als Mehrfachauswahl (Personal, Admins, Fahrer); „Shuttle fällig“ geht jetzt auch an Fahrer
+- Konto zeigt alle Rollen
+
+### Datenbank
+- Migration `20261025000500_driver_role.sql` (additiv): Spalte `profiles.roles` (synchron mit `profiles.role` für ältere Versionen), Funktionen `is_member`, `is_driver`, `notify_roles`; `is_staff` gilt nur noch für Personal/Admins, reine Fahrer bekommen per RLS nur Fahrten, eigene Push-Geräte und Push-Einstellungen; Empfänger und Vorbelegung der Benachrichtigungen nach Rollenliste
+- Edge Function `user-invite` nimmt mehrere Rollen an (die App setzt die Rollen nach der Einladung zusätzlich, funktioniert also auch mit der bisherigen Fassung)
 
 ## 0.26.1 – 25.10.2026
 

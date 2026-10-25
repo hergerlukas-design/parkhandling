@@ -109,11 +109,12 @@ describe('Shuttle-Dispo', () => {
     expect(split.from_airport.map((j) => j.id)).toEqual([a.id])
   })
 
-  it('Fahreransicht: eigene Fahrten, erledigte zuletzt', () => {
+  it('Fahreransicht: eigene und offene Fahrten, erledigte zuletzt', () => {
     const done = job({ status: 'done', driver_id: 'd1', scheduled_at: '2026-10-26T06:00:00Z' })
     const later = job({ driver_id: 'd1', scheduled_at: '2026-10-26T12:00:00Z' })
     const other = job({ driver_id: 'd2', scheduled_at: '2026-10-26T07:00:00Z' })
-    expect(driverOrder([done, later, other], 'd1').map((j) => j.id)).toEqual([later.id, done.id])
+    const free = job({ driver_id: null, scheduled_at: '2026-10-26T09:00:00Z' })
+    expect(driverOrder([done, later, other, free], 'd1').map((j) => j.id)).toEqual([free.id, later.id, done.id])
     expect(driverOrder([done, later, other]).map((j) => j.id)).toEqual([other.id, later.id, done.id])
   })
 
