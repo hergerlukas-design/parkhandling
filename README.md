@@ -83,20 +83,17 @@ Web Push ohne Drittanbieter: Trigger und `pg_cron` legen Meldungen in `public.no
    ```bash
    supabase functions deploy push-send --no-verify-jwt
    ```
-3. Secrets der Edge Functions setzen:
-
-   | Secret | Inhalt |
-   |---|---|
-   | `VAPID_PUBLIC_KEY` | öffentlicher Schlüssel aus Schritt 1 |
-   | `VAPID_PRIVATE_KEY` | privater Schlüssel aus Schritt 1 (**nie ins Repo**) |
-   | `VAPID_SUBJECT` | Kontakt für die Push-Dienste, z. B. `mailto:betrieb@ihre-domain.de` |
-   | `PUSH_SEND_SECRET` | Zufallswert aus Schritt 1 |
-
+3. Entfällt seit 0.26.2: Function-Secrets sind nicht nötig, `push-send` liest die Schlüssel aus Vault und
+   Einstellungen (`push_send_config()`). Optional überschreiben `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+   `VAPID_SUBJECT`, `PUSH_SEND_SECRET` als Function-Secrets diese Werte.
 4. In der Datenbank (SQL-Editor), Werte aus Schritt 1:
    ```sql
    update public.settings set value = to_jsonb('<VAPID_PUBLIC_KEY>'::text) where key = 'push_vapid_public_key';
-   select vault.create_secret('https://<projekt>.supabase.co/functions/v1/push-send', 'push_send_url');
+   select vault.create_secret('<VAPID_PRIVATE_KEY>', 'push_vapid_private_key');
    select vault.create_secret('<PUSH_SEND_SECRET>', 'push_send_secret');
+   select vault.create_secret('https://<projekt>.supabase.co/functions/v1/push-send', 'push_send_url');
+   -- optional: Kontakt für die Push-Dienste (Standard https://parkhandling.fly.dev)
+   update public.settings set value = '"mailto:betrieb@ihre-domain.de"' where key = 'push_vapid_subject';
    ```
 5. Die Migration richtet die Cron-Jobs `push-due-notifications` (alle 5 min: Ankunft/Abholung/Umsetzen/Shuttle)
    und `push-dispatch` (jede Minute: liegengebliebene Meldungen) ein, sofern `pg_cron` verfügbar ist.

@@ -7,8 +7,9 @@
 //    404/410 vom Push-Dienst schalten das Abo ab, sonst nach 5 Fehlern.
 //  * Verschlüsselung (RFC 8291) und VAPID (RFC 8292) ohne Fremdbibliothek: ../_shared/webpush.ts
 //
-// Secrets: PUSH_SEND_SECRET (gleicher Wert wie Vault-Eintrag push_send_secret),
-//          VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (z. B. "mailto:betrieb@example.com")
+// Schlüssel: standardmäßig aus der Datenbank (push_send_config(): Vault push_vapid_private_key und
+// push_send_secret, settings.push_vapid_public_key/push_vapid_subject). Optional überschreiben
+// Function-Secrets VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, PUSH_SEND_SECRET.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { buildPushRequest, type VapidKeys } from '../_shared/webpush.ts'
 
@@ -62,26 +63,36 @@ async function sendOne(r: Recipient, payload: Record<string, unknown>, keys: Vap
   }
 }
 
+interface PushConfig {
+  public_key: string
+  private_key: string
+  subject: string
+  secret: string
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return respond({ error: 'Methode nicht erlaubt' }, 405)
 
-  const secret = Deno.env.get('PUSH_SEND_SECRET') ?? ''
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    auth: { persistSession: false },
+  })
+  const { data: cfgData, error: cfgError } = await db.rpc('push_send_config')
+  if (cfgError) return respond({ error: `push_send_config: ${cfgError.message}` }, 500)
+  const cfg = (cfgData ?? {}) as Partial<PushConfig>
+
+  const secret = Deno.env.get('PUSH_SEND_SECRET') || cfg.secret || ''
   if (!secret || !safeEqual(req.headers.get('x-push-secret') ?? '', secret)) {
     return respond({ error: 'Nicht berechtigt' }, 401)
   }
 
   const keys: VapidKeys = {
-    publicKey: Deno.env.get('VAPID_PUBLIC_KEY') ?? '',
-    privateKey: Deno.env.get('VAPID_PRIVATE_KEY') ?? '',
-    subject: Deno.env.get('VAPID_SUBJECT') ?? 'mailto:admin@example.com',
+    publicKey: Deno.env.get('VAPID_PUBLIC_KEY') || cfg.public_key || '',
+    privateKey: Deno.env.get('VAPID_PRIVATE_KEY') || cfg.private_key || '',
+    subject: Deno.env.get('VAPID_SUBJECT') || cfg.subject || 'https://parkhandling.fly.dev',
   }
   if (!keys.publicKey || !keys.privateKey) {
-    return respond({ error: 'VAPID-Schlüssel fehlen (Secrets VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)' }, 500)
+    return respond({ error: 'VAPID-Schlüssel fehlen (Vault push_vapid_private_key / settings.push_vapid_public_key)' }, 500)
   }
-
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
-    auth: { persistSession: false },
-  })
 
   let notifications = 0
   let delivered = 0

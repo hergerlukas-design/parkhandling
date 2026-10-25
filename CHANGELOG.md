@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.26.2 – 25.10.2026
+
+### Geändert
+- Push-Benachrichtigungen brauchen keine eigenen Secrets an der Edge Function mehr: privater VAPID-Schlüssel und Aufruf-Secret liegen im Supabase Vault (`push_vapid_private_key`, `push_send_secret`), `push-send` liest sie mit dem Service-Zugang über `push_send_config()`. Gesetzte Function-Secrets haben weiter Vorrang
+
+### Datenbank
+- Migration `20261025000400_push_config_vault.sql` (additiv): Funktion `push_send_config()` (nur service_role), Einstellung `push_vapid_subject`
+
 ## 0.26.1 – 25.10.2026
 
 ### Behoben
