@@ -4,5 +4,8 @@ dev-dist
 .git
 .env.local
 .env.*.local
-supabase
+# Nur Migrationen, Tests und Seeds ausschließen; supabase/functions/_shared wird vom Frontend importiert (Web Push)
+supabase/migrations
+supabase/tests
+supabase/*.sql
 mockup
