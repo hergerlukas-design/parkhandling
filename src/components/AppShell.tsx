@@ -4,6 +4,7 @@ import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
 import { BOTTOM_ITEMS, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
+import { PushMessages } from './notifications/PushMessages'
 import { UpdateBanner } from './UpdateBanner'
 
 /** Seitentitel für Ansichten ohne eigenen Navigationseintrag */
@@ -122,6 +123,7 @@ export function AppShell() {
         </ul>
         <div className="pb-1 text-center text-[10px] text-muted">Version {APP_VERSION}</div>
       </nav>
+      <PushMessages />
     </div>
   )
 }

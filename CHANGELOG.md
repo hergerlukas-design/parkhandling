@@ -3,6 +3,28 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.25.0 – 25.10.2026
+
+### Neu
+- Push-Benachrichtigungen für das Personal, auch bei geschlossener App (*Einstellungen → Benachrichtigungen auf diesem Gerät*)
+  - Ereignisse: neue Buchung, Umbuchung/Storno, Import prüfen (nur Admins), Umsetzen nötig (Regal-Konflikt und Erinnerung vor Fälligkeit), Ankunft bald, Abholung bald, Fahrzeug bereit, Shuttle fällig (an den eingeteilten Fahrer, sonst an alle)
+  - Pro Gerät: Gerätename, Ereignisse einzeln an/aus, „Testbenachrichtigung senden“, Abmelden
+  - Tippen auf die Benachrichtigung öffnet die passende Ansicht (Fahrzeug, Aufgaben, Shuttle)
+  - Bei geöffneter App erscheint ein Hinweis unten statt einer Systembenachrichtigung
+  - Wer eine Buchung selbst anlegt oder ändert, wird darüber nicht benachrichtigt
+  - Inhalte ohne Kundennamen und Kontaktdaten (nur Kennzeichen, Zeiten, Platz, Status)
+  - iPhone/iPad: Hinweis „Zum Home-Bildschirm hinzufügen“, wenn die App nicht installiert ist
+- Admin: Ereignisse global an/aus, Empfänger (alle / nur Admins), Vorlaufzeiten (Ankunft, Abholung, Umsetzen, Shuttle), angemeldete Geräte (abmelden/aktivieren) und die letzten 50 Meldungen mit Status
+- App-Updates werden weiterhin nur per Banner gemeldet, nicht per Push
+
+### Technik
+- Web Push ohne Drittanbieter: Verschlüsselung (RFC 8291) und VAPID (RFC 8292) mit WebCrypto in `supabase/functions/_shared/webpush.ts`, gegengeprüft mit `http_ece`/`web-push`
+- Edge Function `push-send` (Aufruf nur aus der Datenbank per Secret-Header); `npm run push:keys` erzeugt die Schlüssel
+- Service Worker bindet `push-handler.js` per `importScripts` ein; der Aktualisierungs-Flow (Prompt, Zurückhalten bei offenem Protokoll) ist unverändert
+
+### Datenbank
+- Migration `20261025000200_push_notifications.sql` (additiv): Tabellen `push_subscriptions` und `notifications` (Outbox mit `dedupe_key`, RLS), Einstellungen `notifications` und `push_vapid_public_key`, Trigger auf Buchungen, Importen und Umsetz-Aufgaben, Funktionen `enqueue_notification`, `enqueue_due_notifications`, `dispatch_push`, `claim_push_batch`, `finish_push`, `save_push_subscription`, `set_push_events`, `remove_push_subscription`, `send_test_push`; Cron-Jobs `push-due-notifications` (5 min) und `push-dispatch` (1 min); Demo-Daten lösen keine Meldungen aus
+
 ## 0.24.0 – 25.10.2026
 
 ### Neu

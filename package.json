@@ -1,7 +1,7 @@
 {
   "name": "parkhandling",
   "private": true,
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Park & Fly Manager – interne PWA zur Steuerung des Park & Fly Betriebs",
   "type": "module",
   "scripts": {
@@ -11,7 +11,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "./scripts/db-test.sh"
+    "test:db": "./scripts/db-test.sh",
+    "push:keys": "node scripts/generate-vapid-keys.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
