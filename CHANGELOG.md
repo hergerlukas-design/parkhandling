@@ -14,7 +14,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Konto zeigt alle Rollen
 
 ### Datenbank
-- Migration `20261025000400_driver_role.sql` (additiv): Spalte `profiles.roles` (synchron mit `profiles.role` für ältere Versionen), Funktionen `is_member`, `is_driver`, `notify_roles`; `is_staff` gilt nur noch für Personal/Admins, reine Fahrer bekommen per RLS nur Fahrten, eigene Push-Geräte und Push-Einstellungen; Empfänger und Vorbelegung der Benachrichtigungen nach Rollenliste
+- Migration `20261025000500_driver_role.sql` (additiv): Spalte `profiles.roles` (synchron mit `profiles.role` für ältere Versionen), Funktionen `is_member`, `is_driver`, `notify_roles`; `is_staff` gilt nur noch für Personal/Admins, reine Fahrer bekommen per RLS nur Fahrten, eigene Push-Geräte und Push-Einstellungen; Empfänger und Vorbelegung der Benachrichtigungen nach Rollenliste
 - Edge Function `user-invite` nimmt mehrere Rollen an (die App setzt die Rollen nach der Einladung zusätzlich, funktioniert also auch mit der bisherigen Fassung)
 
 ## 0.26.1 – 25.10.2026
