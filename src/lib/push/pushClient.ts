@@ -15,7 +15,7 @@ export interface DeviceSubscription {
   failure_count: number
   user_agent: string | null
   created_at: string
-  profiles?: { display_name: string; role: string } | null
+  profiles?: { display_name: string; role: string; roles?: string[] } | null
 }
 
 export interface NotificationLogEntry {
@@ -225,7 +225,7 @@ export async function saveNotificationConfig(config: NotificationConfig): Promis
 export async function listDevices(): Promise<DeviceSubscription[]> {
   const { data, error } = await client()
     .from('push_subscriptions')
-    .select('*, profiles(display_name, role)')
+    .select('*, profiles(display_name, role, roles)')
     .order('active', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(200)

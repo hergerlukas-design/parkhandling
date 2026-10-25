@@ -178,11 +178,11 @@ export function splitByDirection(jobs: TransportJob[]): Record<TransportDirectio
   }
 }
 
-/** Fahreransicht: offene Fahrten zuerst nach Uhrzeit, erledigte am Ende */
+/** Fahreransicht: offene Fahrten zuerst nach Uhrzeit, erledigte am Ende; mit Fahrer: eigene und noch nicht eingeteilte */
 export function driverOrder(jobs: TransportJob[], onlyDriver?: string | null): TransportJob[] {
   return jobs
     .filter((j) => j.status !== 'cancelled' && j.passengers.length > 0)
-    .filter((j) => !onlyDriver || j.driver_id === onlyDriver)
+    .filter((j) => !onlyDriver || j.driver_id === onlyDriver || !j.driver_id)
     .sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || a.scheduled_at.localeCompare(b.scheduled_at))
 }
 

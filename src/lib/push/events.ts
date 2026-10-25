@@ -23,7 +23,18 @@ export const PUSH_EVENT_LABEL: Record<PushEvent, { title: string; hint: string }
   shuttle_due: { title: 'Shuttle fällig', hint: 'Fahrt startet in Kürze (eingeteilter Fahrer)' },
 }
 
-export type EventRoles = Array<'staff' | 'admin'>
+export type EventRole = 'staff' | 'admin' | 'driver'
+export type EventRoles = EventRole[]
+
+export const EVENT_ROLE_LABEL: Record<EventRole, string> = { staff: 'Personal', admin: 'Admins', driver: 'Fahrer' }
+export const EVENT_ROLES: EventRole[] = ['staff', 'admin', 'driver']
+
+/** Konto-Rollen → Empfänger-Rollen: Admins zählen auch als Personal */
+export function recipientRoles(roles: readonly string[]): EventRole[] {
+  const set = new Set(roles.filter((r): r is EventRole => (EVENT_ROLES as string[]).includes(r)))
+  if (set.has('admin')) set.add('staff')
+  return [...set]
+}
 
 export interface NotificationConfig {
   events: Partial<Record<PushEvent, { enabled?: boolean; roles?: EventRoles }>>
@@ -40,17 +51,21 @@ export const LEAD_FIELDS = [
   { key: 'shuttle_lead_minutes', label: 'Shuttle', fallback: 15 },
 ] as const
 
-/** Ist das Ereignis für die Rolle vorgesehen? 'staff' = gesamtes Personal inkl. Admins. */
-export function eventAppliesToRole(config: NotificationConfig, event: PushEvent, role: 'staff' | 'admin'): boolean {
+/**
+ * Ist das Ereignis für ein Konto mit diesen Rollen vorgesehen?
+ * Empfänger 'staff' = Personal inkl. Admins, 'admin' = nur Admins, 'driver' = Fahrer.
+ */
+export function eventAppliesToRole(config: NotificationConfig, event: PushEvent, roles: string | readonly string[]): boolean {
   const cfg = config.events[event]
   if (!cfg || cfg.enabled === false) return false
-  const roles = cfg.roles ?? ['staff']
-  return roles.includes('staff') || roles.includes(role)
+  const targets = cfg.roles ?? ['staff']
+  const mine = recipientRoles(typeof roles === 'string' ? [roles] : roles)
+  return targets.some((t) => mine.includes(t))
 }
 
-/** Ereignisse, die ein Gerät dieser Rolle abonnieren kann. */
-export function availableEvents(config: NotificationConfig, role: 'staff' | 'admin'): PushEvent[] {
-  return PUSH_EVENTS.filter((e) => eventAppliesToRole(config, e, role))
+/** Ereignisse, die ein Gerät mit diesen Rollen abonnieren kann. */
+export function availableEvents(config: NotificationConfig, roles: string | readonly string[]): PushEvent[] {
+  return PUSH_EVENTS.filter((e) => eventAppliesToRole(config, e, roles))
 }
 
 /** Schaltet ein Ereignis in der Liste eines Geräts um (sortiert, ohne Doppelte). */

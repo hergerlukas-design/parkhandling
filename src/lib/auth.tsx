@@ -2,12 +2,15 @@ import type { Session } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from './supabase'
 
-export type Role = 'admin' | 'staff'
+export type Role = 'admin' | 'staff' | 'driver'
 
 export interface Profile {
   id: string
   display_name: string
-  role: Role
+  /** abgeleitet für ältere Versionen: 'admin' oder 'staff' */
+  role: 'admin' | 'staff'
+  /** Rollen, beliebig kombinierbar */
+  roles: Role[]
   active: boolean
   must_change_password: boolean
 }
@@ -35,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { data } = await client
         .from('profiles')
-        .select('id, display_name, role, active, must_change_password')
+        .select('id, display_name, role, roles, active, must_change_password')
         .eq('id', session.user.id)
         .maybeSingle<Profile>()
       if (!cancelled) setState({ loading: false, session, profile: data ?? null })
@@ -57,6 +60,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>
+}
+
+export const ROLE_ORDER: Role[] = ['admin', 'staff', 'driver']
+
+/** Rollen eines Profils (ältere Profile ohne roles: aus role) */
+export function profileRoles(p: Pick<Profile, 'role'> & { roles?: Role[] | null } | null | undefined): Role[] {
+  if (!p) return []
+  return p.roles?.length ? p.roles : [p.role]
+}
+
+export function hasRole(p: Parameters<typeof profileRoles>[0], role: Role): boolean {
+  return profileRoles(p).includes(role)
+}
+
+export function isAdminProfile(p: Parameters<typeof profileRoles>[0]): boolean {
+  return hasRole(p, 'admin')
+}
+
+/** Personal (staff oder admin): Zugriff auf Buchungen, Lageplan, Aufgaben */
+export function isStaffProfile(p: Parameters<typeof profileRoles>[0]): boolean {
+  return hasRole(p, 'admin') || hasRole(p, 'staff')
+}
+
+/** Reiner Fahrer: nur Shuttle-Ansicht */
+export function isDriverOnly(p: Parameters<typeof profileRoles>[0]): boolean {
+  return !!p && hasRole(p, 'driver') && !isStaffProfile(p)
 }
 
 export function useAuth() {

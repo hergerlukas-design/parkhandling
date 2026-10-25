@@ -8,7 +8,7 @@ export type ParkingType = 'indoor' | 'outdoor_cover' | 'outdoor'
 export type ReturnMode = 'shuttle' | 'pickup_delivery' | 'self'
 export type PaymentStatus = 'open' | 'partial' | 'paid' | 'refunded'
 export type FuelType = 'combustion' | 'electric' | 'hybrid'
-export type Role = 'admin' | 'staff'
+export type Role = 'admin' | 'staff' | 'driver'
 export type BookingStatus =
   | 'booked'
   | 'arrived'

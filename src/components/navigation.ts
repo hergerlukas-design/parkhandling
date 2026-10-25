@@ -15,6 +15,16 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/shuttle', label: 'Shuttle', icon: 'shuttle' },
 ]
 
+/** Reiner Fahrer: nur Shuttle (Einstellungen über das Zahnrad bzw. die Seitenleiste) */
+export const DRIVER_ITEMS: NavItem[] = [{ to: '/shuttle', label: 'Shuttle', icon: 'shuttle' }]
+
+/** Seiten, die ein reiner Fahrer öffnen darf */
+export const DRIVER_PATHS = ['/shuttle', '/einstellungen', '/changelog', '/passwort']
+
+export function driverMayOpen(pathname: string): boolean {
+  return DRIVER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
 export const SETTINGS_ITEM: NavItem = { to: '/einstellungen', label: 'Einstellungen', icon: 'settings' }
 
 /** Smartphone: fünf Ziele plus zentraler Scan-Button; Einstellungen über das Zahnrad oben rechts. */

@@ -1,8 +1,9 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
-import { BOTTOM_ITEMS, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
+import { isDriverOnly, useAuth } from '../lib/auth'
+import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
 import { UpdateBanner } from './UpdateBanner'
@@ -24,16 +25,23 @@ function railClass(isActive: boolean) {
 
 export function AppShell() {
   const { pathname } = useLocation()
+  const { profile } = useAuth()
+  const driverOnly = isDriverOnly(profile)
+  const navItems = driverOnly ? DRIVER_ITEMS : NAV_ITEMS
+  const bottomItems = driverOnly ? DRIVER_ITEMS : BOTTOM_ITEMS
   const current = [...NAV_ITEMS, SETTINGS_ITEM, ...EXTRA_TITLES].find((i) =>
     i.to === '/' ? pathname === '/' : pathname.startsWith(i.to),
   )
   const now = new Date()
 
+  // Reiner Fahrer: alles außer Shuttle und Einstellungen führt zur Shuttle-Ansicht
+  if (driverOnly && !driverMayOpen(pathname)) return <Navigate to="/shuttle" replace />
+
   return (
     <div className="flex h-full flex-col">
       {/* Kopfzeile */}
       <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5 md:px-6 md:py-3">
-        <Link to="/" className="text-lg font-bold tracking-tight md:text-xl">
+        <Link to={driverOnly ? '/shuttle' : '/'} className="text-lg font-bold tracking-tight md:text-xl">
           Park &amp; Fly
         </Link>
         <span className="text-sm text-muted md:text-base">{current?.label}</span>
@@ -41,13 +49,13 @@ export function AppShell() {
           {WEEKDAY.format(now).replace('.', '')}, {formatDate(now)}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          <NavLink
+          {!driverOnly && <NavLink
             to="/scan"
             className="touch-target hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark md:inline-flex"
           >
             <Icon name="scan" className="size-5" />
             Scannen
-          </NavLink>
+          </NavLink>}
           <NavLink
             to={SETTINGS_ITEM.to}
             aria-label={SETTINGS_ITEM.label}
@@ -62,7 +70,7 @@ export function AppShell() {
         {/* Seitenleiste (Tablet/Desktop) */}
         <nav aria-label="Hauptnavigation" className="hidden w-[76px] shrink-0 flex-col bg-nav px-1.5 py-3 md:flex">
           <ul className="flex flex-1 flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink to={item.to} end={item.to === '/'} className={({ isActive }) => railClass(isActive)}>
                   <Icon name={item.icon} className="size-5" />
@@ -91,8 +99,8 @@ export function AppShell() {
 
       {/* Bottom-Bar (Smartphone) mit zentralem Scan-Button */}
       <nav aria-label="Hauptnavigation" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        <ul className="grid grid-cols-6 items-end">
-          {BOTTOM_ITEMS.map((item) =>
+        <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : 'grid-cols-6'}`}>
+          {bottomItems.map((item) =>
             item === 'scan' ? (
               <li key="scan" className="flex justify-center">
                 <NavLink
