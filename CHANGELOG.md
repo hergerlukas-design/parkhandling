@@ -3,6 +3,25 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.29.0 – 26.10.2026
+
+### Neu
+- **Laden erfassen**: In der Aufgabe „Laden“ den QR-Aufkleber am Ladepunkt scannen, die App koppelt den Ladevorgang an Fahrzeug und Buchung
+  - mit Kempower-Schnittstelle: Ladung wird automatisch erkannt, Energie (kWh), Ladestand, Leistung und Dauer laufen mit und werden bei Ladeende festgeschrieben
+  - ohne Schnittstelle (Standard, bis der Zugang vorliegt) oder wenn die Säule nichts liefert: Werte von Hand eintragen (kWh mit Dezimalkomma, Ladestand von/bis, Beginn/Ende)
+  - Hinweis, wenn das Fahrzeug nicht auf dem Ladeplatz steht, mit „Auf Ladeplatz umbuchen“
+  - „Ladung trennen“ bei falschem Scan; der Code vom Display der Säule wird erkannt und abgelehnt (gilt nur für einen Ladevorgang)
+- Fahrzeug-Detail: Abschnitt **Ladungen** mit allen Ladevorgängen und Summe kWh
+- Zentraler Scan: Ladepunkt-Aufkleber öffnet die laufende Ladung
+- *Einstellungen → Laden* (Admin): Schnittstelle an/aus, Abfrageintervall, Abrechnung (Pauschale oder pro kWh mit Preis), Aufgabe automatisch abschließen, „Verbindung testen“ mit Stationsliste, Ladepunkte anlegen/bearbeiten (Station-ID, Connector, eichrechtskonform), QR-Aufkleber drucken
+- Abrechnung pro kWh: Betrag per Knopf in die Leistung „Laden“ der Buchung übernehmen, nur bei eichrechtskonformen Ladepunkten und Werten aus der Säule; Eintrag in der Buchungshistorie
+- Push-Benachrichtigung **Ladung beendet** (an Personal; Geräte mit „Fahrzeug bereit“ erhalten sie automatisch)
+
+### Datenbank
+- Migration `20261026000100_charging.sql` (additiv): Tabellen `charge_points`, `charging_sessions`, `charging_sync_state`, View `charging_session_board`, Einstellung `charging`, Ereignis `charging_ended`, Funktionen `start_charging`, `save_manual_charging`, `cancel_charging`, `apply_charging_price`, `charging_status`, `request_charging_test` (App) sowie `charging_dispatch`, `charging_open_sessions`, `charging_apply`, `charging_sync_finished` u. a. (nur Edge Function), Cron-Job `charging-sync` (jede Minute, gedrosselt auf das Abfrageintervall)
+- Seed: Ladepunkte `LP1`/`LP2` an Ladeplatz 1/2
+- Edge Function `charging-sync` (Kempower ChargEye REST-API, Token-Cache, Aufruf nur aus der Datenbank)
+
 ## 0.28.0 – 26.10.2026
 
 ### Geändert

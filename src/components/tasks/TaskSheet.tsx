@@ -7,6 +7,7 @@ import type { Media } from '../../types/domain'
 import { MediaThumb, PendingThumb } from '../media/MediaThumb'
 import { PhotoCapture } from '../media/PhotoCapture'
 import { Button, Dialog, ErrorList } from '../ui'
+import { ChargingPanel } from './ChargingPanel'
 
 /** Aufgabe bearbeiten: Teilschritte, Fotos, Notiz, Status. */
 export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onClose: () => void; onChanged: () => void }) {
@@ -36,6 +37,11 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
     })
     return () => void unsubscribe()
   }, [load, taskId])
+
+  const onChargingChanged = useCallback(() => {
+    void load()
+    onChanged()
+  }, [load, onChanged])
 
   async function run(action: () => Promise<unknown>, { close = false } = {}) {
     setBusy(true)
@@ -124,6 +130,8 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
             )}
           </div>
         )}
+
+        {task.type === 'charge' && <ChargingPanel task={task} onChanged={onChargingChanged} />}
 
         {steps.length > 0 && (
           <section>

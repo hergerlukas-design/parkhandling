@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { QrScanner } from '../components/QrScanner'
 import { ErrorList } from '../components/ui'
+import { DISPLAY_CODE_HINT, openSessionAt, parseChargeScan } from '../lib/charging/charging'
 import { findBookingAt, hasKeySlot, parseScan } from '../lib/siteplan'
 
 /**
@@ -9,6 +10,7 @@ import { findBookingAt, hasKeySlot, parseScan } from '../lib/siteplan'
  *  Stellplatz/Fach belegt  → Fahrzeug (Auschecken, Umsetzen)
  *  Stellplatz/Fach frei    → Einparken auf diesem Platz (Fahrzeug zuordnen, bestätigen)
  *  Arbeits-/Pufferplatz    → Lageplan mit ausgewähltem Platz
+ *  Ladepunkt (PF-CHG)      → laufende Ladeaufgabe an diesem Ladepunkt
  */
 export function ScanPage() {
   const navigate = useNavigate()
@@ -17,8 +19,27 @@ export function ScanPage() {
 
   async function onResult(raw: string) {
     if (busy) return
-    const scan = parseScan(raw)
     setError(null)
+    const charge = parseChargeScan(raw)
+    if (charge.kind === 'display') {
+      setError(DISPLAY_CODE_HINT)
+      return
+    }
+    if (charge.kind === 'charge_point') {
+      setBusy(true)
+      try {
+        const open = await openSessionAt(charge.code)
+        if (open?.task_id) navigate(`/aufgaben?aufgabe=${open.task_id}`)
+        else if (open) navigate(`/fahrzeuge/${open.booking_id}`)
+        else setError(`Ladepunkt ${charge.code} ist frei. Eine Ladung startet in der Aufgabe „Laden“ des Fahrzeugs.`)
+      } catch (e) {
+        setError((e as Error).message)
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+    const scan = parseScan(raw)
     if (scan.kind === 'unknown') {
       setError(`„${scan.code}“ ist kein Park & Fly QR-Code.`)
       return
@@ -47,7 +68,7 @@ export function ScanPage() {
       <ErrorList errors={error ? [error] : []} />
       <p className="text-sm text-subtle">
         Ein belegter Stellplatz öffnet das Fahrzeug zum Auschecken oder Umsetzen. Ein freier Stellplatz startet das
-        Einparken: Fahrzeug zuordnen und bestätigen. Arbeits- und Pufferplätze öffnen den Lageplan.
+        Einparken: Fahrzeug zuordnen und bestätigen. Arbeits- und Pufferplätze öffnen den Lageplan, ein Ladepunkt die laufende Ladung.
       </p>
     </div>
   )

@@ -1,0 +1,12 @@
+{
+  "txId": "tx-0001",
+  "stationId": "charger1",
+  "evseId": "DE*TST*E0001*1",
+  "status": "Ended",
+  "startTime": "2026-10-26T10:05:00.000Z",
+  "endTime": "2026-10-26T10:52:30.000Z",
+  "chargedEnergyKwh": 23.4117,
+  "socStart": 31,
+  "soc": 80,
+  "chargingEndReason": "ChargingStateChanged"
+}

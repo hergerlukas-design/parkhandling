@@ -27,7 +27,7 @@ update public.profiles set active = true where id in ('00000000-0000-0000-0000-0
 -- Rollen-Vorbelegung
 select pg_temp.assert_eq('booking_review' = any (public.default_push_events('staff')), false, 'Personal: kein booking_review');
 select pg_temp.assert_eq('booking_review' = any (public.default_push_events('admin')), true, 'Admin: booking_review');
-select pg_temp.assert_eq(cardinality(public.default_push_events('staff')), 7, 'Personal: 7 Ereignisse');
+select pg_temp.assert_eq(cardinality(public.default_push_events('staff')), 8, 'Personal: 8 Ereignisse (inkl. charging_ended)');
 
 set role authenticated;
 

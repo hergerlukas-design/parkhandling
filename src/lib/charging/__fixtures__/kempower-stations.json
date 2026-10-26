@@ -1,0 +1,43 @@
+{
+  "stations": [
+    {
+      "stationId": "charger1",
+      "name": "Testsäule Ladeplatz",
+      "status": "Operative",
+      "maxPowerKw": 0,
+      "connectors": [
+        {
+          "connectorId": 1,
+          "status": "Charging",
+          "transaction": {
+            "txId": "tx-0001",
+            "stationId": "charger1",
+            "evseId": "DE*TST*E0001*1",
+            "status": "Charging",
+            "startTime": "2026-10-26T10:05:00.000Z",
+            "chargedEnergyKwh": 7.25,
+            "socStart": 31,
+            "soc": 44,
+            "powerKw": { "present": 98.4, "max": 120.0, "avg": 90.1 }
+          }
+        },
+        {
+          "connectorId": 2,
+          "status": "Available",
+          "lastTransaction": {
+            "txId": "tx-0000",
+            "stationId": "charger1",
+            "evseId": "DE*TST*E0001*2",
+            "status": "Ended",
+            "startTime": "2026-10-26T06:00:00.000Z",
+            "endTime": "2026-10-26T07:10:00.000Z",
+            "chargedEnergyKwh": 41.9,
+            "socStart": 12,
+            "soc": 90,
+            "chargingEndReason": "EvDisconnected"
+          }
+        }
+      ]
+    }
+  ]
+}

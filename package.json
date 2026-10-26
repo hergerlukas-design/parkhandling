@@ -1,7 +1,7 @@
 {
   "name": "parkhandling",
   "private": true,
-  "version": "0.28.0",
+  "version": "0.29.0",
   "description": "Park & Fly Manager – interne PWA zur Steuerung des Park & Fly Betriebs",
   "type": "module",
   "scripts": {
