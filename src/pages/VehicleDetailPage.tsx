@@ -113,7 +113,7 @@ function TaskRow({ task, onOpen }: { task: Task; onOpen: (id: string) => void })
         <span className="block text-sm font-medium">{task.title}</span>
         <span className="block text-xs text-subtle">
           {done
-            ? `erledigt ${task.done_at ? formatDate(task.done_at).slice(0, 6) : ''}${task.type === 'charge' && task.energy_kwh != null ? ` · ${formatKwh(task.energy_kwh)} geladen` : ''}`
+            ? `erledigt ${task.done_at ? formatDate(task.done_at).slice(0, 6) : ''}${task.type === 'charge' && task.energy_kwh != null ? ` · ${formatKwh(task.energy_kwh)} geladen${(task.energy_parts?.length ?? 0) > 1 ? ` (${task.energy_parts!.length} Ladevorgänge)` : ''}` : ''}`
             : `${task.status === 'in_progress' ? 'in Arbeit' : 'offen'}${task.due_at ? ` · fällig bis ${formatPickup(task.due_at)}` : ''}`}
         </span>
       </span>

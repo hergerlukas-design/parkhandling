@@ -149,6 +149,8 @@ Am besten mit einem Tablet (Querformat) und einem Smartphone parallel, angemelde
    unten statt einer Systembenachrichtigung (iPhone/iPad zeigen zusätzlich die Systembenachrichtigung).
 7. **Laden:** Buchung mit Leistung „Laden“ → *Aufgaben → Laden → Starten → Erledigt* → geladene kWh vom Display
    der Säule eintragen (z. B. 23,4). Die kWh stehen in der Aufgabe und im Fahrzeug-Detail unter „Leistungen“.
+   Abbruch testen: in der laufenden Aufgabe *Zwischenstand erfassen* (z. B. 3,1), danach *Erledigt* mit 22,5 →
+   „Geladen: 25,6 kWh (2 Ladevorgänge: 3,1 + 22,5)“.
 
 Fotos, Unterschriften und PDFs werden im Browser komprimiert und direkt in den privaten Storage geladen
 (Signed URLs); Listen zeigen nur Thumbnails. Ohne Netz landen sie in der Upload-Warteschlange (Banner oben)

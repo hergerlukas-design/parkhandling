@@ -109,6 +109,8 @@ export interface Task extends Row {
   note: string | null
   /** Geladene Energie in kWh (nur Ladeaufgaben, seit 0.30.0; ältere Datenbank: fehlt) */
   energy_kwh?: number | null
+  /** Einzelne Ladevorgänge [{kwh, at}] (seit 0.30.0) */
+  energy_parts?: { kwh: number; at: string }[] | null
 }
 
 export interface ChecklistItem {

@@ -8,10 +8,12 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ### Geändert
 - **Laden vereinfacht:** „Ladung starten – Ladepunkt scannen“ ist wieder entfernt. Stattdessen fragt die Aufgabe „Laden“ beim **Erledigt** die geladene Energie ab (kWh mit Komma, 0–500), gespeichert an der Aufgabe
 - Aufgabe „Laden“ und Fahrzeug-Detail (Leistungen) zeigen die geladenen kWh
+- **Abgebrochene Ladung:** Die Säule zählt nach dem Neu-Anstecken wieder ab 0. In der laufenden Aufgabe „Zwischenstand erfassen“ speichert den Stand des abgebrochenen Ladevorgangs; beim Erledigt lassen sich zusätzlich vergessene Ladevorgänge eintragen. Die App summiert alle Ladevorgänge und zeigt die Einzelwerte
 - Entfernt aus 0.29.0: Ladepunkte mit QR-Aufklebern, Kempower-Abruf (Edge Function `charging-sync`), *Einstellungen → Laden*, Abrechnung pro kWh, Push „Ladung beendet“. Die Migration aus 0.29.0 wurde nie angewendet und ist entfernt; behebt den Fehler „Could not find the table public.charging_session_board“
 
 ### Datenbank
 - Migration `20261026000200_task_energy_kwh.sql` (additiv): Spalte `tasks.energy_kwh numeric(10,3)` mit Prüfung 0–500
+- Migration `20261026000300_task_energy_parts.sql` (additiv): Spalte `tasks.energy_parts jsonb` (einzelne Ladevorgänge), `energy_kwh` ist die Summe
 
 ## 0.29.0 – 26.10.2026
 

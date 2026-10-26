@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatKwh, parseKwh } from './tasks'
+import { formatEnergyParts, formatKwh, parseKwh, sumEnergy } from './tasks'
 
 describe('kWh bei Ladeaufgaben', () => {
   it('nimmt Dezimalkomma und Punkt, höchstens 3 Nachkommastellen', () => {
@@ -21,5 +21,16 @@ describe('kWh bei Ladeaufgaben', () => {
     expect(formatKwh(41)).toBe('41,0 kWh')
     expect(formatKwh(8.125)).toBe('8,125 kWh')
     expect(formatKwh(null)).toBe('– kWh')
+  })
+})
+
+describe('mehrere Ladevorgänge', () => {
+  it('summiert ohne Rundungsfehler', () => {
+    expect(sumEnergy([{ kwh: 3.1 }, { kwh: 22.5 }])).toBe(25.6)
+    expect(sumEnergy([{ kwh: 0.1 }, { kwh: 0.2 }])).toBe(0.3)
+    expect(sumEnergy([])).toBe(0)
+  })
+  it('zeigt die Einzelwerte', () => {
+    expect(formatEnergyParts([{ kwh: 3.1 }, { kwh: 22.5 }])).toBe('3,1 + 22,5')
   })
 })

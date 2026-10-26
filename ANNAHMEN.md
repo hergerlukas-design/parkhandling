@@ -38,6 +38,9 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Ladepunkte sind privat, nicht öffentlich (Lukas, 26.10.2026) → Ladesäulenverordnung greift nicht
 - [BELEGT] ⚠ ABWEICHUNG: „Ladung starten“ per Scan (0.29.0) wieder entfernt (Lukas, 26.10.2026). Stattdessen beim Erledigt der Aufgabe „Laden“ nur Abfrage der geladenen kWh, gespeichert in `tasks.energy_kwh` (0.30.0)
 - [ANNAHME] kWh sind Pflicht beim Erledigt einer Ladeaufgabe (0 erlaubt), Eingabe mit Komma, höchstens 3 Nachkommastellen, 0–500
+- [BELEGT] Bricht eine Ladung ab, startet die Säule nach dem Neu-Anstecken einen neuen Vorgang ab 0 kWh; das Erfassen wird dabei leicht vergessen (Lukas, 26.10.2026)
+- [ANNAHME] Jeder Ladevorgang wird einzeln erfasst (`tasks.energy_parts`): „Zwischenstand erfassen“ während der Aufgabe, beim Erledigt zusätzlich vergessene Vorgänge nachtragbar; `energy_kwh` = Summe, höchstens 20 Vorgänge je Aufgabe
+- [OFFEN] Vergessene Vorgänge lassen sich ohne Schnittstelle nur nachtragen, wenn der Wert bekannt ist (z. B. aus der Ladehistorie in ChargEye); automatisch prüfen ginge per Lese-Zugriff auf die Kempower-API (Summe aller Transaktionen der Säule zwischen Start und Erledigt)
 - [BELEGT] QR-Code auf dem Kempower-Display (`kempower.io/c/<uuid>`) ist ein Token pro Ladevorgang, nicht pro Stecker
 - [OFFEN] Ladung per App über die API starten/stoppen (virtuelle RFID-Freigabe, Zuordnung über `authorizationToken`); Rechte und Endpunkte bei Kempower klären
 - [OFFEN] Übersicht/Export aller Ladungen (Kennzeichen, kWh, Zeitraum) für die Abrechnung

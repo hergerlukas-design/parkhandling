@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { formatDateTime } from '../../lib/format'
 import { uploadQueue, usePendingMedia } from '../../lib/media/mediaService'
-import { formatKwh, getBoardTask, getTaskEnergy, listTaskPhotos, parseKwh, taskKindLabel, toggleChecklistItem, updateTask, type BoardTask } from '../../lib/tasks'
+import { getBoardTask, listTaskPhotos, taskKindLabel, toggleChecklistItem, updateTask, type BoardTask } from '../../lib/tasks'
 import type { Media } from '../../types/domain'
 import { MediaThumb, PendingThumb } from '../media/MediaThumb'
 import { PhotoCapture } from '../media/PhotoCapture'
-import { Button, Dialog, ErrorList, Field, TextInput } from '../ui'
+import { Button, Dialog, ErrorList } from '../ui'
+import { ChargeEnergy } from './ChargeEnergy'
 
 /** Aufgabe bearbeiten: Teilschritte, Fotos, Notiz, Status. */
 export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onClose: () => void; onChanged: () => void }) {
@@ -15,10 +16,8 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  // Ladeaufgabe: beim Erledigt die geladene Energie abfragen
-  const [energy, setEnergy] = useState<number | null>(null)
-  const [askKwh, setAskKwh] = useState(false)
-  const [kwhInput, setKwhInput] = useState('')
+  // Ladeaufgabe: Erledigt fragt erst die geladene Energie ab
+  const [finishing, setFinishing] = useState(false)
   const pending = usePendingMedia('task', taskId)
 
   const load = useCallback(async () => {
@@ -26,7 +25,6 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
       const t = await getBoardTask(taskId)
       setTask(t)
       setNote(t.note ?? '')
-      if (t.type === 'charge') setEnergy(await getTaskEnergy(taskId))
       setPhotos(await listTaskPhotos(taskId))
     } catch (e) {
       setError((e as Error).message)
@@ -74,15 +72,6 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
   const isRelocate = task.type === 'relocate'
   const isCharge = task.type === 'charge'
 
-  function finishCharge() {
-    const kwh = parseKwh(kwhInput)
-    if (kwh === null) {
-      setError('Geladene Energie in kWh angeben, z. B. 23,4 (0 bis 500)')
-      return
-    }
-    return run(() => updateTask(task!.id, { status: 'done', energy_kwh: kwh }), { close: true })
-  }
-
   return (
     <Dialog
       title={task.title ?? taskKindLabel(task)}
@@ -97,17 +86,10 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           {task.status === 'in_progress' && (
             <>
               <Button disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'open' }))}>Zurück auf offen</Button>
-              {isCharge && askKwh ? (
-                <>
-                  <Button disabled={busy} onClick={() => setAskKwh(false)}>Abbrechen</Button>
-                  <Button variant="primary" disabled={busy} onClick={() => void finishCharge()}>Speichern & erledigt</Button>
-                </>
-              ) : (
+              {!(isCharge && finishing) && (
                 <Button variant="primary" disabled={busy} onClick={() => {
-                  if (!isCharge) return void run(() => updateTask(task.id, { status: 'done' }), { close: true })
-                  setKwhInput(energy !== null ? String(energy).replace('.', ',') : '')
-                  setError(null)
-                  setAskKwh(true)
+                  if (isCharge) return setFinishing(true)
+                  void run(() => updateTask(task.id, { status: 'done' }), { close: true })
                 }}>
                   Erledigt
                 </Button>
@@ -152,19 +134,10 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           </div>
         )}
 
-        {isCharge && askKwh && (
-          <section className="rounded-xl border border-accent bg-accent-soft p-3">
-            <Field label="Wie viel wurde geladen? (Display der Ladesäule)">
-              <TextInput autoFocus inputMode="decimal" value={kwhInput} placeholder="z. B. 23,4"
-                onChange={(e) => setKwhInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void finishCharge()} />
-            </Field>
-            <p className="mt-1 text-xs text-subtle">in kWh, mit Komma</p>
-          </section>
-        )}
-
-        {isCharge && !askKwh && energy !== null && (
-          <p className="rounded-xl bg-ok-soft px-3 py-2 text-sm text-ok-ink">Geladen: <strong>{formatKwh(energy)}</strong></p>
+        {isCharge && (
+          <ChargeEnergy task={task} finishing={finishing} onCancelFinish={() => setFinishing(false)}
+            onChanged={onChanged}
+            onDone={() => { setFinishing(false); onClose() }} />
         )}
 
         {steps.length > 0 && (
