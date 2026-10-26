@@ -30,9 +30,26 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # Frontend nur ausliefern, wenn die Datenbank alle Migrationen aus dem Repo hat (Issue #9)
+  migrations:
+    name: Migrationsstand
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrationen in der Datenbank eingespielt?
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Secret SUPABASE_DB_URL fehlt (Settings → Secrets and variables → Actions). Verbindungs-URI des Session-Poolers aus Supabase → Connect."
+            exit 1
+          fi
+          ./scripts/check-migrations.sh
+
   deploy:
     name: Fly.io
-    needs: check
+    needs: [check, migrations]
     runs-on: ubuntu-latest
     environment: production
     steps:
