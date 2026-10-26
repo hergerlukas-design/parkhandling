@@ -7,7 +7,7 @@ import type { Media } from '../../types/domain'
 import { MediaThumb, PendingThumb } from '../media/MediaThumb'
 import { PhotoCapture } from '../media/PhotoCapture'
 import { Button, Dialog, ErrorList } from '../ui'
-import { ChargingPanel } from './ChargingPanel'
+import { ChargeEnergy } from './ChargeEnergy'
 
 /** Aufgabe bearbeiten: Teilschritte, Fotos, Notiz, Status. */
 export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onClose: () => void; onChanged: () => void }) {
@@ -16,6 +16,8 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Ladeaufgabe: Erledigt fragt erst die geladene Energie ab
+  const [finishing, setFinishing] = useState(false)
   const pending = usePendingMedia('task', taskId)
 
   const load = useCallback(async () => {
@@ -37,11 +39,6 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
     })
     return () => void unsubscribe()
   }, [load, taskId])
-
-  const onChargingChanged = useCallback(() => {
-    void load()
-    onChanged()
-  }, [load, onChanged])
 
   async function run(action: () => Promise<unknown>, { close = false } = {}) {
     setBusy(true)
@@ -73,6 +70,7 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
   const steps = task.checklist ?? []
   const allStepsDone = steps.every((s) => s.done)
   const isRelocate = task.type === 'relocate'
+  const isCharge = task.type === 'charge'
 
   return (
     <Dialog
@@ -88,9 +86,14 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           {task.status === 'in_progress' && (
             <>
               <Button disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'open' }))}>Zurück auf offen</Button>
-              <Button variant="primary" disabled={busy} onClick={() => void run(() => updateTask(task.id, { status: 'done' }), { close: true })}>
-                Erledigt
-              </Button>
+              {!(isCharge && finishing) && (
+                <Button variant="primary" disabled={busy} onClick={() => {
+                  if (isCharge) return setFinishing(true)
+                  void run(() => updateTask(task.id, { status: 'done' }), { close: true })
+                }}>
+                  Erledigt
+                </Button>
+              )}
             </>
           )}
           {task.status === 'done' && (
@@ -131,7 +134,11 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           </div>
         )}
 
-        {task.type === 'charge' && <ChargingPanel task={task} onChanged={onChargingChanged} />}
+        {isCharge && (
+          <ChargeEnergy task={task} finishing={finishing} onCancelFinish={() => setFinishing(false)}
+            onChanged={onChanged}
+            onDone={() => { setFinishing(false); onClose() }} />
+        )}
 
         {steps.length > 0 && (
           <section>

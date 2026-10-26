@@ -10,8 +10,8 @@ import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/book
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
+import { formatKwh } from '../lib/tasks'
 import { hasKeySlot, whereabouts } from '../lib/siteplan'
-import { formatKwh, listBookingSessions, SESSION_STATUS, sumKwh, type ChargingSession } from '../lib/charging/charging'
 import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LABEL, type BookingTrip } from '../lib/transport'
 import {
   AREA_LABEL,
@@ -66,8 +66,7 @@ function fmtValue(key: string, v: unknown): string {
 }
 
 function describeChange(key: string, value: unknown): string {
-  const v = value as { old?: unknown; new?: unknown; code?: string; description?: string }
-  if (key === 'charging_price') return `Ladekosten übernommen: ${v.description ?? ''} = ${formatMoney(Number(v.new))}`
+  const v = value as { old?: unknown; new?: unknown; code?: string }
   if (key === 'service_added') return `Leistung nachgebucht: ${v.code}`
   if (key === 'service_cancelled') return `Leistung storniert: ${v.code}`
   return `${FIELD_LABEL[key] ?? key}: ${fmtValue(key, v.old)} → ${fmtValue(key, v.new)}`
@@ -114,7 +113,7 @@ function TaskRow({ task, onOpen }: { task: Task; onOpen: (id: string) => void })
         <span className="block text-sm font-medium">{task.title}</span>
         <span className="block text-xs text-subtle">
           {done
-            ? `erledigt ${task.done_at ? formatDate(task.done_at).slice(0, 6) : ''}`
+            ? `erledigt ${task.done_at ? formatDate(task.done_at).slice(0, 6) : ''}${task.type === 'charge' && task.energy_kwh != null ? ` · ${formatKwh(task.energy_kwh)} geladen${(task.energy_parts?.length ?? 0) > 1 ? ` (${task.energy_parts!.length} Ladevorgänge)` : ''}` : ''}`
             : `${task.status === 'in_progress' ? 'in Arbeit' : 'offen'}${task.due_at ? ` · fällig bis ${formatPickup(task.due_at)}` : ''}`}
         </span>
       </span>
@@ -143,7 +142,6 @@ export function VehicleDetailPage() {
   const [openTask, setOpenTask] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [protocols, setProtocols] = useState<ProtocolRow[]>([])
-  const [charging, setCharging] = useState<ChargingSession[]>([])
   const [trips, setTrips] = useState<BookingTrip[]>([])
 
   const load = useCallback(() => {
@@ -154,9 +152,6 @@ export function VehicleDetailPage() {
   }, [id])
 
   useEffect(load, [load])
-  useEffect(() => {
-    if (id) listBookingSessions(id).then(setCharging).catch(() => setCharging([]))
-  }, [id, data])
 
   if (error) return <p className="p-6 text-sm text-danger">{error}</p>
   if (!data) return <p className="p-6 text-sm text-muted">Lädt …</p>
@@ -357,38 +352,6 @@ export function VehicleDetailPage() {
             </dl>
           )}
         </Card>
-
-        {(charging.length > 0 || tasks.some((t) => t.type === 'charge' && t.status !== 'cancelled')) && (
-          <Card title="Ladungen" aside={charging.length ? `gesamt ${formatKwh(sumKwh(charging))}` : undefined}>
-            {charging.length === 0 ? (
-              <p className="text-sm text-subtle">Noch keine Ladung erfasst. Start über die Aufgabe „Laden“ mit dem Aufkleber am Ladepunkt.</p>
-            ) : (
-              <ul className="flex flex-col gap-2 text-sm">
-                {charging.map((c) => (
-                  <li key={c.id}>
-                    <button type="button" onClick={() => c.task_id && setOpenTask(c.task_id)}
-                      className="touch-target flex w-full items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left hover:bg-ground">
-                      <span>
-                        <span className="block font-medium">
-                          {c.charge_point_label ?? c.charge_point_code} · {formatDateTime(c.started_at ?? c.linked_at)}
-                        </span>
-                        <span className="block text-xs text-subtle">
-                          {c.soc_start !== null || c.soc_end !== null ? `${c.soc_start ?? '–'} % → ${c.soc_end ?? '–'} % · ` : ''}
-                          {c.source === 'manual' ? 'Werte von Hand' : 'aus der Ladesäule'}
-                          {c.amount !== null ? ` · ${formatMoney(Number(c.amount))}` : ''}
-                        </span>
-                      </span>
-                      <span className="text-right">
-                        <span className="block font-semibold">{c.status === 'ended' || c.status === 'charging' ? formatKwh(c.energy_kwh) : ''}</span>
-                        <span className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${SESSION_STATUS[c.status].className}`}>{SESSION_STATUS[c.status].label}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        )}
 
         <div className="flex flex-col gap-4">
           <Card title="Protokolle">

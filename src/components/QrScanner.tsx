@@ -18,12 +18,10 @@ export function QrScanner({
   onResult,
   label = 'QR-Code scannen',
   paused = false,
-  placeholder = 'z. B. K-018 oder R7-E3',
 }: {
   onResult: (text: string) => void
   label?: string
   paused?: boolean
-  placeholder?: string
 }) {
   const video = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -116,7 +114,7 @@ export function QrScanner({
         <input
           value={manual}
           onChange={(e) => setManual(e.target.value)}
-          placeholder={placeholder}
+          placeholder="z. B. K-018 oder R7-E3"
           autoCapitalize="characters"
           aria-label="Code manuell eingeben"
           className="touch-target min-w-0 flex-1 rounded-lg bg-white/10 px-3 text-base text-white placeholder:text-white/50"

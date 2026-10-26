@@ -103,6 +103,71 @@ export async function updateTask(
   if (error) throw new Error(error.message)
 }
 
+/** Ein Ladevorgang einer Ladeaufgabe (nach Abbruch zählt die Säule wieder ab 0) */
+export interface EnergyPart {
+  kwh: number
+  at: string
+}
+
+export interface TaskEnergy {
+  total: number | null
+  parts: EnergyPart[]
+}
+
+/** Geladene kWh einer Ladeaufgabe (task_board enthält die Spalten nicht) */
+export async function getTaskEnergy(id: string): Promise<TaskEnergy> {
+  const { data, error } = await db().from('tasks').select('energy_kwh, energy_parts').eq('id', id).maybeSingle()
+  if (error || !data) return { total: null, parts: [] }
+  const row = data as { energy_kwh?: number | null; energy_parts?: EnergyPart[] | null }
+  return {
+    total: row.energy_kwh === null || row.energy_kwh === undefined ? null : Number(row.energy_kwh),
+    parts: (row.energy_parts ?? []).map((p) => ({ kwh: Number(p.kwh), at: p.at })),
+  }
+}
+
+/** Summe auf 3 Nachkommastellen (wie numeric(10,3)) */
+export function sumEnergy(parts: Pick<EnergyPart, 'kwh'>[]): number {
+  return Math.round(parts.reduce((sum, p) => sum + p.kwh, 0) * 1000) / 1000
+}
+
+/** Zwischenstand speichern (Aufgabe bleibt in Arbeit) */
+export async function saveEnergyParts(id: string, parts: EnergyPart[]): Promise<void> {
+  const { error } = await db()
+    .from('tasks')
+    .update({ energy_parts: parts, energy_kwh: parts.length ? sumEnergy(parts) : null })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** Ladeaufgabe abschließen: alle Ladevorgänge, Summe in energy_kwh */
+export async function completeChargeTask(id: string, parts: EnergyPart[]): Promise<void> {
+  const { error } = await db()
+    .from('tasks')
+    .update({ status: 'done', energy_parts: parts, energy_kwh: sumEnergy(parts) })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+/** "3,1 + 22,5" */
+export function formatEnergyParts(parts: Pick<EnergyPart, 'kwh'>[]): string {
+  return parts.map((p) => kwhFmt.format(p.kwh)).join(' + ')
+}
+
+/** kWh-Eingabe mit Dezimalkomma, höchstens 3 Nachkommastellen, 0–500; sonst null */
+export function parseKwh(input: string): number | null {
+  const s = input.trim().replace(/\s/g, '')
+  if (!/^\d{1,3}([.,]\d{1,3})?$/.test(s)) return null
+  const n = Number(s.replace(',', '.'))
+  return n >= 0 && n <= 500 ? n : null
+}
+
+const kwhFmt = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 3 })
+
+/** 23.4 → "23,4 kWh" */
+export function formatKwh(value: number | null | undefined): string {
+  return value === null || value === undefined ? '– kWh' : `${kwhFmt.format(Number(value))} kWh`
+}
+
 /** Teilschritt umschalten; erster Haken startet die Aufgabe automatisch. */
 export async function toggleChecklistItem(task: BoardTask, index: number): Promise<ChecklistItem[]> {
   const checklist = task.checklist.map((c, i) => (i === index ? { ...c, done: !c.done } : c))

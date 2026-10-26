@@ -5,7 +5,6 @@ import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
-import { ChargingSettingsCard } from '../components/charging/ChargingSettingsCard'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
@@ -82,11 +81,6 @@ export function SettingsPage() {
         {admin && (
           <Card title="Personal">
             <UserManagement />
-          </Card>
-        )}
-        {admin && (
-          <Card title="Laden: Ladepunkte & Abrechnung">
-            <ChargingSettingsCard />
           </Card>
         )}
         {admin && (
