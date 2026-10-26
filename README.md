@@ -56,7 +56,6 @@ update public.profiles set active = true, role = 'admin' where id = (select id f
 ```bash
 supabase functions deploy media-sign      # Signed Upload URLs für Fotos/Unterschriften/PDFs
 supabase functions deploy protocol-mail   # Versand des Protokoll-PDFs
-supabase functions deploy charging-sync --no-verify-jwt   # Laden: Abruf der Kempower-API (siehe Abschnitt 6)
 ```
 
 Secrets (Dashboard → Edge Functions → Secrets), nur für den Mailversand nötig:
@@ -105,32 +104,6 @@ Ereignisse, Empfänger und Vorlaufzeiten stellen Admins unter *Einstellungen →
 dort stehen auch die angemeldeten Geräte und die letzten 50 Meldungen mit Status. Ohne Schritt 1–4 läuft
 die App unverändert, Meldungen bleiben dann nur in der Outbox liegen.
 
-### 6. Laden (Kempower, optional)
-
-Ohne diesen Schritt funktioniert „Laden“ im manuellen Modus: Aufkleber scannen, Werte von Hand eintragen.
-
-1. QR-Aufkleber drucken: *Einstellungen → Laden → QR-Aufkleber drucken* (`PF-CHG:LP1` …) und am Ladepunkt anbringen.
-   Nicht den QR-Code auf dem Display der Säule verwenden, der gilt nur für einen Ladevorgang.
-2. Refresh-Token beim Kempower-Support anfordern (https://kempower.com/support/).
-3. Edge Function **ohne JWT-Prüfung** ausliefern (Aufruf kommt aus der Datenbank, geschützt per Secret-Header):
-   ```bash
-   supabase functions deploy charging-sync --no-verify-jwt
-   ```
-4. In der Datenbank (SQL-Editor):
-   ```sql
-   select vault.create_secret('<KEMPOWER_REFRESH_TOKEN>', 'kempower_refresh_token');
-   select vault.create_secret('<zufälliges Secret, z. B. openssl rand -hex 32>', 'charging_sync_secret');
-   select vault.create_secret('https://<projekt>.supabase.co/functions/v1/charging-sync', 'charging_sync_url');
-   ```
-   Optional überschreiben die Function-Secrets `KEMPOWER_REFRESH_TOKEN` und `CHARGING_SYNC_SECRET` die Vault-Werte.
-5. *Einstellungen → Laden*: „Kempower-Schnittstelle nutzen“ einschalten, speichern, **Verbindung testen**. Die Liste zeigt
-   Station-IDs und Connectoren; diese bei den Ladepunkten eintragen und „Werte: aus Kempower“ wählen.
-6. Abrechnung pro kWh nur bei eichrechtskonformen Ladepunkten (Haken am Ladepunkt) und mit Preis pro kWh; sonst
-   Pauschale über die Leistung „Laden“.
-
-Die Migration richtet den Cron-Job `charging-sync` ein (jede Minute, ruft die API nur bei offenen Ladungen und höchstens
-im eingestellten Abfrageintervall ab). Das JWT (8 h gültig) wird in `charging_sync_state` zwischengespeichert.
-
 ## Prüfen
 
 ```bash
@@ -174,10 +147,8 @@ Am besten mit einem Tablet (Querformat) und einem Smartphone parallel, angemelde
    bei geschlossener App senden, Tippen öffnet die App. Auf dem zweiten Gerät eine Buchung anlegen bzw. umbuchen →
    „Neue Buchung“/„Umbuchung“ kommt an, auf dem auslösenden Gerät nicht. Bei geöffneter App erscheint ein Hinweis
    unten statt einer Systembenachrichtigung (iPhone/iPad zeigen zusätzlich die Systembenachrichtigung).
-7. **Laden:** Buchung mit Leistung „Laden“ → *Aufgaben → Laden → Ladung starten*, Aufkleber `LP1` scannen (oder „LP1“
-   eingeben). Ohne Schnittstelle: Werte von Hand eintragen (z. B. 23,4 kWh, 20 → 80 %), *Erledigt*. Im Fahrzeug-Detail
-   erscheint die Ladung unter „Ladungen“. Der Display-Code der Säule (`kempower.io/c/…`) wird mit Hinweis abgelehnt.
-   Mit Schnittstelle (Abschnitt 6): Ladung wird nach dem Scan erkannt, Werte laufen mit, bei Ladeende kommt „Ladung beendet“.
+7. **Laden:** Buchung mit Leistung „Laden“ → *Aufgaben → Laden → Starten → Erledigt* → geladene kWh vom Display
+   der Säule eintragen (z. B. 23,4). Die kWh stehen in der Aufgabe und im Fahrzeug-Detail unter „Leistungen“.
 
 Fotos, Unterschriften und PDFs werden im Browser komprimiert und direkt in den privaten Storage geladen
 (Signed URLs); Listen zeigen nur Thumbnails. Ohne Netz landen sie in der Upload-Warteschlange (Banner oben)

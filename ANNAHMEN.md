@@ -33,23 +33,15 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Katalog: Grundreinigung (Standard), Aufbereitung innen, Aufbereitung außen, Politur, Laden, Tanken, Servicearbeiten, Zusatzleistung (Freitext)
 - [ANNAHME] Preise im Katalog leer (`null`); Gesamtpreis pro Buchung manuell eintragbar
 
-## Laden (neu 26.10.2026, 0.29.0)
-- [BELEGT] Ladesäulen von Kempower, Verwaltung über ChargEye; REST-API vorhanden (docs.kempower.io)
+## Laden (26.10.2026)
+- [BELEGT] Ladesäulen von Kempower (mobile Säule mit RFID-Leser), Verwaltung über ChargEye; REST-API vorhanden (docs.kempower.io)
 - [BELEGT] Ladepunkte sind privat, nicht öffentlich (Lukas, 26.10.2026) → Ladesäulenverordnung greift nicht
-- [BELEGT] Ziel: Ladung je Kunde erfassen, um die Leistung korrekt abzurechnen; Erfassung über die Aufgabe „Laden“ per QR-Scan (Lukas, 26.10.2026)
-- [BELEGT] QR-Code auf dem Kempower-Display (`kempower.io/c/<uuid>`) ist ein Token pro Ladevorgang, nicht pro Stecker (3 Scans, 2 davon am selben Stecker, jeweils andere UUID); enthält keine Station- oder Transaktions-ID
-- [ANNAHME] ⚠ ABWEICHUNG vom Wunsch „Display-Code scannen“: Zuordnung über eigenen QR-Aufkleber pro Ladepunkt (`PF-CHG:<Code>`, Druck unter *Einstellungen → Laden*). Der Display-Code wird erkannt und mit Hinweis abgelehnt
-- [ANNAHME] Zwei Ladepunkte `LP1`/`LP2` an Ladeplatz 1/2, zunächst „Werte von Hand“, bis der API-Zugang vorliegt
-- [ANNAHME] Abruf alle 5 min (`settings.charging.poll_interval_minutes`), nach dem Scan sofort; Zuordnung wartet bis 15 min auf den Ladestart (`link_window_minutes`), danach „nicht erkannt“ und Eintrag von Hand
-- [ANNAHME] Zuordnung: erste Transaktion am Connector ab 2 min vor dem Scan; eine Transaktion gehört nie zu zwei Buchungen
-- [ANNAHME] Abrechnung Standard pauschal über die Leistung „Laden“ (`billing_mode = flat`); pro kWh nur mit eichrechtskonformer Messung (`charge_points.legal_metering`) und Wert aus der Säule, Übernahme in die Leistung „Laden“ per Knopf
-- [ANNAHME] Aufgabe wird bei Ladeende nicht automatisch abgeschlossen (`auto_complete_task = false`)
-- [ANNAHME] Neues Push-Ereignis `charging_ended` → Personal (Geräte mit „Fahrzeug bereit“ bekommen es automatisch)
-- [ANNAHME] Abweichung vom Issue: Verknüpfung per Datenbankfunktion `start_charging` statt eigener Edge Function `charging-link`; die API fragt nur `charging-sync` ab (eine Function weniger, gleiche Regeln)
-- [OFFEN] API-Zugang (Refresh-Token über Kempower-Support), Station- und Connector-IDs der echten Ladepunkte
+- [BELEGT] ⚠ ABWEICHUNG: „Ladung starten“ per Scan (0.29.0) wieder entfernt (Lukas, 26.10.2026). Stattdessen beim Erledigt der Aufgabe „Laden“ nur Abfrage der geladenen kWh, gespeichert in `tasks.energy_kwh` (0.30.0)
+- [ANNAHME] kWh sind Pflicht beim Erledigt einer Ladeaufgabe (0 erlaubt), Eingabe mit Komma, höchstens 3 Nachkommastellen, 0–500
+- [BELEGT] QR-Code auf dem Kempower-Display (`kempower.io/c/<uuid>`) ist ein Token pro Ladevorgang, nicht pro Stecker
+- [OFFEN] Ladung per App über die API starten/stoppen (virtuelle RFID-Freigabe, Zuordnung über `authorizationToken`); Rechte und Endpunkte bei Kempower klären
+- [OFFEN] Übersicht/Export aller Ladungen (Kennzeichen, kWh, Zeitraum) für die Abrechnung
 - [OFFEN] Eichrechtskonformität der Säulen; Abrechnung pauschal oder pro kWh (rechtlich prüfen)
-- [OFFEN] Ob die API den Display-Token auflösen kann
-- [OFFEN] Feldnamen der API gegen die OpenAPI-Spezifikation bzw. „Verbindung testen“ prüfen (Normalisierung akzeptiert Varianten)
 
 ## Buchungen
 - [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- und Ladestand im Protokoll: Verbrenner nur Tank, Elektro nur Ladestand, Hybrid beides

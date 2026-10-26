@@ -1,4 +1,4 @@
-/** Ereignisse für Push-Benachrichtigungen (Codes wie in den Migrationen 20261025000200 und 20261026000100). */
+/** Ereignisse für Push-Benachrichtigungen (Codes wie in der Migration 20261025000200). */
 export const PUSH_EVENTS = [
   'booking_new',
   'booking_changed',
@@ -8,7 +8,6 @@ export const PUSH_EVENTS = [
   'pickup_soon',
   'booking_ready',
   'shuttle_due',
-  'charging_ended',
 ] as const
 
 export type PushEvent = (typeof PUSH_EVENTS)[number]
@@ -22,7 +21,6 @@ export const PUSH_EVENT_LABEL: Record<PushEvent, { title: string; hint: string }
   pickup_soon: { title: 'Abholung bald', hint: 'Fahrzeug wird in Kürze abgeholt' },
   booking_ready: { title: 'Fahrzeug bereit', hint: 'Alle Aufgaben erledigt' },
   shuttle_due: { title: 'Shuttle fällig', hint: 'Fahrt startet in Kürze (eingeteilter Fahrer)' },
-  charging_ended: { title: 'Ladung beendet', hint: 'Fahrzeug vom Ladeplatz holen' },
 }
 
 export type EventRole = 'staff' | 'admin' | 'driver'

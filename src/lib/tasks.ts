@@ -97,10 +97,33 @@ export async function getBoardTask(id: string): Promise<BoardTask> {
 
 export async function updateTask(
   id: string,
-  patch: Partial<Pick<Task, 'status' | 'note' | 'checklist'>>,
+  patch: Partial<Pick<Task, 'status' | 'note' | 'checklist' | 'energy_kwh'>>,
 ): Promise<void> {
   const { error } = await db().from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+/** Geladene kWh einer Ladeaufgabe (task_board enthält die Spalte nicht) */
+export async function getTaskEnergy(id: string): Promise<number | null> {
+  const { data, error } = await db().from('tasks').select('energy_kwh').eq('id', id).maybeSingle()
+  if (error) return null
+  const v = (data as { energy_kwh?: number | null } | null)?.energy_kwh
+  return v === null || v === undefined ? null : Number(v)
+}
+
+/** kWh-Eingabe mit Dezimalkomma, höchstens 3 Nachkommastellen, 0–500; sonst null */
+export function parseKwh(input: string): number | null {
+  const s = input.trim().replace(/\s/g, '')
+  if (!/^\d{1,3}([.,]\d{1,3})?$/.test(s)) return null
+  const n = Number(s.replace(',', '.'))
+  return n >= 0 && n <= 500 ? n : null
+}
+
+const kwhFmt = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 3 })
+
+/** 23.4 → "23,4 kWh" */
+export function formatKwh(value: number | null | undefined): string {
+  return value === null || value === undefined ? '– kWh' : `${kwhFmt.format(Number(value))} kWh`
 }
 
 /** Teilschritt umschalten; erster Haken startet die Aufgabe automatisch. */
