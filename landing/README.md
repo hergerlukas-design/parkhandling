@@ -123,6 +123,34 @@ Die Bestätigungsmail an Kunden bleibt aus, bis Mail-Anbieter und Datenschutz ge
 (`inquiry_customer_confirmation = true` schaltet sie ein; im `mail_mode = 'test'` geht auch sie nur an
 die Testadresse).
 
+## Review-Notizen: markieren und mit Claude Code umsetzen
+
+Nur lokal mit `npm run dev` (im Produktions-Build nicht enthalten):
+
+1. `npm run dev`, Seite öffnen, unten links **„✎ Markieren“**.
+2. Werkzeug wählen:
+   - **Stift**: frei zeichnen – einkreisen, unterstreichen, Pfeile, auch über Bilder und Buttons.
+     Weiterzeichnen ergänzt die Markierung. Auf dem Handy zum Scrollen den Stift ausschalten.
+   - **Text**: Text markieren wie beim Kopieren, wird gelb hervorgehoben.
+   - **Element**: Button, Bild, Feld … anklicken (der Klick löst nichts aus).
+3. Notiz schreiben, **Speichern**. Nummern-Abzeichen auf der Seite öffnen die Notiz wieder
+   (bearbeiten, erledigt, löschen). **Liste** zeigt alle Notizen über alle Seiten. `Esc` bricht ab.
+
+Gespeichert wird sofort in `landing/review/`:
+
+| Datei | Inhalt |
+|---|---|
+| `NOTES.md` | Aufbereitung für Claude Code: Seite, Notiz, Abschnitt, Überschrift, markierter Text, Elemente mit CSS-Pfad |
+| `notes.json` | Rohdaten (Koordinaten, Striche, Status) |
+| `screens/<nr>.png` | Screenshot jeder offenen Markierung, automatisch im Hintergrund |
+
+Für die Screenshots einmalig `npx playwright install chromium` ausführen; ohne Browser funktioniert
+alles andere trotzdem (Hinweis im Terminal).
+
+**Umsetzen:** In Claude Code `/review-umsetzen` eingeben. Lokales Claude Code liest die Dateien
+direkt. Für Claude Code im Web/in der Cloud vorher `landing/review/` committen und pushen.
+Umgesetzte Punkte werden in `notes.json` auf `erledigt` gesetzt.
+
 ## Version
 
 Die Version steht **nur** in `landing/package.json` und erscheint über Vite (`__APP_VERSION__`) im
@@ -136,6 +164,7 @@ internen App (Root-`package.json`) bleibt davon unberührt.
 cd landing
 npm run typecheck            # TypeScript
 npm test                     # Unit-Tests: Validierung (Datum, E-Mail, Pflichtfelder, Längen), UTM, Datumsformat
+npm run test:review          # Markier-Werkzeug im Dev-Server (Notizen in temporärem Ordner)
 npm run test:e2e             # Playwright, Smartphone (Pixel 7, Hochformat): Startseite → Formular → /danke
                              # inkl. UTM im Request, kein horizontales Scrollen, Touch-Ziele ≥ 44 px
                              # (Edge Function wird abgefangen, es gehen keine Daten an Supabase)

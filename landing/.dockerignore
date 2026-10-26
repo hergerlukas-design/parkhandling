@@ -5,3 +5,5 @@ dist
 e2e
 test-results
 playwright-report
+e2e-review
+review

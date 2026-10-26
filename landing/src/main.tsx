@@ -13,3 +13,8 @@ createRoot(document.getElementById('root')!).render(
     <RouterProvider router={router} />
   </StrictMode>,
 )
+
+// Markier-Werkzeug für Review-Notizen – nur mit `npm run dev`, nicht im Produktions-Build
+if (import.meta.env.DEV) {
+  void import('./review-tool/mount').then((m) => m.mountReviewTool(router))
+}

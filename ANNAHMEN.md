@@ -133,3 +133,4 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [OFFEN] Fahrzeugmaße werden nicht erfasst (AGB 4.1). Mechanische Parksysteme (AGB 5.3) sind nicht online buchbar
 - [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain
 - [OFFEN] Ob die Buchung mit Zahlung auch bei Park OS-Buchungen gilt; Park OS liefert eigene Buchungen (Schnittstelle/E-Mail noch offen)
+- [ANNAHME] Review-Notizen (landing 0.7.0): Markier-Werkzeug (Stift, Text, Element) nur im Dev-Server, nicht im Produktions-Build. Notizen als Dateien in `landing/review/` (`NOTES.md` für Claude Code, `notes.json`, Screenshots), Umsetzung mit `/review-umsetzen`. Markierungen beziehen sich auf die Bildschirmbreite beim Markieren; auf deutlich anderer Breite werden sie blass angezeigt. Der bisherige Review-Modus mit Supabase (`?review=<Token>`, 0.6.0) bleibt unverändert bestehen

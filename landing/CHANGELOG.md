@@ -5,6 +5,20 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.7.0 – 26.10.2026
+
+### Neu
+- Markier-Werkzeug für Review-Notizen (nur `npm run dev`, nicht im Produktions-Build): Knopf „Markieren“ unten links
+  - Stift: frei zeichnen (einkreisen, unterstreichen, Pfeile), auch über Bildern und Buttons; Weiterzeichnen ergänzt die Markierung
+  - Text: Textstelle markieren, wird gelb hervorgehoben
+  - Element: beliebiges Element anklicken (Klick löst keine Aktion aus)
+  - Zu jeder Markierung eine Notiz; Liste aller Notizen mit „Anzeigen“, „Erledigt“, „Löschen“; Nummern-Abzeichen auf der Seite
+- Notizen werden als Dateien gespeichert: `landing/review/notes.json` (Rohdaten) und `landing/review/NOTES.md` (aufbereitet für Claude Code mit Abschnitt, Überschrift, markiertem Text, Elementen und CSS-Pfad)
+- Screenshots offener Markierungen automatisch in `landing/review/screens/<nr>.png` (Playwright im Dev-Server; ohne installierten Browser wird ohne Screenshots weitergearbeitet)
+- Ohne Dev-Server (z. B. `npm run preview`) nicht verfügbar; Export als Datei bleibt im Werkzeug möglich
+- Claude-Code-Befehl `/review-umsetzen` (`.claude/commands/review-umsetzen.md`) setzt die offenen Notizen um
+- Test `npm run test:review` (Playwright gegen den Dev-Server, Notizen in einem temporären Ordner)
+
 ## 0.6.0 – 21.10.2026
 
 ### Neu

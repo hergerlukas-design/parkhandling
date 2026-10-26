@@ -1,7 +1,7 @@
 {
   "name": "parkhandling-landing",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Park & Fly München – öffentliche Landingpage mit Online-Buchung und PayPal-Zahlung (Stufe 2)",
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:review": "playwright test -c playwright.review.config.ts"
   },
   "dependencies": {
     "@supabase/functions-js": "^2.117.3",
