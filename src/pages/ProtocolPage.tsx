@@ -19,6 +19,8 @@ import {
   damageSlot,
   type DamageEntry,
   EXTRA_SLOT,
+  gaugePhotoLabel,
+  LEGACY_SCHEIN_SLOT,
   FUEL_SEGMENTS,
   finalizeProtocol,
   formatMileage,
@@ -489,8 +491,9 @@ export function ProtocolPage() {
   const unsavedDamages = draftDamages.length + Object.values(dirtyDamages).filter(Boolean).length
   const canCheckIn = booking.status === 'booked' || booking.status === 'arrived'
   const handedOver = booking.status === 'completed'
-  const extraMedia = media.filter((m) => m.slot === EXTRA_SLOT)
-  const extraPending = pending.filter((p) => p.slot === EXTRA_SLOT)
+  const isExtra = (slot?: string | null) => slot === EXTRA_SLOT || slot === LEGACY_SCHEIN_SLOT
+  const extraMedia = media.filter((m) => isExtra(m.slot))
+  const extraPending = pending.filter((p) => isExtra(p.slot))
 
   return (
     <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 p-4 md:p-6">
@@ -637,7 +640,7 @@ export function ProtocolPage() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2">
               {PHOTO_SLOTS.map(({ slot, label }) => (
                 <div key={slot} className={`flex flex-col gap-2 rounded-xl border p-2 ${hasSlot(slot) ? 'border-ok/50 bg-ok-soft' : 'border-dashed border-line-strong'}`}>
-                  <span className="text-sm font-semibold">{label}{hasSlot(slot) ? ' ✓' : ''}</span>
+                  <span className="text-sm font-semibold">{slot === 'anzeige' ? gaugePhotoLabel(fuel) : label}{hasSlot(slot) ? ' ✓' : ''}</span>
                   <SlotPreview media={latest.get(slot)} pending={latestPending.get(slot)} />
                   {!isFinal && <PhotoCapture owner={owner(slot)} label={hasSlot(slot) ? 'Neu' : 'Foto'} single />}
                   {isFinal && !hasSlot(slot) && <span className="text-xs text-muted">kein Foto</span>}

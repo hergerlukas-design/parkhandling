@@ -35,8 +35,18 @@ export const PHOTO_SLOTS = [
   { slot: 'hinten', label: 'Hinten' },
   { slot: 'links', label: 'Links' },
   { slot: 'rechts', label: 'Rechts' },
-  { slot: 'schein', label: 'Fahrzeugschein' },
+  { slot: 'anzeige', label: 'Tank-/Ladestand' },
 ] as const
+
+/** Bis 0.27: Foto vom Fahrzeugschein; vorhandene Fotos erscheinen unter „Weitere Fotos“ */
+export const LEGACY_SCHEIN_SLOT = 'schein'
+
+/** Beschriftung des Anzeige-Fotos nach Antriebsart */
+export function gaugePhotoLabel(fuel: FuelType | null): string {
+  if (fuel === 'electric') return 'Ladestand'
+  if (fuel === 'hybrid') return 'Tank-/Ladestand'
+  return 'Tankanzeige'
+}
 
 export const SIGNATURE_STAFF = 'signature'
 export const SIGNATURE_CUSTOMER = 'signature_customer'
@@ -273,11 +283,13 @@ const SECTION_LABELS: Partial<PdfLabels> = {
 }
 
 /** Beschriftungen der Vorlage für Park & Fly */
-export function pdfLabels(type: ProtocolType): Partial<PdfLabels> {
+export function pdfLabels(type: ProtocolType, fuel: FuelType | null = null): Partial<PdfLabels> {
+  const photo = { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', anzeige: gaugePhotoLabel(fuel) }
   return type === 'intake'
-    ? { ...SECTION_LABELS, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
+    ? { ...SECTION_LABELS, photo, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
     : {
         ...SECTION_LABELS,
+        photo,
         title_transfer: 'Fahrzeug-Übergabeprotokoll',
         creator: 'Mitarbeiter',
         receiver: 'Kunde',
@@ -294,7 +306,7 @@ export function pickSlotUrls(items: { slot: string | null; url: string; created_
   let extra = 0
   for (const m of sorted) {
     if (!m.slot || m.slot === PDF_SLOT) continue
-    if (m.slot === EXTRA_SLOT) out[`zusatz_${extra++}`] = m.url
+    if (m.slot === EXTRA_SLOT || m.slot === LEGACY_SCHEIN_SLOT) out[`zusatz_${extra++}`] = m.url
     else out[m.slot] = m.url
   }
   return out
