@@ -184,11 +184,19 @@ halten Updates zurück (`useUpdateBlocker`), Entwürfe liegen in IndexedDB (`use
 ## Deployment (Fly.io)
 
 Automatisch: Jeder Merge auf `main` startet `.github/workflows/deploy.yml` (Typecheck, Tests, Build,
-dann `flyctl deploy`). Einmalig nötig:
+Abgleich des Migrationsstands, dann `flyctl deploy`). Einmalig nötig:
 
 1. Token erzeugen: `fly tokens create deploy -a parkhandling`
 2. Auf GitHub unter *Settings → Secrets and variables → Actions* als `FLY_API_TOKEN` speichern
-3. Optional manuell starten: *Actions → Deploy (Fly.io) → Run workflow*
+3. Ebenso `SUPABASE_DB_URL` speichern: Verbindungs-URI des **Session-Poolers** aus Supabase → *Connect*
+   (mit Datenbank-Passwort; die direkte Verbindung geht nur über IPv6 und ist aus GitHub Actions nicht erreichbar)
+4. Optional manuell starten: *Actions → Deploy (Fly.io) → Run workflow*
+
+Der Deploy stoppt, wenn eine Migration aus `supabase/migrations/` in der Datenbank fehlt
+(`scripts/check-migrations.sh`, Abgleich über den Namen). Migrationen also **vor** dem Merge einspielen.
+Dieselbe Prüfung läuft schon in jedem PR auf `main` (ohne Auslieferung): Bringt ein PR eine neue Migration mit,
+bleibt „Migrationsstand“ rot, bis sie eingespielt ist.
+Lokal prüfen: `DATABASE_URL=… ./scripts/check-migrations.sh`
 
 Manuell von einem Rechner mit `flyctl`:
 
