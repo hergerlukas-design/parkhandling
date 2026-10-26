@@ -75,7 +75,7 @@ export async function createProtocolPdf(input: {
     const data = buildPdfData({ ...input, slotUrls })
     const { generatePdf } = await import('./pdf/generatePdf')
     const { bytes } = await generateWithinLimit((photoQuality) =>
-      generatePdf(data, 'de', { labels: pdfLabels(input.type), photoQuality }),
+      generatePdf(data, 'de', { labels: pdfLabels(input.type, input.booking.fuel_type), photoQuality }),
     )
     return {
       blob: new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }),

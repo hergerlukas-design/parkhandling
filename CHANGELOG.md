@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.28.0 – 26.10.2026
+
+### Geändert
+- Protokolle: Das Pflichtfoto „Fahrzeugschein“ ist ersetzt durch ein Foto der **Tank- bzw. Ladestandsanzeige** (Beschriftung nach Antriebsart: Tankanzeige, Ladestand oder Tank-/Ladestand), auch im PDF
+- Bereits aufgenommene Fahrzeugschein-Fotos bleiben erhalten und erscheinen unter „Weitere Fotos“
+
 ## 0.27.1 – 25.10.2026
 
 ### Geändert

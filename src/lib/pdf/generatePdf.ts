@@ -85,7 +85,7 @@ export interface PdfLabels {
   clean: string; dirty: string; yes: string; no: string
   carrier_sig: string; creator_sig_label: string; sig_creator: string; sig_receiver: string
   no_photo: string; damage_label: string
-  photo: { vorne: string; hinten: string; links: string; rechts: string; schein: string }
+  photo: { vorne: string; hinten: string; links: string; rechts: string; anzeige: string }
   checklist: { floor: string; seats: string; entry: string; instruments: string; trunk: string; engine: string
                aid_kit: string; triangle: string; vest: string; cable: string; registration: string; card: string }
   damage_pos: string; damage_type: string; damage_intensity: string; damage_desc: string
@@ -109,7 +109,7 @@ const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
     carrier_sig: 'Übergabe durch Spediteur', creator_sig_label: 'Annahme durch (Ersteller)',
     sig_creator: 'Ersteller', sig_receiver: 'Empfänger',
     no_photo: 'Kein Foto', damage_label: 'Schaden',
-    photo: { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', schein: 'Schein' },
+    photo: { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', anzeige: 'Tank-/Ladestand' },
     checklist: { floor: 'Boden', seats: 'Sitze', entry: 'Einstiege', instruments: 'Armaturen',
                  trunk: 'Kofferraum', engine: 'Motorraum', aid_kit: 'Verbandskasten',
                  triangle: 'Warndreieck', vest: 'Warnweste', cable: 'Ladekabel',
@@ -133,7 +133,7 @@ const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
     carrier_sig: 'Carrier Handover', creator_sig_label: 'Accepted by (Inspector)',
     sig_creator: 'Inspector', sig_receiver: 'Receiver',
     no_photo: 'No Photo', damage_label: 'Damage',
-    photo: { vorne: 'Front', hinten: 'Rear', links: 'Left', rechts: 'Right', schein: 'Reg. Doc.' },
+    photo: { vorne: 'Front', hinten: 'Rear', links: 'Left', rechts: 'Right', anzeige: 'Fuel/Charge' },
     checklist: { floor: 'Floor', seats: 'Seats', entry: 'Entry', instruments: 'Dashboard',
                  trunk: 'Trunk', engine: 'Engine Bay', aid_kit: 'First Aid Kit',
                  triangle: 'Warning Triangle', vest: 'Vest', cable: 'Charging Cable',
@@ -845,7 +845,7 @@ async function buildPhotoPage(
     { key: 'hinten', col: 1, maxHMm: 95 },
     { key: 'links',  col: 0, maxHMm: 58 },
     { key: 'rechts', col: 1, maxHMm: 58 },
-    { key: 'schein', col: 1, maxHMm: 58 },
+    { key: 'anzeige', col: 1, maxHMm: 58 },
   ]
 
   const colX = [mm(10), mm(108)]
@@ -1158,7 +1158,7 @@ export async function generatePdf(
   } catch { /* logo is optional */ }
 
   // ── Load & embed vehicle photos ─────────────────────────────────────────────
-  const photoKeys = ['vorne', 'hinten', 'links', 'rechts', 'schein']
+  const photoKeys = ['vorne', 'hinten', 'links', 'rechts', 'anzeige']
   const vehiclePhotoImgs: Partial<Record<string, PDFImage>> = {}
   await Promise.all(
     photoKeys.map(async (k) => {

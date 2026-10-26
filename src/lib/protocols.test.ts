@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { protocolFilename } from './protocolPdf'
 import {
   buildPdfData,
+  gaugePhotoLabel,
+  pdfLabels,
   compareWithIntake,
   formFromRow,
   formatMileage,
@@ -176,6 +178,24 @@ describe('pickSlotUrls / buildPdfData', () => {
       { slot: 'pdf', url: 'p', created_at: '2026-10-06T08:03:00Z' },
     ])
     expect(urls).toEqual({ vorne: 'neu', zusatz_0: 'z1', zusatz_1: 'z2' })
+  })
+
+  it('führt alte Fahrzeugschein-Fotos als Zusatzfotos und übernimmt das Anzeige-Foto', () => {
+    const urls = pickSlotUrls([
+      { slot: 'schein', url: 's', created_at: '2026-10-06T08:00:00Z' },
+      { slot: 'anzeige', url: 'a', created_at: '2026-10-06T08:01:00Z' },
+      { slot: 'zusatz', url: 'z', created_at: '2026-10-06T08:02:00Z' },
+    ])
+    expect(urls).toEqual({ zusatz_0: 's', anzeige: 'a', zusatz_1: 'z' })
+    const data = buildPdfData({ type: 'intake', status: 'final', form: form(), booking, slotUrls: urls, inspectionDate: '2026-10-06T08:00:00Z' })
+    expect(data.photos.anzeige).toBe('a')
+  })
+
+  it('beschriftet das Anzeige-Foto nach Antriebsart', () => {
+    expect(gaugePhotoLabel('electric')).toBe('Ladestand')
+    expect(gaugePhotoLabel('hybrid')).toBe('Tank-/Ladestand')
+    expect(gaugePhotoLabel(null)).toBe('Tankanzeige')
+    expect(pdfLabels('handover', 'electric').photo?.anzeige).toBe('Ladestand')
   })
 
   it('ordnet Schadensfotos nach Position in der Liste und Unterschriften der Vorlage zu', () => {
