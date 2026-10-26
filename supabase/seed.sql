@@ -51,3 +51,10 @@ insert into public.locations (code, name, area, capacity, qr_code, sort_order) v
 on conflict (code) do nothing;
 
 -- Schlüsselfächer: je Stellplatz in Halle und Außenfläche ein Fach mit dessen Code (keine eigene Tabelle, seit 0.18.0)
+
+-- Ladepunkte an den Ladeplätzen [ANNAHME] (seit 0.29.0; Provider manual, bis der Kempower-Zugang vorliegt)
+insert into public.charge_points (code, label, location_id, provider, qr_code, sort_order)
+select v.code, v.label, l.id, 'manual', 'PF-CHG:' || v.code, v.sort_order
+from (values ('LP1', 'Ladeplatz 1', 'W-LAD1', 10), ('LP2', 'Ladeplatz 2', 'W-LAD2', 20)) v(code, label, loc, sort_order)
+join public.locations l on l.code = v.loc
+on conflict (code) do update set location_id = coalesce(public.charge_points.location_id, excluded.location_id);

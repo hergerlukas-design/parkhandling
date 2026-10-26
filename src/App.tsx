@@ -3,6 +3,7 @@ import { AppShell } from './components/AppShell'
 import { AuthGate } from './components/AuthGate'
 import { AuthProvider } from './lib/auth'
 import { ChangelogPage } from './pages/ChangelogPage'
+import { ChargePointsPage } from './pages/ChargePointsPage'
 import { CheckinPage } from './pages/CheckinPage'
 import { KeySlotsPage } from './pages/KeySlotsPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -24,6 +25,7 @@ export function App() {
             {/* Druckbogen ohne Navigation */}
             <Route path="stellplaetze" element={<KeySlotsPage />} />
             <Route path="schluesselanhaenger" element={<KeySlotsPage />} />
+            <Route path="ladepunkte" element={<ChargePointsPage />} />
             <Route element={<AppShell />}>
               <Route index element={<TodayPage />} />
               <Route path="lageplan" element={<SitePlanPage />} />
