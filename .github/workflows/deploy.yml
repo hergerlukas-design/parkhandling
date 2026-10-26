@@ -1,15 +1,18 @@
 name: Deploy (Fly.io)
 
 # Jeder Merge bzw. Push auf main wird geprüft und auf Fly.io ausgeliefert.
-# Voraussetzung: Repository-Secret FLY_API_TOKEN (erzeugen mit `fly tokens create deploy`).
+# PRs auf main werden nur geprüft (inkl. Migrationsstand), nicht ausgeliefert.
+# Voraussetzung: Repository-Secrets FLY_API_TOKEN (erzeugen mit `fly tokens create deploy`) und SUPABASE_DB_URL.
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
-# Nie zwei Deployments gleichzeitig; ein neuerer Push ersetzt einen wartenden
+# Nie zwei Deployments gleichzeitig; ein neuerer Push ersetzt einen wartenden. PRs laufen getrennt davon.
 concurrency:
-  group: deploy-fly
+  group: ${{ github.event_name == 'pull_request' && format('check-{0}', github.ref) || 'deploy-fly' }}
   cancel-in-progress: false
 
 permissions:
@@ -35,7 +38,6 @@ jobs:
   migrations:
     name: Migrationsstand
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - uses: actions/checkout@v4
       - name: Migrationen in der Datenbank eingespielt?
@@ -51,6 +53,7 @@ jobs:
   deploy:
     name: Fly.io
     needs: [check, migrations]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: production
     steps:

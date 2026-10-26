@@ -194,6 +194,8 @@ Abgleich des Migrationsstands, dann `flyctl deploy`). Einmalig nötig:
 
 Der Deploy stoppt, wenn eine Migration aus `supabase/migrations/` in der Datenbank fehlt
 (`scripts/check-migrations.sh`, Abgleich über den Namen). Migrationen also **vor** dem Merge einspielen.
+Dieselbe Prüfung läuft schon in jedem PR auf `main` (ohne Auslieferung): Bringt ein PR eine neue Migration mit,
+bleibt „Migrationsstand“ rot, bis sie eingespielt ist.
 Lokal prüfen: `DATABASE_URL=… ./scripts/check-migrations.sh`
 
 Manuell von einem Rechner mit `flyctl`:
