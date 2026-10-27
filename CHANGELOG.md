@@ -8,7 +8,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ### Neu
 - **„Kennzeichen prüfen“ erledigen:** Fahrzeug-Detail zeigt bei unklarem Kennzeichen aus der Parkos-Mail oben einen Hinweis mit dem erkannten Kennzeichen und den Knöpfen **Kennzeichen stimmt** und **Korrigieren**. Wird das Kennzeichen über „Bearbeiten“ geändert, gilt es ebenfalls als geprüft. Danach verschwinden der Hinweis und das „prüfen“-Kennzeichen in der Fahrzeugliste; der Verlauf zeigt „Geprüft: …“
 - Alle übrigen Import-Hinweise (z. B. „Telefon fehlt“) lassen sich in der Zeile **Import** einzeln mit **Erledigt** quittieren
-- Fahrzeug-Detail zeigt neben der Abholung auch die **Anreise** mit Uhrzeit
+- Fahrzeug-Detail zeigt neben der Abholung auch die **Ankunft Parkplatz** mit Uhrzeit (wie in der Parkos-Mail)
 - **Parkos-Import: Zusatzleistungen als Aufgabe.** Gebuchte Extras aus der Preistabelle der Mail werden übernommen, z. B. „E-Ladeservice (exclusive Stromkosten) € 10,00“ → Leistung **Laden** mit Preis und Aufgabe. Zugeordnet werden Laden, Tanken, Innenreinigung und Außenwäsche; unbekannte Extras erscheinen als Hinweis „Zusatzleistung prüfen“. Die Import-Vorschau zeigt die erkannten Extras
   - auch bei **Umbuchungen**: neu gebuchte Extras kommen sofort an die bestehende Buchung, der Rest der Umbuchung bleibt wie bisher zur Prüfung
   - es wird nur ergänzt: von Hand gebuchte oder stornierte Leistungen bleiben unverändert

@@ -33,7 +33,7 @@ const FIELD_LABEL: Record<string, string> = {
   vehicle_model: 'Fahrzeug',
   fuel_type: 'Antrieb',
   persons: 'Personen',
-  start_at: 'Anreise',
+  start_at: 'Ankunft Parkplatz',
   end_at: 'Abholung',
   parking_type: 'Parkplatz',
   return_mode: 'Rückgabe',
@@ -270,7 +270,7 @@ export function VehicleDetailPage() {
               <Row label="Zeitraum">
                 {formatDate(b.start_at).slice(0, 6)} – {formatDate(b.end_at)}
               </Row>
-              <Row label="Anreise">{formatPickup(b.start_at)}</Row>
+              <Row label="Ankunft Parkplatz">{formatPickup(b.start_at)}</Row>
               <Row label="Abholung">
                 {formatPickup(b.end_at)} · {RETURN_MODE_LABEL[b.return_mode]}
               </Row>
