@@ -2,9 +2,11 @@
 
 Stand: 26.10.2026 · Diese Datei gehört ins Repo-Root und wird bei jeder geklärten Frage aktualisiert.
 
-Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[OFFEN]** = bewusst nicht umgesetzt · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
+Legende: **[BELEGT]** = aus Gespräch, Excel-Vorlage oder Nachtrag bestätigt · **[ANNAHME]** = Platzhalter, später anpassen · **[ENTFALLEN]** = nicht mehr Teil des Konzepts
 
 Verbindlich ist `docs/PARK_AND_FLY_Arbeitsanweisung.md`, geändert durch `docs/ARBEITSANWEISUNG_Nachtrag_08-10-2026.md`, `docs/ARBEITSANWEISUNG_Nachtrag_22-10-2026.md` und `docs/ARBEITSANWEISUNG_Nachtrag_25-10-2026.md` (Nachträge haben bei Widersprüchen Vorrang, der jüngere zuerst).
+
+Offene Fragen und bewusst noch nicht umgesetzte Punkte stehen in `OFFENE_FRAGEN.md`.
 
 Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne Code-Änderung anpassbar.
 
@@ -40,11 +42,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] kWh sind Pflicht beim Erledigt einer Ladeaufgabe (0 erlaubt), Eingabe mit Komma, höchstens 3 Nachkommastellen, 0–500
 - [BELEGT] Bricht eine Ladung ab, startet die Säule nach dem Neu-Anstecken einen neuen Vorgang ab 0 kWh; das Erfassen wird dabei leicht vergessen (Lukas, 26.10.2026)
 - [ANNAHME] Jeder Ladevorgang wird einzeln erfasst (`tasks.energy_parts`): „Zwischenstand erfassen“ während der Aufgabe, beim Erledigt zusätzlich vergessene Vorgänge nachtragbar; `energy_kwh` = Summe, höchstens 20 Vorgänge je Aufgabe
-- [OFFEN] Vergessene Vorgänge lassen sich ohne Schnittstelle nur nachtragen, wenn der Wert bekannt ist (z. B. aus der Ladehistorie in ChargEye); automatisch prüfen ginge per Lese-Zugriff auf die Kempower-API (Summe aller Transaktionen der Säule zwischen Start und Erledigt)
 - [BELEGT] QR-Code auf dem Kempower-Display (`kempower.io/c/<uuid>`) ist ein Token pro Ladevorgang, nicht pro Stecker
-- [OFFEN] Ladung per App über die API starten/stoppen (virtuelle RFID-Freigabe, Zuordnung über `authorizationToken`); Rechte und Endpunkte bei Kempower klären
-- [OFFEN] Übersicht/Export aller Ladungen (Kennzeichen, kWh, Zeitraum) für die Abrechnung
-- [OFFEN] Eichrechtskonformität der Säulen; Abrechnung pauschal oder pro kWh (rechtlich prüfen)
 
 ## Buchungen
 - [ANNAHME] Zusätzliches Feld `fuel_type` (Verbrenner/Elektro/Hybrid) steuert Tank- und Ladestand im Protokoll: Verbrenner nur Tank, Elektro nur Ladestand, Hybrid beides
@@ -77,7 +75,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] ⚠ ABWEICHUNG vom Issue: Unbekannte Parkform legt keine Buchung mit leerer Parkart an (Spalte ist Pflicht), sondern landet in der Prüfliste; im Import-Dialog kann die Parkart von Hand gewählt werden (Hinweis `parking_type_manual`)
 - [ANNAHME] Notizen werden beim Import nicht überschrieben; Parkform und Rohtext stehen im Import-Protokoll (`booking_imports`)
 - [ANNAHME] Änderungs-/Stornomails bis zum Vorliegen von Beispielen nur als `needs_review` (Prüfliste unter Fahrzeuge → „n prüfen“)
-- [OFFEN] Kunden-E-Mail in der Parkos-Mail? Aussehen von Änderungs-/Stornomails? Partner-API/Export? Weitere Portale? Postfach-Anbieter, IMAP-Zugang und Freigabe für Auto-Import?
 
 ## Lageplan & Scannen
 - [ANNAHME] Je Hallenregal genau eine Spalte (Code `R3-E1`); das Datenmodell erlaubt mehrere Spalten je Regal
@@ -100,7 +97,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Der Fahrer zählt noch nicht zur Buskapazität (8 Plätze)
 - [BELEGT] Rückgabe am Terminal 30 min nach der Landung (`settings.valet_return_after_landing_minutes`), bestätigt von Lukas 25.10.2026; ohne Landezeit ab Abholung − Puffer
 - [ENTFALLEN] Vallet als eigene Leistung und als Shuttle-Fahrtart (`transport_jobs.type = vallet`, entfernt in 0.14.0)
-- [OFFEN] Flugstatus-Abfrage (Flugnummern liegen seit 0.22.0 vor)
 - [ANNAHME] Shuttle-Dispo (0.24.0): Fahrten entstehen automatisch aus jeder aktiven Buchung mit `return_mode = shuttle`, je eine Hin- und Rückfahrt
 - [ANNAHME] Hinfahrt = nächster Slot ab Ankunft am Platz + 15 min für Annahme und Protokoll (`settings.shuttle_checkin_minutes`)
 - [ANNAHME] Rückfahrt = nächster Slot ab Landung + 30 min für Gepäck (`settings.shuttle_pickup_after_landing_minutes`); ohne Landezeit ab Abholung − Puffer
@@ -124,8 +120,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Pflicht zum Abschließen: Mitarbeiter, Kilometerstand, Tankstand (bei Verbrenner und Hybrid), Ladestand (bei Elektro und Hybrid), vollständige Schadensangaben, Name und Unterschrift Kunde, Unterschrift Mitarbeiter; Fotos sind optional
 - [ANNAHME] Abgeschlossene Protokolle sind unveränderlich (Datenbank-Trigger); je Buchung genau ein Annahme- und ein Übergabeprotokoll
 - [ANNAHME] Annahmeprotokoll ist vor dem Einchecken vorgesehen, blockiert es aber nicht (Hinweis im Check-in)
-- [OFFEN] Mail-Dienst zurückgestellt (Entscheidung 06.10.2026: vorerst nicht wichtig). Vorbereitet ist Resend in der Edge Function `protocol-mail` (Secrets `RESEND_API_KEY`, `MAIL_FROM`); ohne Schlüssel wird „Mail-Dienst nicht eingerichtet“ vermerkt, Protokolle und PDFs funktionieren vollständig
-- [OFFEN] Aufbewahrungsfrist (Platzhalter in `settings`: 365 Tage, Löschjob deaktiviert)
 
 ## Benachrichtigungen (neu 25.10.2026, 0.25.0)
 - [BELEGT] Push-Benachrichtigungen für das Personal bei: neuer Buchung, Umbuchung/Storno, Import prüfen, Regal-Konflikt/Umsetzen, Ankunft bald, Abholung bald, Fahrzeug bereit, Shuttle fällig (Entscheidung Lukas 25.10.2026)
@@ -139,7 +133,6 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Keine Ruhezeiten; Demo-Daten lösen keine Meldungen aus
 - [ANNAHME] Bei geöffneter App Hinweis in der App statt Systembenachrichtigung; iPhone/iPad zeigen trotzdem die Systembenachrichtigung (Safari entzieht sonst die Berechtigung)
 - [BELEGT] iPhone/iPad: Push nur in der installierten App (Home-Bildschirm, ab iOS/iPadOS 16.4)
-- [OFFEN] Ruhezeiten nachts
 
 ## Nutzer & Geräte
 - [BELEGT] ⚠ ABWEICHUNG: Rollen Admin, Personal, Fahrer, beliebig kombinierbar (Lukas, 25.10.2026; vorher nur `staff`/`admin`). Gespeichert in `profiles.roles`, `profiles.role` bleibt für ältere App-Versionen synchron
