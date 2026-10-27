@@ -6,7 +6,7 @@ import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
-import { cancelBooking, getBookingDetail, type BookingDetail } from '../lib/bookings'
+import { cancelBooking, confirmImportFlag, getBookingDetail, type BookingDetail } from '../lib/bookings'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
@@ -69,6 +69,7 @@ function describeChange(key: string, value: unknown): string {
   const v = value as { old?: unknown; new?: unknown; code?: string }
   if (key === 'service_added') return `Leistung nachgebucht: ${v.code}`
   if (key === 'service_cancelled') return `Leistung storniert: ${v.code}`
+  if (key === 'import_confirmed') return `Geprüft: ${IMPORT_FLAG_LABEL[v.code as ImportFlag] ?? v.code}`
   return `${FIELD_LABEL[key] ?? key}: ${fmtValue(key, v.old)} → ${fmtValue(key, v.new)}`
 }
 
@@ -190,6 +191,18 @@ export function VehicleDetailPage() {
     { at: b.received_at ?? b.created_at, text: `Buchung eingegangen · ${SOURCE_LABEL[b.source] ?? b.source}`, tone: 'bg-muted' },
   ].sort((x, y) => y.at.localeCompare(x.at))
 
+  async function doConfirmFlag(flag: string) {
+    setBusy(true)
+    try {
+      await confirmImportFlag(b.id, flag)
+      load()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function doCancel() {
     setBusy(true)
     try {
@@ -225,6 +238,21 @@ export function VehicleDetailPage() {
         </div>
       </header>
 
+      {b.import_flags?.includes('plate_unverified') && !closed && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-warn bg-warn-soft px-4 py-3 text-sm text-warn-ink">
+          <p className="min-w-0 flex-1">
+            Kennzeichen aus der Parkos-Mail nicht eindeutig erkannt: <strong className="font-mono">{b.plate}</strong>.
+            Bitte mit dem Fahrzeug bzw. Fahrzeugschein abgleichen.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={() => setEditing(true)}>Korrigieren</Button>
+            <Button variant="primary" disabled={busy} onClick={() => void doConfirmFlag('plate_unverified')}>
+              Kennzeichen stimmt
+            </Button>
+          </div>
+        </div>
+      )}
+
       {b.notes?.startsWith('⚠') && (
         <p className="rounded-xl border border-warn bg-warn-soft px-4 py-2 text-sm text-warn-ink">
           Kennzeichen aus dem Import nicht eindeutig – bitte prüfen und über „Bearbeiten“ korrigieren.
@@ -242,6 +270,7 @@ export function VehicleDetailPage() {
               <Row label="Zeitraum">
                 {formatDate(b.start_at).slice(0, 6)} – {formatDate(b.end_at)}
               </Row>
+              <Row label="Anreise">{formatPickup(b.start_at)}</Row>
               <Row label="Abholung">
                 {formatPickup(b.end_at)} · {RETURN_MODE_LABEL[b.return_mode]}
               </Row>
@@ -276,8 +305,18 @@ export function VehicleDetailPage() {
               {b.portal_payout != null && <Row label="Auszahlung">{formatMoney(Number(b.portal_payout))}</Row>}
               {(b.import_flags ?? []).length > 0 && (
                 <Row label="Import">
-                  <span className="text-warn-ink">
-                    {b.import_flags.map((f) => IMPORT_FLAG_LABEL[f as ImportFlag] ?? f).join(', ')}
+                  <span className="flex flex-col items-end gap-1">
+                    {b.import_flags.map((f) => (
+                      <span key={f} className="flex items-center gap-2 text-warn-ink">
+                        {IMPORT_FLAG_LABEL[f as ImportFlag] ?? f}
+                        {!closed && (
+                          <button type="button" disabled={busy} onClick={() => void doConfirmFlag(f)}
+                            className="touch-target rounded-md border border-line-strong px-2.5 text-xs font-semibold text-accent disabled:opacity-50">
+                            Erledigt
+                          </button>
+                        )}
+                      </span>
+                    ))}
                   </span>
                 </Row>
               )}
