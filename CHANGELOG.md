@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.31.0 – 27.10.2026
+
+### Neu
+- **„Kennzeichen prüfen“ erledigen:** Fahrzeug-Detail zeigt bei unklarem Kennzeichen aus der Parkos-Mail oben einen Hinweis mit dem erkannten Kennzeichen und den Knöpfen **Kennzeichen stimmt** und **Korrigieren**. Wird das Kennzeichen über „Bearbeiten“ geändert, gilt es ebenfalls als geprüft. Danach verschwinden der Hinweis und das „prüfen“-Kennzeichen in der Fahrzeugliste; der Verlauf zeigt „Geprüft: …“
+- Alle übrigen Import-Hinweise (z. B. „Telefon fehlt“) lassen sich in der Zeile **Import** einzeln mit **Erledigt** quittieren
+- Fahrzeug-Detail zeigt neben der Abholung auch die **Anreise** mit Uhrzeit
+
+### Datenbank
+- Migration `20261027000100_import_flag_confirm.sql` (additiv): Spalte `bookings.import_flags_confirmed`, Trigger `bookings_import_flags_filter` (bestätigte Hinweise kommen bei erneutem Import derselben Mail nicht zurück), Funktion `confirm_booking_import_flag`
+
 ## 0.30.0 – 26.10.2026
 
 ### Geändert

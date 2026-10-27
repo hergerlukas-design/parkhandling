@@ -225,3 +225,10 @@ export async function cancelBooking(id: string): Promise<void> {
   const { error } = await db().rpc('upsert_booking', { p_booking: { id, cancelled: true }, p_source: 'manual' })
   if (error) throw new Error(error.message)
 }
+
+/** Import-Hinweis (z. B. „Kennzeichen prüfen“) als geprüft bestätigen; gibt die offenen Hinweise zurück. */
+export async function confirmImportFlag(id: string, flag: string): Promise<string[]> {
+  const { data, error } = await db().rpc('confirm_booking_import_flag', { p_id: id, p_flag: flag })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as string[]
+}
