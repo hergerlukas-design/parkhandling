@@ -138,6 +138,9 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
           {result.status === 'imported' && <p className="text-sm">Die Buchung wurde angelegt.</p>}
           {result.status === 'updated' && <p className="text-sm">Die Buchung gab es schon, sie wurde aktualisiert (siehe Buchungshistorie).</p>}
           {result.status === 'unchanged' && <p className="text-sm">Diese Mail war bereits importiert, nichts geändert.</p>}
+          {(result.added_services?.length ?? 0) > 0 && (
+            <p className="text-sm">Leistungen aus der Mail ergänzt: {result.added_services!.join(', ')}</p>
+          )}
           {result.error && <p className="text-sm text-subtle">{result.error}</p>}
           {(result.status === 'needs_review' || result.status === 'failed') && (
             <p className="text-sm text-subtle">Die Mail liegt in der Prüfliste unter „Fahrzeuge → Importe prüfen“.</p>
@@ -233,6 +236,15 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
                 <Item label="Preis Kunde">{f.totalCustomer != null ? formatMoney(f.totalCustomer) : ''}</Item>
                 <Item label="Auszahlung">{f.payout != null ? formatMoney(f.payout) : ''}</Item>
                 <Item label="Zahlung">{f.paidInAdvance ? 'Bezahlt (bei Parkos)' : 'Offen'}</Item>
+                {f.extras.length > 0 && (
+                  <Item label="Zusatzleistungen">
+                    {f.extras.map((x) => (
+                      <span key={x.label} className={`block ${x.code ? '' : 'text-warn-ink'}`}>
+                        {x.label} · {formatMoney(x.price)} → {x.code ? `Aufgabe ${x.code}` : 'nicht zugeordnet, von Hand buchen'}
+                      </span>
+                    ))}
+                  </Item>
+                )}
               </dl>
             </section>
           )}

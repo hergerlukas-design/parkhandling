@@ -253,6 +253,56 @@ describe('Parkos-Mail', () => {
     })
     expect(p.raw_text).toContain('Reservierungsnummer')
     expect(p.raw_text.length).toBeLessThan(200_000)
+    expect(p.services).toEqual([])
+  })
+
+  it('nur das Parkprodukt → keine Zusatzleistungen', () => {
+    for (const raw of [html, pasted]) expect(parseParkosMail(raw, options).fields.extras).toEqual([])
+  })
+
+  const charge = 'E-Ladeservice (exclusive Stormkosten) € 10,00'
+  for (const [name, raw] of [
+    ['Text', pasted.replace('Gesamtumsatz ParkHandling', `${charge}\nGesamtumsatz ParkHandling`)],
+    ['Text, Betrag in eigener Zeile', pasted.replace('Gesamtumsatz ParkHandling', 'E-Ladeservice (exclusive Stormkosten)\n€ 10,00\nGesamtumsatz ParkHandling')],
+    ['HTML', html.replace('überdacht)</td><td align="right">&euro; 72,00</td></tr>', '$&<tr><td>E-Ladeservice (exclusive Stormkosten)</td><td align="right">&euro; 10,00</td></tr>')],
+  ] as const) {
+    it(`übernimmt den E-Ladeservice als Leistung LADEN (${name})`, () => {
+      const r = parseParkosMail(raw, options)
+      expect(r.fields.extras).toEqual([{ label: 'E-Ladeservice (exclusive Stormkosten)', price: 10, code: 'LADEN' }])
+      expect(r.flags).toEqual([])
+      expect(toImportPayload(r, 'manual').services).toEqual([
+        { code: 'LADEN', price: 10, description: 'E-Ladeservice (exclusive Stormkosten)' },
+      ])
+    })
+  }
+
+  it('Umbuchung: Zusatzleistungen aus „Neue Daten“, nicht aus der alten Tabelle', () => {
+    const change = pasted
+      .replace('Eine neue Reservierung über Parkos', 'Reservierung über Parkos geändert')
+      .replace(
+        /6 Tage Shuttle[\s\S]*$/,
+        [
+          '4 days Shuttle transfer (outside) € 49,00',
+          'Total revenue ParkHandling Park&Fly € 49,00',
+          'Total Customer (Paid upfront at Parkos) € 49,00',
+          'Neue Daten:',
+          '4 Tage Shuttle-Transfer (nicht überdacht) € 49,00',
+          'E-Ladeservice (exclusive Stormkosten) € 10,00',
+          'Gesamtumsatz ParkHandling Park&Fly € 59,00',
+          'Gesamtbetrag Kunde (im Voraus bei Parkos bezahlt) € 59,00',
+        ].join('\n'),
+      )
+    const r = parseParkosMail(change, options)
+    expect(r.mailType).toBe('change')
+    expect(r.fields.extras.map((x) => x.code)).toEqual(['LADEN'])
+    expect(r.portalPayout).toBe(59)
+  })
+
+  it('unbekannte Zusatzleistung → Hinweis, nicht als Leistung übernommen', () => {
+    const r = parseParkosMail(pasted.replace('Gesamtumsatz ParkHandling', 'Kindersitz € 5,00\nGesamtumsatz ParkHandling'), options)
+    expect(r.fields.extras).toEqual([{ label: 'Kindersitz', price: 5, code: null }])
+    expect(r.flags).toContain('unknown_extra')
+    expect(toImportPayload(r, 'manual').services).toEqual([])
   })
 })
 

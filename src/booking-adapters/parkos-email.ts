@@ -28,6 +28,7 @@ export type ImportFlag =
   | 'unknown_product'
   | 'parking_type_manual'
   | 'sender_unverified'
+  | 'unknown_extra'
 
 export const IMPORT_FLAG_LABEL: Record<ImportFlag, string> = {
   plate_unverified: 'Kennzeichen prüfen',
@@ -35,6 +36,27 @@ export const IMPORT_FLAG_LABEL: Record<ImportFlag, string> = {
   unknown_product: 'Parkform unbekannt',
   parking_type_manual: 'Parkart von Hand gewählt',
   sender_unverified: 'Absender nicht Parkos',
+  unknown_extra: 'Zusatzleistung prüfen',
+}
+
+/** Zusatzleistung aus der Preistabelle der Mail (z. B. „E-Ladeservice (exclusive Stromkosten) € 10,00“) */
+export interface ParkosExtra {
+  label: string
+  price: number
+  /** Leistungscode in `services`, null = nicht zugeordnet */
+  code: string | null
+}
+
+/** Zusatzleistungen der Mail → Leistungscode (erste passende Regel gewinnt) */
+const EXTRA_SERVICE_RULES: [RegExp, string][] = [
+  [/lade|charg/i, 'LADEN'],
+  [/tank|fuel|betank/i, 'TANKEN'],
+  [/innen\s*reinigung|innenraum|interior/i, 'AUF_INNEN'],
+  [/au(?:ß|ss)en\s*w(?:ä|ae)sche|auto\s*w(?:ä|ae)sche|car\s*wash|exterior/i, 'AUF_AUSSEN'],
+]
+
+export function extraServiceCode(label: string): string | null {
+  return EXTRA_SERVICE_RULES.find(([re]) => re.test(label))?.[1] ?? null
 }
 
 export const MAIL_TYPE_LABEL: Record<MailType, string> = {
@@ -81,6 +103,8 @@ export interface ParkosFields {
   totalCustomer: number | null
   payout: number | null
   paidInAdvance: boolean
+  /** Positionen der Preistabelle außer dem Parkprodukt */
+  extras: ParkosExtra[]
 }
 
 export interface ParkosParseResult {
@@ -165,6 +189,50 @@ const LABELS = {
   total: /Gesamtbetrag\s+Kunde/,
 }
 
+/**
+ * Positionen der Preistabelle (über „Gesamtumsatz ParkHandling“). Bei Umbuchungen gilt die
+ * Tabelle unter „Neue Daten“. Das Parkprodukt („6 Tage Shuttle-Transfer …“), Rabatte und
+ * Parkos-eigene Posten (mit * markiert) zählen nicht als Zusatzleistung.
+ */
+function readExtras(text: string, parkform: string | null): ParkosExtra[] {
+  const newData = /Neue\s+Daten\s*:?/gi
+  let from = 0
+  for (let m = newData.exec(text); m; m = newData.exec(text)) from = m.index + m[0].length
+  const ret = /Zeitpunkt\s+R(?:ü|ue)ckkehr\s+Flughafen[^\n]*\n?(?:[ \t]*\d{1,2}[:.]\d{2}[^\n]*)?/i.exec(text.slice(from))
+  if (ret) from += ret.index + ret[0].length
+  const rest = text.slice(from)
+  const end = /Gesamtumsatz\s+ParkHandling|Total\s+revenue/i.exec(rest)
+  if (!end) return []
+  const cells = rest
+    .slice(0, end.index)
+    .split(/[\n\t]/)
+    .map((c) => c.trim())
+    .filter(Boolean)
+  const items: { label: string; price: number }[] = []
+  let pending: string | null = null
+  for (const cell of cells) {
+    const m = /^(.*?)\s*€\s*(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/.exec(cell)
+    if (!m) {
+      pending = pending ? `${pending} ${cell}` : cell
+      continue
+    }
+    const label = (m[1] || pending || '').trim()
+    pending = null
+    const price = parseMoney(m[2])
+    if (label && price != null) items.push({ label, price })
+  }
+  const product = parkform ? normLabel(parkform) : null
+  return items
+    .filter(({ label, price }) =>
+      price > 0 &&
+      !label.includes('*') &&
+      !/\b\d+\s*(?:tage?|days?|nächte|nights?)\b/i.test(label) &&
+      !(product && normLabel(label).includes(product)) &&
+      !/rabatt|discount|provision|commission|administration/i.test(label),
+    )
+    .map(({ label, price }) => ({ label, price, code: extraServiceCode(label) }))
+}
+
 /** Abschnitt „Kundendaten“ bis zum Abschnitt „Parkplatz“ (dort steht die Betriebsnummer). */
 function customerSection(text: string): string {
   const start = /Kundendaten\s*:?/i.exec(text)
@@ -244,6 +312,7 @@ export function readParkosFields(text: string): ParkosFields {
   const email = emptyToNull(field(customer, LABELS.email))
   const personsRaw = emptyToNull(field(text, LABELS.persons))
   const personsNum = personsRaw ? Number(/\d+/.exec(personsRaw)?.[0]) : NaN
+  const parkform = emptyToNull(field(text, LABELS.parkform))
   return {
     externalRef: emptyToNull(field(text, LABELS.ref))?.replace(/^#/, '').split(/\s/)[0] ?? null,
     customerName: emptyToNull(field(text, LABELS.name)),
@@ -253,7 +322,7 @@ export function readParkosFields(text: string): ParkosFields {
     vehicleModel: emptyToNull(field(text, LABELS.vehicle)),
     plateRaw: emptyToNull(field(text, LABELS.plate)),
     persons: Number.isInteger(personsNum) ? personsNum : null,
-    parkform: emptyToNull(field(text, LABELS.parkform)),
+    parkform,
     transfer: emptyToNull(field(text, LABELS.transfer)),
     flightOut: emptyToNull(field(text, LABELS.flightOut)),
     flightReturn: emptyToNull(field(text, LABELS.flightReturn)),
@@ -264,6 +333,7 @@ export function readParkosFields(text: string): ParkosFields {
     totalCustomer: amountAfter(text, LABELS.total),
     payout: amountAfter(text, LABELS.payout),
     paidInAdvance: /im\s+Voraus\s+bei\s+Parkos\s+bezahlt/i.test(text),
+    extras: readExtras(text, parkform),
   }
 }
 
@@ -288,6 +358,7 @@ export function parseParkosMail(raw: string, options: ParkosOptions): ParkosPars
   const plate = f.plateRaw ? normalizePlate(f.plateRaw) : null
   if (plate && !plate.verified) flags.push('plate_unverified')
   if (!f.customerPhone) flags.push('phone_missing')
+  if (f.extras.some((x) => !x.code)) flags.push('unknown_extra')
 
   const product = findProduct(f.parkform, options.productMap)
   let parkingType: ParkingType | null = product?.parking_type ?? null
@@ -372,5 +443,9 @@ export function toImportPayload(result: ParkosParseResult, channel: 'manual' | '
     flags: result.flags,
     booking: result.booking,
     portal_payout: result.portalPayout,
+    // Zusatzleistungen werden nur ergänzt, nie storniert (von Hand gebuchte Leistungen bleiben)
+    services: result.fields.extras
+      .filter((x) => x.code)
+      .map((x) => ({ code: x.code, price: x.price, description: x.label })),
   }
 }

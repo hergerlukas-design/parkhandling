@@ -52,6 +52,8 @@ export interface ImportResult {
   booking_id: string | null
   error: string | null
   unknown_services: string[]
+  /** Aus der Mail ergänzte Leistungscodes (z. B. LADEN); fehlt bei älterer Datenbank */
+  added_services?: string[]
 }
 
 /** Parkform-Zuordnung und Puffer aus `settings` (Fallback: Werte aus ANNAHMEN.md). */
