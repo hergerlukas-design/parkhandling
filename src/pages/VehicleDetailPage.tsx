@@ -17,6 +17,7 @@ import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
   LANGUAGE_LABEL,
+  PARKING_TYPE_LABEL,
   type LocationArea,
   type Task,
 } from '../types/domain'
@@ -318,9 +319,15 @@ export function VehicleDetailPage() {
                 {b.customer_language && (
                   <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
                 )}
+                <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
                 <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
                 <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
               </div>
+              {b.notes && (
+                <div>
+                  <Row label="Notizen"><span className="whitespace-pre-line">{b.notes}</span></Row>
+                </div>
+              )}
             </dl>
           </Card>
 

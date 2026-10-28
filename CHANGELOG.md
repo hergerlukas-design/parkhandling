@@ -6,9 +6,10 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ## 0.31.1 – 28.10.2026
 
 ### Geändert
-- **Fahrzeug-Detail, Karte „Buchung“ neu gegliedert** in drei Blöcke: Zeitraum · Ankunft Parkplatz · Landung / Abholung — Shuttle · Flüge — Kunde · Kontakt · Personen · Sprache · Quelle · Zahlung
+- **Fahrzeug-Detail, Karte „Buchung“ neu gegliedert** in drei Blöcke: Zeitraum · Ankunft Parkplatz · Landung / Abholung — Shuttle · Flüge — Kunde · Kontakt · Personen · Sprache · Parkplatz · Quelle · Zahlung — Notizen
 - „Anreise“ heißt jetzt **Ankunft Parkplatz** (wie in der Parkos-Mail)
-- Nicht mehr in der Übersicht: Firma, Parkplatz (Halle/Außen), Antrieb, Transfer, Preis, Auszahlung, Notizen. Die Werte bleiben gespeichert und sind über „Bearbeiten“ sichtbar
+- Parkplatz (Halle/Außen) steht im Kundenblock zwischen Sprache und Quelle, Notizen als eigener Block am Ende
+- Nicht mehr in der Übersicht: Firma, Antrieb, Transfer, Preis, Auszahlung. Die Werte bleiben gespeichert und sind über „Bearbeiten“ sichtbar
 - Offene Import-Hinweise (außer Kennzeichen) stehen als Hinweisbox über den Karten, weiter mit „Erledigt“
 
 ## 0.31.0 – 27.10.2026
