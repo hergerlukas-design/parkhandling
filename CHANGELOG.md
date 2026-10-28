@@ -10,6 +10,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - „Anreise“ heißt jetzt **Ankunft Parkplatz** (wie in der Parkos-Mail)
 - Parkplatz (Halle/Außen) steht im Kundenblock zwischen Sprache und Quelle, Notizen als eigener Block am Ende
 - Nicht mehr in der Übersicht: Firma, Antrieb, Transfer, Preis, Auszahlung. Die Werte bleiben gespeichert und sind über „Bearbeiten“ sichtbar
+- **Aufgaben erst ab Ankunft:** Aufgaben-Board und Dashboard („Offene Aufgaben“, „fällig heute“) zeigen keine Aufgaben von Fahrzeugen, die noch nicht angekommen sind (Status „Gebucht“). Sie erscheinen ab dem Einchecken; im Fahrzeug-Detail bleiben die gebuchten Leistungen sichtbar
 - Offene Import-Hinweise (außer Kennzeichen) stehen als Hinweisbox über den Karten, weiter mit „Erledigt“
 
 ## 0.31.0 – 27.10.2026
