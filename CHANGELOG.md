@@ -11,6 +11,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Parkplatz (Halle/Außen) steht im Kundenblock zwischen Sprache und Quelle, Notizen als eigener Block am Ende
 - Nicht mehr in der Übersicht: Firma, Antrieb, Transfer, Preis, Auszahlung. Die Werte bleiben gespeichert und sind über „Bearbeiten“ sichtbar
 - **Einchecken mit Lageplan statt Kamera:** Der Schritt „Platz wählen“ zeigt den Lageplan (Halle, Außen, Arbeitsorte; startet passend zur Parkart). Freies Feld antippen, unten bestätigen. Der Vorschlag ist vorausgewählt und wird beim Öffnen angezeigt; belegte oder gesperrte Felder lassen sich nicht wählen. Der Stellplatz-QR-Scanner beim Einchecken entfällt (zentraler „Scannen“-Knopf bleibt)
+- **Scannen-Knopf vorerst ausgeblendet** (Kopfzeile Tablet und Mitte der Smartphone-Leiste, die jetzt fünf Einträge hat). Die Seite bleibt unter /scan erreichbar; wieder einschalten über `SCAN_ENABLED` in `src/components/navigation.ts`
 - **Aufgaben erst ab Ankunft:** Aufgaben-Board und Dashboard („Offene Aufgaben“, „fällig heute“) zeigen keine Aufgaben von Fahrzeugen, die noch nicht angekommen sind (Status „Gebucht“). Sie erscheinen ab dem Einchecken; im Fahrzeug-Detail bleiben die gebuchten Leistungen sichtbar
 - Offene Import-Hinweise (außer Kennzeichen) stehen als Hinweisbox über den Karten, weiter mit „Erledigt“
 

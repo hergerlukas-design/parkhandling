@@ -27,5 +27,10 @@ export function driverMayOpen(pathname: string): boolean {
 
 export const SETTINGS_ITEM: NavItem = { to: '/einstellungen', label: 'Einstellungen', icon: 'settings' }
 
-/** Smartphone: fünf Ziele plus zentraler Scan-Button; Einstellungen über das Zahnrad oben rechts. */
-export const BOTTOM_ITEMS: (NavItem | 'scan')[] = [NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[2], 'scan', NAV_ITEMS[3], NAV_ITEMS[4]]
+/** Zentraler Scan-Button (Kopfzeile und Smartphone-Leiste). Vorerst aus, wird nicht genutzt; Seite /scan bleibt erreichbar. */
+export const SCAN_ENABLED = false
+
+/** Smartphone: fünf Ziele (plus zentraler Scan-Button, falls aktiv); Einstellungen über das Zahnrad oben rechts. */
+export const BOTTOM_ITEMS: (NavItem | 'scan')[] = SCAN_ENABLED
+  ? [NAV_ITEMS[0], NAV_ITEMS[1], NAV_ITEMS[2], 'scan', NAV_ITEMS[3], NAV_ITEMS[4]]
+  : NAV_ITEMS
