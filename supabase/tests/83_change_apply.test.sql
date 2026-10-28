@@ -45,7 +45,7 @@ select public.upsert_booking(jsonb_build_object('id', :'bid', 'plate', 'M-CH 11'
 select public.import_booking_mail(jsonb_set(jsonb_set((select p from mail), '{mail_type}', '"change"'),
   '{booking,start_at}', '"2030-10-29T08:00:00+01:00"')) as r3 \gset
 select pg_temp.assert_eq((:'r3'::jsonb) ->> 'status', 'needs_review', 'Hand-Feld weicht ab');
-select pg_temp.assert_eq((:'r3'::jsonb) ->> 'error' like '%plate%', true, 'Feld genannt');
+select pg_temp.assert_eq((:'r3'::jsonb) ->> 'error' like '%Kennzeichen%', true, 'Feld genannt');
 select pg_temp.assert_eq((select plate from public.bookings where id = :'bid'), 'M-CH 11', 'Kennzeichen von Hand bleibt');
 select pg_temp.assert_eq((select start_at from public.bookings where id = :'bid'), '2030-10-29T08:00:00+01:00'::timestamptz, 'Ankunft trotzdem übernommen');
 
@@ -60,6 +60,7 @@ select public.upsert_booking(jsonb_build_object('id', :'bid', 'cancelled', true)
 select public.import_booking_mail(jsonb_set(jsonb_set((select p from mail), '{mail_type}', '"change"'),
   '{booking,start_at}', '"2030-10-29T07:00:00+01:00"')) as r5 \gset
 select pg_temp.assert_eq((:'r5'::jsonb) ->> 'status', 'needs_review', 'storniert zur Prüfung');
+select pg_temp.assert_eq((:'r5'::jsonb) ->> 'booking_id', :'bid', 'Prüfeintrag verweist auf Buchung');
 select pg_temp.assert_eq((select start_at from public.bookings where id = :'bid'), '2030-10-29T08:00:00+01:00'::timestamptz, 'storniert unverändert');
 
 -- Stornomail bleibt zur Prüfung

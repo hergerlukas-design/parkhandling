@@ -41,6 +41,7 @@ declare
   v_manual text[] := '{}';
   v_kept text[] := '{}';
   v_patch jsonb;
+  v_kept_label text[] := '{}';
 begin
   if not public.can_write_bookings() then
     raise exception 'Kein Zugriff' using errcode = '42501';
@@ -96,6 +97,7 @@ begin
   elsif v_type = 'change' and v_existing.status in ('cancelled', 'completed') then
     v_status := 'needs_review';
     v_error := 'Umbuchung zu einer stornierten oder abgeschlossenen Buchung – bitte prüfen';
+    v_booking_id := v_existing.id;
   else
     begin
       if v_type = 'change' then
@@ -109,6 +111,16 @@ begin
           select k from unnest(v_manual) k
           where v_booking ? k and to_jsonb(v_merged) -> k is distinct from to_jsonb(v_existing) -> k
           order by k
+        );
+        -- Feldnamen für den Hinweis in der Prüfliste
+        v_kept_label := array(
+          select case k
+            when 'plate' then 'Kennzeichen' when 'start_at' then 'Ankunft' when 'end_at' then 'Abholung'
+            when 'customer_name' then 'Kunde' when 'customer_phone' then 'Telefon' when 'customer_email' then 'E-Mail'
+            when 'vehicle_model' then 'Fahrzeug' when 'persons' then 'Personen' when 'parking_type' then 'Parkplatz'
+            when 'return_mode' then 'Rückgabe' when 'price_total' then 'Preis' when 'payment_status' then 'Zahlung'
+            else k end
+          from unnest(v_kept) k
         );
         select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) into v_patch
         from jsonb_each(v_booking) e
@@ -130,7 +142,7 @@ begin
         else 'unchanged'
       end;
       if cardinality(v_kept) > 0 then
-        v_error := 'Umbuchung übernommen, außer von Hand geänderten Feldern: ' || array_to_string(v_kept, ', ')
+        v_error := 'Umbuchung übernommen, außer von Hand geänderten Feldern: ' || array_to_string(v_kept_label, ', ')
           || ' – bitte prüfen';
       end if;
     exception when others then
