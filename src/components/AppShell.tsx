@@ -3,7 +3,7 @@ import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
 import { isDriverOnly, useAuth } from '../lib/auth'
-import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, NAV_ITEMS, SETTINGS_ITEM } from './navigation'
+import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, NAV_ITEMS, SCAN_ENABLED, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
 import { UpdateBanner } from './UpdateBanner'
@@ -49,7 +49,7 @@ export function AppShell() {
           {WEEKDAY.format(now).replace('.', '')}, {formatDate(now)}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          {!driverOnly && <NavLink
+          {!driverOnly && SCAN_ENABLED && <NavLink
             to="/scan"
             className="touch-target hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark md:inline-flex"
           >
@@ -99,7 +99,7 @@ export function AppShell() {
 
       {/* Bottom-Bar (Smartphone) mit zentralem Scan-Button */}
       <nav aria-label="Hauptnavigation" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : 'grid-cols-6'}`}>
+        <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : bottomItems.length === 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {bottomItems.map((item) =>
             item === 'scan' ? (
               <li key="scan" className="flex justify-center">

@@ -16,10 +16,8 @@ import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LAB
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
-  FUEL_TYPE_LABEL,
   LANGUAGE_LABEL,
   PARKING_TYPE_LABEL,
-  RETURN_MODE_LABEL,
   type LocationArea,
   type Task,
 } from '../types/domain'
@@ -33,7 +31,7 @@ const FIELD_LABEL: Record<string, string> = {
   vehicle_model: 'Fahrzeug',
   fuel_type: 'Antrieb',
   persons: 'Personen',
-  start_at: 'Anreise',
+  start_at: 'Ankunft Parkplatz',
   end_at: 'Abholung',
   parking_type: 'Parkplatz',
   return_mode: 'Rückgabe',
@@ -253,6 +251,21 @@ export function VehicleDetailPage() {
         </div>
       )}
 
+      {!closed && (b.import_flags ?? []).some((f) => f !== 'plate_unverified') && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-warn bg-warn-soft px-4 py-2 text-sm text-warn-ink">
+          <span className="font-semibold">Import prüfen:</span>
+          {b.import_flags.filter((f) => f !== 'plate_unverified').map((f) => (
+            <span key={f} className="flex items-center gap-2">
+              {IMPORT_FLAG_LABEL[f as ImportFlag] ?? f}
+              <button type="button" disabled={busy} onClick={() => void doConfirmFlag(f)}
+                className="touch-target rounded-md border border-line-strong bg-surface px-2.5 text-xs font-semibold text-accent disabled:opacity-50">
+                Erledigt
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {b.notes?.startsWith('⚠') && (
         <p className="rounded-xl border border-warn bg-warn-soft px-4 py-2 text-sm text-warn-ink">
           Kennzeichen aus dem Import nicht eindeutig – bitte prüfen und über „Bearbeiten“ korrigieren.
@@ -262,66 +275,59 @@ export function VehicleDetailPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4">
           <Card title="Buchung">
-            <dl>
-              <Row label="Kunde">{b.customer_name}</Row>
-              {b.company && b.company !== b.customer_name && <Row label="Firma">{b.company}</Row>}
-              <Row label="Kontakt">{[b.customer_email, b.customer_phone].filter(Boolean).join(' · ') || '–'}</Row>
-              <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
-              <Row label="Zeitraum">
-                {formatDate(b.start_at).slice(0, 6)} – {formatDate(b.end_at)}
-              </Row>
-              <Row label="Anreise">{formatPickup(b.start_at)}</Row>
-              <Row label="Abholung">
-                {formatPickup(b.end_at)} · {RETURN_MODE_LABEL[b.return_mode]}
-              </Row>
-              {trips.length > 0 && (
-                <Row label={trips.some((t) => t.type === 'pickup_delivery') ? 'Hol- & Bring' : 'Shuttle'}>
-                  <span className="flex flex-col">
-                    {trips.map((t) => (
-                      <Link key={t.passenger_id} to={`/shuttle${tripDayParam(t.scheduled_at)}`} className="text-accent underline-offset-2 hover:underline">
-                        {tripLabel(t)}: {formatDate(t.scheduled_at).slice(0, 6)} {formatTime(t.scheduled_at)}{t.type === 'pickup_delivery' ? '' : ` · ${TRANSPORT_TYPE_LABEL[t.type]}`}
-                        {t.status !== 'planned' ? ` · ${TRANSPORT_STATUS_LABEL[t.status]}` : ''}
-                      </Link>
-                    ))}
-                  </span>
+            <dl className="divide-y divide-line [&>div]:py-2 [&>div:first-child]:pt-0 [&>div:last-child]:pb-0">
+              <div>
+                <Row label="Zeitraum">
+                  {formatDate(b.start_at).slice(0, 6)} – {formatDate(b.end_at)}
                 </Row>
-              )}
-              <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
-              {b.fuel_type && <Row label="Antrieb">{FUEL_TYPE_LABEL[b.fuel_type]}</Row>}
-              <Row label="Personen">{b.persons}</Row>
-              {(b.flight_out || b.flight_return) && (
-                <Row label="Flüge">
-                  {[b.flight_out && `Hin ${b.flight_out}`, b.flight_return && `Zurück ${b.flight_return}`]
-                    .filter(Boolean)
-                    .join(' · ')}
+                <Row label="Ankunft Parkplatz">{formatPickup(b.start_at)}</Row>
+                <Row label={b.return_flight_at ? 'Landung / Abholung' : 'Abholung'}>
+                  {b.return_flight_at
+                    ? `${formatPickup(b.return_flight_at)} / ${
+                        formatDate(b.return_flight_at) === formatDate(b.end_at) ? formatTime(b.end_at) : formatPickup(b.end_at)
+                      }`
+                    : formatPickup(b.end_at)}
                 </Row>
-              )}
-              {b.return_flight_at && <Row label="Landung">{formatDateTime(b.return_flight_at)}</Row>}
-              {b.transfer_note && <Row label="Transfer">{b.transfer_note}</Row>}
-              {b.customer_language && (
-                <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
-              )}
-              <Row label="Preis">{b.price_total != null ? formatMoney(Number(b.price_total)) : '–'}</Row>
-              {b.portal_payout != null && <Row label="Auszahlung">{formatMoney(Number(b.portal_payout))}</Row>}
-              {(b.import_flags ?? []).length > 0 && (
-                <Row label="Import">
-                  <span className="flex flex-col items-end gap-1">
-                    {b.import_flags.map((f) => (
-                      <span key={f} className="flex items-center gap-2 text-warn-ink">
-                        {IMPORT_FLAG_LABEL[f as ImportFlag] ?? f}
-                        {!closed && (
-                          <button type="button" disabled={busy} onClick={() => void doConfirmFlag(f)}
-                            className="touch-target rounded-md border border-line-strong px-2.5 text-xs font-semibold text-accent disabled:opacity-50">
-                            Erledigt
-                          </button>
-                        )}
+              </div>
+              {(trips.length > 0 || b.flight_out || b.flight_return) && (
+                <div>
+                  {trips.length > 0 && (
+                    <Row label={trips.some((t) => t.type === 'pickup_delivery') ? 'Hol- & Bring' : 'Shuttle'}>
+                      <span className="flex flex-col">
+                        {trips.map((t) => (
+                          <Link key={t.passenger_id} to={`/shuttle${tripDayParam(t.scheduled_at)}`} className="text-accent underline-offset-2 hover:underline">
+                            {tripLabel(t)}: {formatDate(t.scheduled_at).slice(0, 6)} {formatTime(t.scheduled_at)}{t.type === 'pickup_delivery' ? '' : ` · ${TRANSPORT_TYPE_LABEL[t.type]}`}
+                            {t.status !== 'planned' ? ` · ${TRANSPORT_STATUS_LABEL[t.status]}` : ''}
+                          </Link>
+                        ))}
                       </span>
-                    ))}
-                  </span>
-                </Row>
+                    </Row>
+                  )}
+                  {(b.flight_out || b.flight_return) && (
+                    <Row label="Flüge">
+                      {[b.flight_out && `Hin ${b.flight_out}`, b.flight_return && `Zurück ${b.flight_return}`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Row>
+                  )}
+                </div>
               )}
-              <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
-              {b.notes && <Row label="Notizen">{b.notes}</Row>}
+              <div>
+                <Row label="Kunde">{b.customer_name}</Row>
+                <Row label="Kontakt">{[b.customer_email, b.customer_phone].filter(Boolean).join(' · ') || '–'}</Row>
+                <Row label="Personen">{b.persons}</Row>
+                {b.customer_language && (
+                  <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
+                )}
+                <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
+                <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
+                <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
+              </div>
+              {b.notes && (
+                <div>
+                  <Row label="Notizen"><span className="whitespace-pre-line">{b.notes}</span></Row>
+                </div>
+              )}
             </dl>
           </Card>
 

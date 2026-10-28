@@ -3,12 +3,24 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.31.1 – 28.10.2026
+
+### Geändert
+- **Fahrzeug-Detail, Karte „Buchung“ neu gegliedert** in drei Blöcke: Zeitraum · Ankunft Parkplatz · Landung / Abholung — Shuttle · Flüge — Kunde · Kontakt · Personen · Sprache · Parkplatz · Quelle · Zahlung — Notizen
+- „Anreise“ heißt jetzt **Ankunft Parkplatz** (wie in der Parkos-Mail)
+- Parkplatz (Halle/Außen) steht im Kundenblock zwischen Sprache und Quelle, Notizen als eigener Block am Ende
+- Nicht mehr in der Übersicht: Firma, Antrieb, Transfer, Preis, Auszahlung. Die Werte bleiben gespeichert und sind über „Bearbeiten“ sichtbar
+- **Einchecken mit Lageplan statt Kamera:** Der Schritt „Platz wählen“ zeigt den Lageplan (Halle, Außen, Arbeitsorte; startet passend zur Parkart). Freies Feld antippen, unten bestätigen. Der Vorschlag ist vorausgewählt und wird beim Öffnen angezeigt; belegte oder gesperrte Felder lassen sich nicht wählen. Der Stellplatz-QR-Scanner beim Einchecken entfällt (zentraler „Scannen“-Knopf bleibt)
+- **Scannen-Knopf vorerst ausgeblendet** (Kopfzeile Tablet und Mitte der Smartphone-Leiste, die jetzt fünf Einträge hat). Die Seite bleibt unter /scan erreichbar; wieder einschalten über `SCAN_ENABLED` in `src/components/navigation.ts`
+- **Aufgaben erst ab Ankunft:** Aufgaben-Board und Dashboard („Offene Aufgaben“, „fällig heute“) zeigen keine Aufgaben von Fahrzeugen, die noch nicht angekommen sind (Status „Gebucht“). Sie erscheinen ab dem Einchecken; im Fahrzeug-Detail bleiben die gebuchten Leistungen sichtbar
+- Offene Import-Hinweise (außer Kennzeichen) stehen als Hinweisbox über den Karten, weiter mit „Erledigt“
+
 ## 0.31.0 – 27.10.2026
 
 ### Neu
 - **„Kennzeichen prüfen“ erledigen:** Fahrzeug-Detail zeigt bei unklarem Kennzeichen aus der Parkos-Mail oben einen Hinweis mit dem erkannten Kennzeichen und den Knöpfen **Kennzeichen stimmt** und **Korrigieren**. Wird das Kennzeichen über „Bearbeiten“ geändert, gilt es ebenfalls als geprüft. Danach verschwinden der Hinweis und das „prüfen“-Kennzeichen in der Fahrzeugliste; der Verlauf zeigt „Geprüft: …“
 - Alle übrigen Import-Hinweise (z. B. „Telefon fehlt“) lassen sich in der Zeile **Import** einzeln mit **Erledigt** quittieren
-- Fahrzeug-Detail zeigt neben der Abholung auch die **Anreise** mit Uhrzeit
+- Fahrzeug-Detail zeigt neben der Abholung auch die **Ankunft Parkplatz** mit Uhrzeit (wie in der Parkos-Mail)
 - **Parkos-Import: Zusatzleistungen als Aufgabe.** Gebuchte Extras aus der Preistabelle der Mail werden übernommen, z. B. „E-Ladeservice (exclusive Stromkosten) € 10,00“ → Leistung **Laden** mit Preis und Aufgabe. Zugeordnet werden Laden, Tanken, Innenreinigung und Außenwäsche; unbekannte Extras erscheinen als Hinweis „Zusatzleistung prüfen“. Die Import-Vorschau zeigt die erkannten Extras
   - auch bei **Umbuchungen**: neu gebuchte Extras kommen sofort an die bestehende Buchung, der Rest der Umbuchung bleibt wie bisher zur Prüfung
   - es wird nur ergänzt: von Hand gebuchte oder stornierte Leistungen bleiben unverändert

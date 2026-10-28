@@ -64,6 +64,8 @@ export function matchesFilter(t: BoardTask, f: TaskFilter, endOfToday: string): 
 
 /**
  * Board-Daten: alle offenen und laufenden Aufgaben aktiver Fahrzeuge plus heute erledigte.
+ * Fahrzeuge, die noch nicht angekommen sind (Status „Gebucht“), haben noch keine offenen
+ * Aufgaben; ihre Aufgaben erscheinen ab dem Einchecken.
  * (Menge ist durch die Anzahl Fahrzeuge auf dem Gelände begrenzt.)
  */
 export async function loadTaskBoard(): Promise<BoardTask[]> {
@@ -73,7 +75,7 @@ export async function loadTaskBoard(): Promise<BoardTask[]> {
       .from('task_board')
       .select('*')
       .in('status', ['open', 'in_progress'])
-      .not('booking_status', 'in', '(completed,cancelled)')
+      .not('booking_status', 'in', '(booked,completed,cancelled)')
       .order('due_at', { ascending: true, nullsFirst: false })
       .limit(500),
     db()
