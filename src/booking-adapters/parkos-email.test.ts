@@ -298,6 +298,43 @@ describe('Parkos-Mail', () => {
     expect(r.portalPayout).toBe(59)
   })
 
+  it('liest eine echte Umbuchungsmail („Eine Reservierung wurde geändert“) vollständig', () => {
+    const change = [
+      'Eine Reservierung wurde geändert',
+      'Ein Kunde, der bei Ihnen reserviert hat, hat seine Reservierung geändert. Die folgenden Daten wurden angepasst: Datum und Time of arrival.',
+      'Kundendaten:',
+      'Reservierungsnummer:\tBX12345',
+      'Vor- und Nachname:\tMax Mustermann',
+      'Tel.: (mobil):\t+43 680 0000002',
+      'Sprache:\tDeutsch',
+      '',
+      'Parkplatz:',
+      'Parkplatz:\tParkHandling Park&Fly',
+      'Tel.: (mobil):\t+49 89 0000000',
+      '',
+      'Reservierungsdaten:',
+      'Informationen zum Fahrzeug:\tTesla Model Y',
+      'Autokennzeichen:\tM MM 3839',
+      'Anzahl Personen:\t1',
+      'Parkform:\tShuttle-Transfer (nicht überdacht)',
+      'Transfer Typ:\tInklusive Transfer (16 Minuten)',
+      '',
+      'Flugnummer Hinreise:\tLH123',
+      'Ankunftsdatum Parkplatz:\tDo. 29.10.2026',
+      'Zeitpunkt Ankunft Parkplatz:\t08:30',
+      '',
+      'Flugnummer Rückreise:\tLH234',
+      'Datum Rückkehr Flughafen:\tSo. 01.11.2026',
+      'Zeitpunkt Rückkehr Flughafen:\t18:15',
+    ].join('\n')
+    const r = parseParkosMail(change, options)
+    expect(r.mailType).toBe('change')
+    expect(r.errors).toEqual([])
+    expect(r.booking).toMatchObject({ external_ref: 'BX12345', customer_phone: '+43 680 0000002', plate: 'M-MM 3839' })
+    expect(r.booking!.start_at).toBe(new Date('2026-10-29T08:30:00+01:00').toISOString())
+    expect(r.fields.extras).toEqual([])
+  })
+
   it('unbekannte Zusatzleistung → Hinweis, nicht als Leistung übernommen', () => {
     const r = parseParkosMail(pasted.replace('Gesamtumsatz ParkHandling', 'Kindersitz € 5,00\nGesamtumsatz ParkHandling'), options)
     expect(r.fields.extras).toEqual([{ label: 'Kindersitz', price: 5, code: null }])

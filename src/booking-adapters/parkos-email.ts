@@ -8,7 +8,8 @@
  *
  * Gelesen wird über Label → Wert, nicht über Positionen. Belegt ist bisher nur die Mail
  * „Eine neue Reservierung über Parkos“ (Testbuchung #494PHBR, 22.10.2026). Umbuchungen
- * und Stornos werden erkannt, aber nur zur Prüfung abgelegt.
+ * („Eine Reservierung wurde geändert“) enthalten den vollständigen neuen Stand und werden
+ * auf die bestehende Buchung übernommen; Stornos werden erkannt, aber nur zur Prüfung abgelegt.
  */
 import type { ParkingType, ReturnMode } from '../types/domain'
 import { decodeMail, senderAddress, type DecodedMail } from './mail/decode'
