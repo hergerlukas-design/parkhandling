@@ -10,6 +10,11 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Von Hand geänderte Felder (z. B. korrigiertes Kennzeichen) überschreibt die Umbuchung nicht; weicht die Mail dort ab, bleibt der Import zur Prüfung offen und nennt die Felder
   - Umbuchung zu unbekannter, stornierter oder abgeschlossener Buchung sowie Stornomails bleiben wie bisher zur Prüfung
 
+### Datenbank
+- Migration `20261028000100_parkos_change_apply.sql` (additiv): `import_booking_mail` wendet Umbuchungen an (create or replace, gleiche Signatur)
+
+## 0.31.1 – 28.10.2026
+
 ### Geändert
 - **Fahrzeug-Detail, Karte „Buchung“ neu gegliedert** in drei Blöcke: Zeitraum · Ankunft Parkplatz · Landung / Abholung — Shuttle · Flüge — Kunde · Kontakt · Personen · Sprache · Parkplatz · Quelle · Zahlung — Notizen
 - „Anreise“ heißt jetzt **Ankunft Parkplatz** (wie in der Parkos-Mail)
@@ -19,9 +24,6 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Scannen-Knopf vorerst ausgeblendet** (Kopfzeile Tablet und Mitte der Smartphone-Leiste, die jetzt fünf Einträge hat). Die Seite bleibt unter /scan erreichbar; wieder einschalten über `SCAN_ENABLED` in `src/components/navigation.ts`
 - **Aufgaben erst ab Ankunft:** Aufgaben-Board und Dashboard („Offene Aufgaben“, „fällig heute“) zeigen keine Aufgaben von Fahrzeugen, die noch nicht angekommen sind (Status „Gebucht“). Sie erscheinen ab dem Einchecken; im Fahrzeug-Detail bleiben die gebuchten Leistungen sichtbar
 - Offene Import-Hinweise (außer Kennzeichen) stehen als Hinweisbox über den Karten, weiter mit „Erledigt“
-
-### Datenbank
-- Migration `20261028000100_parkos_change_apply.sql` (additiv): `import_booking_mail` wendet Umbuchungen an (create or replace, gleiche Signatur)
 
 ## 0.31.0 – 27.10.2026
 
