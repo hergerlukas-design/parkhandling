@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Icon } from '../components/Icon'
-import { QrScanner } from '../components/QrScanner'
+import { HallGrid } from '../components/siteplan/HallGrid'
+import { OutdoorGrid, WorkAreas } from '../components/siteplan/OutdoorGrid'
+import { Legend } from '../components/siteplan/SlotTile'
 import { Button, ErrorList, TextInput } from '../components/ui'
 import { formatPickup } from '../lib/due'
 import { formatDate } from '../lib/format'
@@ -12,9 +14,10 @@ import {
   listCheckinCandidates,
   loadBoard,
   moveVehicle,
-  parseScan,
   recommendedSuggestion,
+  subscribeBoard,
   suggestLocations,
+  type BoardSlot,
   type CheckinCandidate,
   type Suggestion,
 } from '../lib/siteplan'
@@ -22,12 +25,12 @@ import { useUpdateBlocker } from '../lib/update/updateGuard'
 import { PARKING_TYPE_LABEL } from '../types/domain'
 
 type Step = 'vehicle' | 'place'
+type PlanTab = 'hall' | 'outdoor' | 'work'
 
-const KIND_STYLE: Record<Suggestion['kind'], { badge: string; label: string; box: string; title: string }> = {
-  fits: { badge: 'bg-accent-soft text-accent-dark', label: 'passt', box: 'border-solid border-accent', title: 'Passt' },
-  conflict: { badge: 'bg-danger-soft text-danger-ink', label: 'Konflikt', box: 'border-dashed border-line-strong', title: 'Nicht geeignet' },
-  relocate: { badge: 'bg-danger-soft text-danger-ink', label: 'gesperrt', box: 'border-dashed border-line-strong', title: 'Nur mit Umsetzen' },
-  buffer: { badge: 'bg-chip text-subtle', label: 'Puffer', box: 'border-dashed border-line-strong', title: 'Pufferzone' },
+const PLAN_TABS: [PlanTab, string][] = [['hall', 'Halle'], ['outdoor', 'Außen'], ['work', 'Arbeitsorte']]
+
+function tabOf(area: BoardSlot['area']): PlanTab {
+  return area === 'hall' ? 'hall' : area === 'outdoor_a' || area === 'outdoor_b' ? 'outdoor' : 'work'
 }
 
 type IntakeState = 'none' | 'draft' | 'final' | null
@@ -64,6 +67,8 @@ export function CheckinPage() {
   const [hint, setHint] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [intake, setIntake] = useState<IntakeState>(null)
+  const [board, setBoard] = useState<BoardSlot[]>([])
+  const [tab, setTab] = useState<PlanTab>('hall')
 
   const step: Step = !booking ? 'vehicle' : 'place'
   useUpdateBlocker(!!booking && !warnings, 'Check-in')
@@ -107,6 +112,49 @@ export function CheckinPage() {
     }
   }, [booking])
 
+  // Lageplan für die Platzwahl (live)
+  useEffect(() => {
+    if (!booking) return
+    const reload = () => loadBoard().then(setBoard).catch((e: Error) => setErrors([e.message]))
+    reload()
+    return subscribeBoard(reload)
+  }, [booking])
+
+  const boardReady = board.length > 0
+  // Reiter nach gewähltem Platz, sonst nach Parkart
+  useEffect(() => {
+    if (!booking) return
+    const slot = chosen ? board.find((b) => b.code === chosen) : null
+    setTab(slot ? tabOf(slot.area) : booking.parking_type === 'indoor' ? 'hall' : 'outdoor')
+  }, [booking, boardReady]) // nur bei Fahrzeugwechsel bzw. erstem Laden, nicht bei jedem Live-Update
+
+  // Vorgeschlagenes Feld einmal in den sichtbaren Bereich holen (Smartphone: Plan ist lang)
+  const [scrolledFor, setScrolledFor] = useState<string | null>(null)
+  useEffect(() => {
+    if (!booking || !boardReady || !chosen || scrolledFor === booking.id) return
+    const t = setTimeout(() => {
+      // Halle gibt es doppelt (Tablet-Tabelle und Smartphone-Liste): das sichtbare Feld nehmen
+      const tiles = [...document.querySelectorAll<HTMLElement>(`[aria-label^="${CSS.escape(chosen)} "]`)]
+      tiles.find((el) => el.offsetParent !== null)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      setScrolledFor(booking.id)
+    }, 100)
+    return () => clearTimeout(t)
+  }, [booking, boardReady, chosen, scrolledFor, tab])
+
+  const hall = useMemo(() => board.filter((b) => b.area === 'hall'), [board])
+  const outdoor = useMemo(() => board.filter((b) => b.area === 'outdoor_a' || b.area === 'outdoor_b'), [board])
+  const chosenSlot = chosen ? board.find((b) => b.code === chosen) ?? null : null
+  const chosenSuggestion = chosen ? suggestions.find((x) => x.code === chosen) ?? null : null
+
+  function pick(slot: BoardSlot) {
+    setErrors([])
+    const sug = suggestions.find((x) => x.code === slot.code)
+    if (slot.occupancy >= slot.capacity) setErrors([`${slot.code} ist belegt${slot.plate ? ` (${slot.plate})` : ''}.`])
+    else if (slot.status === 'blocked' || sug?.kind === 'relocate') setErrors([`${slot.code} ist nur mit Umsetzen erreichbar.`])
+    else if (slot.area === 'transit') setErrors(['„Unterwegs“ ist kein Stellplatz.'])
+    else setChosen(slot.code)
+  }
+
   const recommended = suggestions.find((s) => s.kind === 'fits')?.code ?? null
   const openServices = booking?.open_task_count ?? 0
   const openNames = useMemo(
@@ -133,17 +181,6 @@ export function CheckinPage() {
       setErrors([(e as Error).message])
     } finally {
       setBusy(false)
-    }
-  }
-
-  function onScan(raw: string) {
-    const scan = parseScan(raw)
-    setErrors([])
-    if (step === 'place') {
-      if (scan.kind === 'location') {
-        setChosen(scan.code)
-        void confirm(scan.code)
-      } else setErrors([`„${scan.code}“ ist kein Stellplatz-QR-Code.`])
     }
   }
 
@@ -186,7 +223,7 @@ export function CheckinPage() {
       </header>
 
       <div className="grid flex-1 gap-4 p-4 md:p-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        {/* Linke Spalte: Fahrzeug, Hinweise, Scanner */}
+        {/* Linke Spalte: Fahrzeug, Hinweise */}
         <div className="flex flex-col gap-4">
           {booking ? (
             <section className="rounded-2xl border border-line bg-surface p-4">
@@ -244,32 +281,63 @@ export function CheckinPage() {
             </section>
           )}
 
-          {step === 'place' && <QrScanner onResult={onScan} label="Stellplatz-QR scannen zum Bestätigen" />}
-          <ErrorList errors={errors} />
+          {step === 'vehicle' && <ErrorList errors={errors} />}
         </div>
 
-        {/* Rechte Spalte: Platzwahl */}
+        {/* Rechte Spalte: Platzwahl im Lageplan */}
         {step === 'place' && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold">Platz wählen</h2>
-            {suggestions.map((s) => {
-              const st = KIND_STYLE[s.kind]
-              const isChosen = chosen === s.code
-              return (
-                <button key={s.code} type="button" onClick={() => setChosen(s.code)}
-                  disabled={s.kind === 'relocate'}
-                  className={`flex items-center gap-4 rounded-2xl border-2 bg-surface px-4 py-3 text-left ${st.box} ${isChosen ? 'ring-3 ring-accent ring-offset-1' : ''} ${s.kind !== 'fits' ? 'opacity-80' : ''} disabled:cursor-not-allowed`}>
-                  <span className={`w-20 shrink-0 font-mono text-xl font-bold ${s.kind === 'fits' ? '' : 'text-muted'}`}>{s.code}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{s.code === recommended ? 'Empfohlen' : st.title}</span>
-                    <span className="block text-sm text-subtle">{s.reason}</span>
-                  </span>
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.badge}`}>{st.label}</span>
+          <section className="flex min-w-0 flex-col gap-3 pb-28 md:pb-0">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Platz wählen</h2>
+              <div className="inline-flex rounded-xl bg-chip p-1" role="tablist">
+                {PLAN_TABS.map(([t, label]) => (
+                  <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
+                    className={`touch-target rounded-lg px-3 py-1.5 text-sm font-semibold ${tab === t ? 'bg-surface shadow-sm' : 'text-subtle'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {recommended && (
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <span className="text-subtle">Vorschlag:</span>
+                <button type="button" onClick={() => { setChosen(recommended); const sl = board.find((b) => b.code === recommended); if (sl) setTab(tabOf(sl.area)) }}
+                  className="rounded-full bg-accent-soft px-2.5 py-0.5 font-mono font-semibold text-accent-dark">
+                  {recommended}
                 </button>
-              )
-            })}
-            {suggestions.length === 0 && <p className="text-sm text-muted">Lädt Vorschläge …</p>}
-            <div className="mt-auto flex flex-wrap justify-end gap-2 pt-2">
+                <span className="text-subtle">{suggestions.find((x) => x.code === recommended)?.reason}</span>
+              </p>
+            )}
+
+            {tab !== 'work' && <Legend />}
+            {board.length === 0 && <p className="text-sm text-muted">Lageplan lädt …</p>}
+            {tab === 'hall' && hall.length > 0 && (
+              <HallGrid slots={hall} conflictRacks={new Set()} selectedId={chosenSlot?.id ?? null} onSelect={pick} />
+            )}
+            {tab === 'outdoor' && outdoor.length > 0 && (
+              <OutdoorGrid slots={outdoor} selectedId={chosenSlot?.id ?? null} onSelect={pick} />
+            )}
+            {tab === 'work' && board.length > 0 && (
+              <WorkAreas slots={board} selectedId={chosenSlot?.id ?? null} onSelect={pick} />
+            )}
+
+            {/* Bestätigen: auf dem Smartphone fest über der Navigation */}
+            <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-3 border-t border-line bg-surface px-4 py-3 shadow-2xl md:static md:mt-auto md:justify-end md:border-0 md:bg-transparent md:p-0 md:pt-2 md:shadow-none">
+              <span className="min-w-0 flex-1 text-sm md:flex-none md:text-right">
+                {errors.length > 0 ? (
+                  <span role="alert" className="block text-danger">{errors[errors.length - 1]}</span>
+                ) : chosen ? (
+                  <>
+                    <span className="font-mono font-semibold">{chosen}</span>
+                    {chosenSuggestion && chosenSuggestion.kind !== 'fits' && (
+                      <span className="block text-xs text-warn-ink">{chosenSuggestion.reason}</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-muted">Freies Feld im Plan antippen</span>
+                )}
+              </span>
               <Button variant="primary" disabled={!chosen || busy} onClick={() => chosen && void confirm(chosen)}>
                 {busy ? 'Speichert …' : chosen ? `${chosen} bestätigen` : 'Platz wählen'}
               </Button>
