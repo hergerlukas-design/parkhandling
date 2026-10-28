@@ -44,12 +44,12 @@ select pg_temp.assert_eq((select bs.status from public.booking_services bs join 
 select pg_temp.assert_eq((select bs.status from public.booking_services bs join public.services s on s.id = bs.service_id
   where bs.booking_id = :'bid' and s.code = 'AUF_INNEN'), 'active', 'Hand-Leistung bleibt');
 
--- Umbuchung mit neuem E-Ladeservice → Leistung ergänzt, Mail bleibt zur Prüfung
+-- Umbuchung mit neuem E-Ladeservice → Leistung ergänzt, Umbuchung übernommen
 select public.upsert_booking(jsonb_build_object('external_ref', 'SVC02', 'customer_name', 'Umbuchung', 'plate', 'M-SV 2',
   'start_at', '2030-11-01T10:00:00+01:00', 'end_at', '2030-11-05T19:00:00+01:00', 'parking_type', 'outdoor'), 'parkos') ->> 'id' as bid2 \gset
 select public.import_booking_mail(jsonb_set(jsonb_set((select p from mail), '{mail_type}', '"change"'),
   '{booking,external_ref}', '"SVC02"')) as r3 \gset
-select pg_temp.assert_eq((:'r3'::jsonb) ->> 'status', 'needs_review', 'Umbuchung zur Prüfung');
+select pg_temp.assert_eq((:'r3'::jsonb) ->> 'status', 'updated', 'Umbuchung übernommen');
 select pg_temp.assert_eq((:'r3'::jsonb) ->> 'booking_id', :'bid2', 'Umbuchung verweist auf Buchung');
 select pg_temp.assert_eq((select count(*)::int from public.tasks where booking_id = :'bid2' and type = 'charge' and status = 'open'), 1, 'Ladeaufgabe nach Umbuchung');
 

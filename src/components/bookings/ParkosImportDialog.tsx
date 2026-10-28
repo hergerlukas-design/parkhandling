@@ -58,7 +58,7 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
   )
   const needsOverride = !!parsed && (parsed.flags.includes('unknown_product') || parsed.flags.includes('parking_type_manual'))
   const willReview =
-    !!parsed && (parsed.mailType !== 'new' || !parsed.booking || parsed.flags.some((f) => REVIEW_FLAGS.includes(f)))
+    !!parsed && ((parsed.mailType !== 'new' && parsed.mailType !== 'change') || !parsed.booking || parsed.flags.some((f) => REVIEW_FLAGS.includes(f)))
 
   async function onFile(file: File | undefined) {
     if (!file) return
@@ -116,7 +116,7 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
             <Button onClick={onClose}>Abbrechen</Button>
             <Button variant="primary" disabled={!parsed || saving}
               onClick={() => void submit()}>
-              {saving ? 'Speichert …' : willReview ? 'Zur Prüfung ablegen' : 'Buchung übernehmen'}
+              {saving ? 'Speichert …' : willReview ? 'Zur Prüfung ablegen' : parsed?.mailType === 'change' ? 'Umbuchung übernehmen' : 'Buchung übernehmen'}
             </Button>
           </>
         )
@@ -179,7 +179,12 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
                 ))}
               </header>
 
-              {parsed.mailType !== 'new' && (
+              {parsed.mailType === 'change' && (
+                <p className="mb-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-dark">
+                  Umbuchung erkannt. Die neuen Daten werden auf die bestehende Buchung übernommen; von Hand geänderte Felder bleiben.
+                </p>
+              )}
+              {parsed.mailType !== 'new' && parsed.mailType !== 'change' && (
                 <p className="mb-3 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-ink">
                   {parsed.mailType === 'unknown'
                     ? 'Das sieht nicht nach einer Parkos-Reservierung aus. Die Mail wird nur zur Prüfung abgelegt.'
