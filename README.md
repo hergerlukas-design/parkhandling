@@ -30,6 +30,25 @@ npm run dev                  # http://localhost:5173
 
 Abweichungen lokal in `.env.local` (nicht eingecheckt). Der service_role-Key gehört **nie** ins Repo.
 
+#### Lokal testen ohne Produktionsdaten
+
+`.env` zeigt auf die **Produktions**-Datenbank – auch `npm run dev` auf localhost schreibt dann echte
+Daten. Für Tests gibt es das Supabase-Projekt **parkhandling-staging** (gleiches Schema, nur Demo-Daten):
+
+```bash
+cp .env.local.example .env.local   # Test-Datenbank verwenden
+npm run dev                        # http://localhost:5173
+rm .env.local                      # zurück auf Produktion
+```
+
+Staging hat eigene Konten. Einmalig im Supabase-Dashboard (Projekt *parkhandling-staging* →
+*Authentication* → *Add user*, „Auto Confirm User“ an) ein Konto anlegen und im SQL-Editor desselben
+Projekts freischalten (Abschnitt 3). Edge Functions (Fotos, Protokoll-Mail, Push, Einladungen) sind
+dort nicht ausgeliefert; bei Bedarf mit `supabase functions deploy … --project-ref dfukunnkwnckiisdgwnf`.
+
+Neue Migrationen zuerst auf Staging einspielen, dann auf Produktion. Demo-Daten auffrischen:
+`supabase/demo.sql` im SQL-Editor von Staging ausführen.
+
 ### 2. Datenbank
 
 Migrationen in `supabase/migrations/` der Reihe nach ausführen (Supabase CLI `supabase db push` oder
