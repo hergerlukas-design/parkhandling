@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { canChangeStaff, normalizeRoles, rolesLabel, toggleRole, type StaffProfile } from './users'
+import { canChangeStaff, normalizeRoles, resetErrorMessage, rolesLabel, toggleRole, type StaffProfile } from './users'
+
+describe('resetErrorMessage', () => {
+  it('erkennt Ratenbegrenzung', () => {
+    expect(resetErrorMessage('email rate limit exceeded')).toMatch(/Zu viele/)
+    expect(resetErrorMessage('For security purposes, you can only request this after 42 seconds.')).toMatch(/Zu viele/)
+  })
+
+  it('übrige Fehler allgemein', () => {
+    expect(resetErrorMessage('Error sending recovery email')).toBe('Link konnte nicht gesendet werden')
+  })
+})
 
 const base = (over: Partial<StaffProfile>): StaffProfile => ({
   id: 'x', email: null, display_name: '', role: 'staff', roles: ['staff'], active: true, invited_at: null, ...over,

@@ -140,7 +140,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Admin umfasst alle Rechte von Personal; Fahrer darf Fahrten starten/abschließen und sich eintragen, aber nicht umsetzen oder Zeiten ändern
 - [ANNAHME] Reiner Fahrer sieht Kennzeichen, Personen, Flug, Terminal und Telefon (Anrufen), aber keine Buchungsdetails
 - [ANNAHME] Login per E-Mail + Passwort (Supabase Auth), PIN-Login später
-- [ANNAHME] Keine Selbstregistrierung. Eingeladene müssen beim ersten Login ihr Passwort festlegen (bestätigt). Konten legt nur ein Admin per Einladung an (E-Mail + Rollen, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen).
+- [ANNAHME] Keine Selbstregistrierung. Eingeladene müssen beim ersten Login ihr Passwort festlegen (bestätigt). Konten legt nur ein Admin per Einladung an (E-Mail + Rollen, Edge Function `user-invite`). Die eingeladene Person vergibt ihr Passwort auf `/passwort` (mindestens 12 Zeichen). Passwort vergessen: Link per E-Mail (Anmeldeseite oder Admin in der Personalverwaltung), ebenfalls auf `/passwort`.
 - [ANNAHME] Profile werden nur deaktiviert, nicht gelöscht. Der letzte aktive Admin lässt sich nicht deaktivieren oder herabstufen.
 - [ANNAHME] Geräte: Android-/iOS-Tablets quer und Smartphones, Chrome/Safari aktuell
 

@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { ROLE_ORDER, useAuth, type Role } from '../../lib/auth'
-import { canChangeStaff, inviteStaff, listStaff, ROLE_LABEL, toggleRole, updateStaff, type StaffProfile } from '../../lib/users'
+import {
+  canChangeStaff, inviteStaff, listStaff, requestPasswordReset, ROLE_LABEL, toggleRole, updateStaff, type StaffProfile,
+} from '../../lib/users'
 import { Button, Dialog, ErrorList, Field, TextInput } from '../ui'
 
 const ROLE_HINT: Record<Role, string> = {
@@ -45,6 +47,18 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [inviting, setInviting] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [sendingReset, setSendingReset] = useState<string | null>(null)
+
+  async function sendReset(target: StaffProfile) {
+    if (!target.email) return
+    setSendingReset(target.id)
+    setNotice(null)
+    const result = await requestPasswordReset(target.email)
+    setSendingReset(null)
+    setError(result)
+    if (!result) setNotice(`Link an ${target.email} gesendet. Die Person vergibt darüber ein neues Passwort.`)
+  }
 
   async function reload() {
     setLoading(true)
@@ -80,6 +94,7 @@ export function UserManagement() {
   return (
     <div className="flex flex-col gap-3">
       <ErrorList errors={error ? [error] : []} />
+      {notice && <p className="text-sm text-subtle" role="status">{notice}</p>}
       {loading ? (
         <p className="text-sm text-muted">Lädt …</p>
       ) : (
@@ -93,6 +108,11 @@ export function UserManagement() {
               <div className="flex flex-wrap items-center gap-2">
                 <RolePicker compact value={p.roles?.length ? p.roles : [p.role]}
                   onChange={(roles) => void change(p, { roles })} />
+                {p.email && p.active && (
+                  <Button onClick={() => void sendReset(p)} disabled={sendingReset === p.id}>
+                    {sendingReset === p.id ? 'Sende …' : 'Passwort-Link senden'}
+                  </Button>
+                )}
                 <Button variant={p.active ? 'secondary' : 'primary'}
                   onClick={() => void change(p, { active: !p.active })}>
                   {p.active ? 'Deaktivieren' : 'Aktivieren'}

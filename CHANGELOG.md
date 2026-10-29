@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.34.0 – 29.10.2026
+
+### Neu
+- **Passwort vergessen:** Im Anmeldeformular führt **Passwort vergessen?** zu einem Formular für die E-Mail-Adresse. Die Person erhält einen Link und vergibt auf `/passwort` ein neues Passwort (gleiche Seite wie nach der Einladung). Die Meldung verrät nicht, ob ein Konto zur Adresse existiert
+- **Admins können den Link schicken:** In Einstellungen → Team → Personal hat jede aktive Person den Knopf **Passwort-Link senden**
+- Öffnet jemand einen abgelaufenen oder schon benutzten Einladungs- bzw. Passwort-Link, erklärt die Anmeldeseite das und verweist auf „Passwort vergessen?“
+
+### Geändert
+- **Passwort festlegen** zeigt die E-Mail-Adresse des Kontos (nur lesbar). Browser und Passwort-Manager speichern das neue Passwort so zum richtigen Konto. Bisher wurde es oft nicht oder ohne E-Mail gespeichert, und die Anmeldung danach scheiterte
+
+### Einrichtung
+- In Supabase (Authentication → URL Configuration → Redirect URLs) muss `<App-Adresse>/passwort` erlaubt sein; für Einladungen ist das bereits so
+
 ## 0.33.0 – 29.10.2026
 
 ### Neu

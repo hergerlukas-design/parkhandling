@@ -79,6 +79,26 @@ export async function setPassword(password: string): Promise<string | null> {
   return flagError ? 'Passwort gespeichert, Profil konnte nicht aktualisiert werden' : null
 }
 
+/** Fehlermeldung von Supabase für den Passwort-Link übersetzen. */
+export function resetErrorMessage(message: string): string {
+  if (/rate limit|security purposes|seconds/i.test(message)) {
+    return 'Zu viele Anfragen. Bitte in einigen Minuten erneut versuchen.'
+  }
+  return 'Link konnte nicht gesendet werden'
+}
+
+/**
+ * Link zum Zurücksetzen des Passworts per E-Mail (Passwort vergessen, auch vom Admin ausgelöst).
+ * Der Link führt auf /passwort; dort greift dieselbe Seite wie nach der Einladung.
+ */
+export async function requestPasswordReset(email: string): Promise<string | null> {
+  if (!supabase) return 'Supabase ist nicht konfiguriert'
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    redirectTo: `${window.location.origin}/passwort`,
+  })
+  return error ? resetErrorMessage(error.message) : null
+}
+
 /** Clientseitige Vorprüfung; die verbindliche Prüfung liegt in der Datenbank (Trigger guard_last_admin). */
 export function canChangeStaff(
   target: Pick<StaffProfile, 'id' | 'roles' | 'active'>,
