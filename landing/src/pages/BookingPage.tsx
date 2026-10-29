@@ -227,6 +227,9 @@ export function BookingPage() {
   const days = useMemo(() => rentalDays(form), [form.arrival_date, form.pickup_date])
   const tier = days !== null ? tierForDays(days) : null
   const selectedTariff = tariffs?.find((t) => t.code === form.tariff_code) ?? null
+  // Mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs) nur diesen und höherwertige Tarife anbieten
+  const presetIndex = tariffs?.findIndex((t) => t.code === presetTariff) ?? -1
+  const offeredTariffs = tariffs && presetIndex > 0 ? tariffs.slice(presetIndex) : tariffs
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -339,9 +342,9 @@ export function BookingPage() {
         <Section title="Tarif" review="tarif">
           {tariffError && <p className="text-sm font-medium text-danger">{tariffError}</p>}
           {!tariffs && !tariffError && <p className="text-sm text-ink-soft">Tarife werden geladen …</p>}
-          {tariffs && (
+          {offeredTariffs && (
             <div role="radiogroup" aria-label="Tarif" aria-describedby={errors.tariff_code ? 'tariff_code-error' : undefined} className="grid gap-3 md:grid-cols-2">
-              {tariffs.map((t, i) => (
+              {offeredTariffs.map((t, i) => (
                 <label
                   key={t.code}
                   className="flex min-h-12 cursor-pointer flex-col gap-2 rounded-xl border border-line bg-white p-4 has-checked:border-ink has-checked:bg-paper has-checked:ring-1 has-checked:ring-ink"

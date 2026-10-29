@@ -5,6 +5,14 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.9.0 – 29.10.2026
+
+### Geändert (Review-Notizen 27.10.2026)
+- Tarif „Space“ heißt jetzt „Cover“ (#1); der Code bleibt `space`, bestehende Links mit `?tarif=space` funktionieren weiter
+- Economy und Cover: „Geräumiger Außenstellplatz“ statt „Außenstellplatz 12 m²“ bzw. „15 m²“ (#2, #3)
+- Migration `20261029000100_tariff_texts.sql` (nur Texte in `booking_tariffs`; von Hand geänderte Texte bleiben unberührt)
+- Buchung mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs): Es erscheinen nur der gewählte und die höherwertigen Tarife, günstigere nicht (#4). Ohne Vorauswahl stehen alle Tarife zur Wahl
+
 ## 0.8.0 – 29.10.2026
 
 ### Neu

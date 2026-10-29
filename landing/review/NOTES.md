@@ -11,8 +11,22 @@ vorhanden, einen Screenshot mit der Markierung (rot = Stift, gelb = Text, gestri
 Danach in `notes.json` beim Punkt `"status": "erledigt"` setzen, die Version in `landing/package.json`
 nach SemVer erhöhen und `landing/CHANGELOG.md` ergänzen. Unklare Punkte nicht raten, sondern nachfragen.
 
-Stand: landing 0.7.0 · 0 offen · 0 erledigt
+Stand: landing 0.9.0 · 1 offen · 4 erledigt
 
 ## Offen
 
-_Keine offenen Punkte._
+### #5 · `/anfrage?tarif=business` · Element
+
+**Notiz:** Fallsa halle voll, sperren oder Ausverkauft Banner
+
+- Abschnitt: Tarif
+- Überschrift darüber: „Jetzt buchen“
+- Bildschirm: 1280 × 551 px, Bereich x 0, y 0, 0 × 0 px
+- Erstellt: 27.10.2026 12:58
+
+## Erledigt
+
+- #1 `/`: Cover anstelle space
+- #2 `/`: ändern zu geräumiger Aussenstellplatz
+- #3 `/`: wie 2
+- #4 `/anfrage?tarif=business`: günstigere Tarife nicht anzeigen.

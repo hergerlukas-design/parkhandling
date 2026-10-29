@@ -1,4 +1,300 @@
 {
   "version": 1,
-  "marks": []
+  "marks": [
+    {
+      "id": "5c81e5d1-23b9-40a9-9cb7-bb3ec6c5660e",
+      "nr": 1,
+      "page": "/",
+      "kind": "pen",
+      "note": "Cover anstelle space",
+      "status": "erledigt",
+      "createdAt": "2026-10-27T12:50:36.862Z",
+      "updatedAt": "2026-10-29T07:49:11.826Z",
+      "viewport": {
+        "width": 1280,
+        "height": 551
+      },
+      "box": {
+        "x": 383.3333435058594,
+        "y": 564.9999847412109,
+        "w": 212.00003051757812,
+        "h": 128.6666717529297
+      },
+      "strokes": [
+        [
+          {
+            "x": 574,
+            "y": 586.9999847412109
+          },
+          {
+            "x": 570,
+            "y": 583.6666564941406
+          },
+          {
+            "x": 566,
+            "y": 580.9999847412109
+          },
+          {
+            "x": 556,
+            "y": 574.9999847412109
+          },
+          {
+            "x": 542.6666870117188,
+            "y": 570.9999847412109
+          },
+          {
+            "x": 523.3333740234375,
+            "y": 568.9999847412109
+          },
+          {
+            "x": 500.66668701171875,
+            "y": 569.6666564941406
+          },
+          {
+            "x": 486.66668701171875,
+            "y": 570.9999847412109
+          },
+          {
+            "x": 462,
+            "y": 576.9999847412109
+          },
+          {
+            "x": 440,
+            "y": 585.6666564941406
+          },
+          {
+            "x": 427.3333435058594,
+            "y": 592.9999847412109
+          },
+          {
+            "x": 407.3333435058594,
+            "y": 608.9999847412109
+          },
+          {
+            "x": 396.66668701171875,
+            "y": 624.9999847412109
+          },
+          {
+            "x": 389.3333435058594,
+            "y": 640.9999847412109
+          },
+          {
+            "x": 387.3333435058594,
+            "y": 648.9999847412109
+          },
+          {
+            "x": 388,
+            "y": 662.9999847412109
+          },
+          {
+            "x": 395.3333435058594,
+            "y": 675.6666564941406
+          },
+          {
+            "x": 408.66668701171875,
+            "y": 685
+          },
+          {
+            "x": 418,
+            "y": 687.6666564941406
+          },
+          {
+            "x": 439.3333435058594,
+            "y": 689.6666564941406
+          },
+          {
+            "x": 466.66668701171875,
+            "y": 687.6666564941406
+          },
+          {
+            "x": 498,
+            "y": 681
+          },
+          {
+            "x": 512,
+            "y": 677.6666564941406
+          },
+          {
+            "x": 538.6666870117188,
+            "y": 669
+          },
+          {
+            "x": 562,
+            "y": 657.6666564941406
+          },
+          {
+            "x": 578.6666870117188,
+            "y": 644.9999847412109
+          },
+          {
+            "x": 584,
+            "y": 638.9999847412109
+          },
+          {
+            "x": 590.6666870117188,
+            "y": 626.9999847412109
+          },
+          {
+            "x": 591.3333740234375,
+            "y": 615.6666564941406
+          },
+          {
+            "x": 586.6666870117188,
+            "y": 602.9999847412109
+          },
+          {
+            "x": 582,
+            "y": 596.3333129882812
+          },
+          {
+            "x": 565.3333740234375,
+            "y": 583.6666564941406
+          },
+          {
+            "x": 556,
+            "y": 578.3333129882812
+          }
+        ]
+      ],
+      "context": {
+        "section": "Startseite: Tarife",
+        "heading": "Economy",
+        "elements": [
+          {
+            "tag": "span",
+            "selector": "section[data-review=\"startseite-tarife\"] > div > article:nth-of-type(2) > span",
+            "text": "Außen mit Plane"
+          },
+          {
+            "tag": "h3",
+            "selector": "section[data-review=\"startseite-tarife\"] > div > article:nth-of-type(2) > h3",
+            "text": "Space"
+          },
+          {
+            "tag": "p",
+            "selector": "section[data-review=\"startseite-tarife\"] > div > article:nth-of-type(2) > p",
+            "text": "Shuttle zum Terminal: Alle 60 Minuten"
+          }
+        ]
+      }
+    },
+    {
+      "id": "9b144557-6696-4251-8c39-b67377e01b6e",
+      "nr": 2,
+      "page": "/",
+      "kind": "element",
+      "note": "ändern zu geräumiger Aussenstellplatz",
+      "status": "erledigt",
+      "createdAt": "2026-10-27T12:54:17.321Z",
+      "updatedAt": "2026-10-29T07:49:11.826Z",
+      "viewport": {
+        "width": 1280,
+        "height": 551
+      },
+      "box": {
+        "x": 157,
+        "y": 796.6666564941406,
+        "w": 194.6666717529297,
+        "h": 20
+      },
+      "context": {
+        "section": "Startseite: Tarife",
+        "heading": "Economy",
+        "elements": [
+          {
+            "tag": "li",
+            "selector": "section[data-review=\"startseite-tarife\"] > div > article:nth-of-type(1) > ul > li:nth-of-type(1)",
+            "text": "Außenstellplatz 12 m²"
+          }
+        ]
+      }
+    },
+    {
+      "id": "c0adc41f-e7e8-4943-9150-d8a40c127364",
+      "nr": 3,
+      "page": "/",
+      "kind": "element",
+      "note": "wie 2",
+      "status": "erledigt",
+      "createdAt": "2026-10-27T12:54:34.299Z",
+      "updatedAt": "2026-10-29T07:49:11.826Z",
+      "viewport": {
+        "width": 1280,
+        "height": 551
+      },
+      "box": {
+        "x": 409,
+        "y": 796.6666564941406,
+        "w": 194.6666717529297,
+        "h": 20
+      },
+      "context": {
+        "section": "Startseite: Tarife",
+        "heading": "Space",
+        "elements": [
+          {
+            "tag": "li",
+            "selector": "section[data-review=\"startseite-tarife\"] > div > article:nth-of-type(2) > ul > li:nth-of-type(1)",
+            "text": "Außenstellplatz 15 m²"
+          }
+        ]
+      }
+    },
+    {
+      "id": "120dbf2e-8785-4d55-9c35-4d22a45bdb44",
+      "nr": 4,
+      "page": "/anfrage?tarif=business",
+      "kind": "element",
+      "note": "günstigere Tarife nicht anzeigen.",
+      "status": "erledigt",
+      "createdAt": "2026-10-27T12:57:56.770Z",
+      "updatedAt": "2026-10-29T07:49:11.826Z",
+      "viewport": {
+        "width": 1280,
+        "height": 551
+      },
+      "box": {
+        "x": 289,
+        "y": 606,
+        "w": 337.3333435058594,
+        "h": 213.33334350585938
+      },
+      "context": {
+        "section": "Tarif",
+        "heading": "Jetzt buchen",
+        "elements": [
+          {
+            "tag": "label",
+            "selector": "fieldset[data-review=\"tarif\"] > div > div > label:nth-of-type(1)",
+            "text": "Economy Alle 60 Minuten Shuttle zum Terminal Außenstellplatz 12 m², abgesperrte…"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bfa5021e-2f1b-4750-842e-152c1a75b1c8",
+      "nr": 5,
+      "page": "/anfrage?tarif=business",
+      "kind": "element",
+      "note": "Fallsa halle voll, sperren oder Ausverkauft Banner",
+      "status": "offen",
+      "createdAt": "2026-10-27T12:58:29.319Z",
+      "updatedAt": "2026-10-27T12:58:29.319Z",
+      "viewport": {
+        "width": 1280,
+        "height": 551
+      },
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0
+      },
+      "context": {
+        "section": "Tarif",
+        "heading": "Jetzt buchen",
+        "elements": []
+      }
+    }
+  ]
 }

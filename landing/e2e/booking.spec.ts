@@ -4,8 +4,8 @@ import { expect, type Page, test } from '@playwright/test'
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
 
 const TARIFFS = [
-  { code: 'economy', label: 'Economy', parking_type: 'outdoor', shuttle_text: 'Alle 60 Minuten', included_text: 'Außenstellplatz 12 m², abgesperrtes Gelände', price_week: 89, price_holiday: 129, price_month: 179 },
-  { code: 'space', label: 'Space', parking_type: 'outdoor_cover', shuttle_text: 'Alle 60 Minuten', included_text: 'Außenstellplatz 15 m²', price_week: 95, price_holiday: 138, price_month: 199 },
+  { code: 'economy', label: 'Economy', parking_type: 'outdoor', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz, abgesperrtes Gelände', price_week: 89, price_holiday: 129, price_month: 179 },
+  { code: 'space', label: 'Cover', parking_type: 'outdoor_cover', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz', price_week: 95, price_holiday: 138, price_month: 199 },
   { code: 'business', label: 'Business', parking_type: 'indoor', shuttle_text: 'Alle 30 Minuten', included_text: 'Innenstellplatz im Park-Regal', price_week: 125, price_holiday: 195, price_month: 299 },
   { code: 'premium', label: 'Premium', parking_type: 'indoor', shuttle_text: 'Direkt', included_text: 'Innenstellplatz im Park-Regal, CarCover Satin Indoor', price_week: 148, price_holiday: 249, price_month: 369 },
 ]
@@ -44,6 +44,18 @@ test('Startseite zeigt Tarife und führt mit Vorauswahl zur Buchung (Smartphone)
   await expect(page).toHaveURL(/\/anfrage\?tarif=premium/)
   await expect(page.getByLabel('Premium')).toBeChecked()
   await expectNoHorizontalScroll(page)
+})
+
+test('Mit Vorauswahl erscheinen nur der gewählte und höherwertige Tarife', async ({ page }) => {
+  await page.goto('/anfrage?tarif=business')
+  await expect(page.getByLabel('Business')).toBeChecked()
+  await expect(page.getByLabel('Premium')).toBeVisible()
+  const offered = page.locator('input[name="tariff_code"]')
+  await expect(offered).toHaveCount(2)
+  await expect(page.locator('input[value="economy"], input[value="space"]')).toHaveCount(0)
+
+  await page.goto('/anfrage')
+  await expect(offered).toHaveCount(4)
 })
 
 test('Dauer und Preis werden aus dem Zeitraum berechnet', async ({ page }) => {
