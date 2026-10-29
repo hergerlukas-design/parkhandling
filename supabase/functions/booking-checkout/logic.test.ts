@@ -1,6 +1,9 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
 import { berlinToUtcIso, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
 
+/** Buchungszeitpunkt passend zu „heute“ 20.10.2026 */
+const NOW = '2026-10-20T08:00:00.000Z'
+
 const tariffs: TariffRow[] = [
   {
     code: 'premium', label: 'Premium', parking_type: 'indoor', shuttle_text: 'Direkt', included_text: 'x',
@@ -27,43 +30,54 @@ Deno.test('Zeitzone Berlin → UTC (Sommer- und Winterzeit)', () => {
 })
 
 Deno.test('gültige Buchung berechnet Preis und normalisiert Kennzeichen', () => {
-  const r = validateBooking(base, '2026-10-20', tariffs)
+  const r = validateBooking(base, '2026-10-20', tariffs, NOW)
   if (!r.value || r.value.amount !== 148 || r.value.plate !== 'M-TE 123' || r.value.days !== 7) throw new Error(JSON.stringify(r))
 })
 
 Deno.test('unter 5 Tagen, Honeypot und fehlende Zustimmung werden abgelehnt', () => {
-  const short = validateBooking({ ...base, pickup_date: '2026-11-09' }, '2026-10-20', tariffs)
+  const short = validateBooking({ ...base, pickup_date: '2026-11-09' }, '2026-10-20', tariffs, NOW)
   if (short.value !== null || !short.errors.pickup_date) throw new Error('kurz')
-  const bot = validateBooking({ ...base, website: 'spam' }, '2026-10-20', tariffs)
+  const bot = validateBooking({ ...base, website: 'spam' }, '2026-10-20', tariffs, NOW)
   if (bot.value !== null || !bot.errors.website) throw new Error('honeypot')
-  const noConsent = validateBooking({ ...base, consent_privacy: false }, '2026-10-20', tariffs)
+  const noConsent = validateBooking({ ...base, consent_privacy: false }, '2026-10-20', tariffs, NOW)
   if (!noConsent.errors.consent_privacy) throw new Error('consent')
 })
 
 Deno.test('AGB-Zustimmung und Widerrufsbelehrung sind Pflicht', () => {
-  const r = validateBooking({ ...base, consent_agb: false, consent_withdrawal: false }, '2026-10-20', tariffs)
+  const r = validateBooking({ ...base, consent_agb: false, consent_withdrawal: false }, '2026-10-20', tariffs, NOW)
   if (!r.errors.consent_agb || !r.errors.consent_withdrawal) throw new Error(JSON.stringify(r.errors))
 })
 
 Deno.test('Anreise innerhalb von 14 Tagen verlangt Zustimmung zum frühen Leistungsbeginn', () => {
   const soon = { ...base }
-  const early = validateBooking({ ...soon, arrival_date: '2026-10-25', pickup_date: '2026-11-01' }, '2026-10-20', tariffs)
+  const early = validateBooking({ ...soon, arrival_date: '2026-10-25', pickup_date: '2026-11-01' }, '2026-10-20', tariffs, NOW)
   if (!early.errors.consent_early_start) throw new Error('Zustimmung fehlt')
-  const ok = validateBooking({ ...soon, arrival_date: '2026-10-25', pickup_date: '2026-11-01', consent_early_start: true }, '2026-10-20', tariffs)
+  const ok = validateBooking({ ...soon, arrival_date: '2026-10-25', pickup_date: '2026-11-01', consent_early_start: true }, '2026-10-20', tariffs, NOW)
   if (!ok.value || !ok.value.early_start) throw new Error('mit Zustimmung')
-  const later = validateBooking({ ...base, arrival_date: '2026-11-20', pickup_date: '2026-11-28' }, '2026-10-20', tariffs)
+  const later = validateBooking({ ...base, arrival_date: '2026-11-20', pickup_date: '2026-11-28' }, '2026-10-20', tariffs, NOW)
   if (later.value?.early_start !== false || later.errors.consent_early_start) throw new Error('außerhalb der Frist')
 })
 
+Deno.test('Anreise frühestens 12 Stunden nach der Buchung', () => {
+  // gebucht 20.10. 10:00 Berliner Zeit → frühestens 20.10. 22:00
+  const sameDay = validateBooking({ ...base, arrival_date: '2026-10-20', arrival_time: '21:30', pickup_date: '2026-10-27', consent_early_start: true }, '2026-10-20', tariffs, NOW)
+  if (!sameDay.errors.arrival_time || sameDay.errors.arrival_date) throw new Error(JSON.stringify(sameDay.errors))
+  const ok = validateBooking({ ...base, arrival_date: '2026-10-20', arrival_time: '22:00', pickup_date: '2026-10-27', consent_early_start: true }, '2026-10-20', tariffs, NOW)
+  if (!ok.value) throw new Error(JSON.stringify(ok.errors))
+  // gebucht 20.10. 15:00 → frühestens 21.10. 03:00, der 20.10. ist als Datum zu früh
+  const late = validateBooking({ ...base, arrival_date: '2026-10-20', arrival_time: '23:00', pickup_date: '2026-10-27', consent_early_start: true }, '2026-10-20', tariffs, '2026-10-20T13:00:00.000Z')
+  if (!late.errors.arrival_date) throw new Error(JSON.stringify(late.errors))
+})
+
 Deno.test('Shuttle verlangt Flugnummern, Kindersitze auf 0 bis 3 begrenzt', () => {
-  const noFlight = validateBooking({ ...base, flight_outbound: '', flight_return: '' }, '2026-10-20', tariffs)
+  const noFlight = validateBooking({ ...base, flight_outbound: '', flight_return: '' }, '2026-10-20', tariffs, NOW)
   if (!noFlight.errors.flight_outbound || !noFlight.errors.flight_return) throw new Error('Flug')
-  const seats = validateBooking({ ...base, child_seats: 4 }, '2026-10-20', tariffs)
+  const seats = validateBooking({ ...base, child_seats: 4 }, '2026-10-20', tariffs, NOW)
   if (!seats.errors.child_seats) throw new Error('Kindersitze')
 })
 
 Deno.test('Bestätigungsmail nimmt die Buchung an und enthält AGB und Widerruf', () => {
-  const r = validateBooking(base, '2026-10-20', tariffs)
+  const r = validateBooking(base, '2026-10-20', tariffs, NOW)
   const m = confirmationMail({
     bookingRef: 'PF-TEST', booking: r.value!, tariffLabel: 'Premium', parkingLabel: 'Halle',
     agbText: 'AGB-TEXT', withdrawalText: 'WIDERRUF-TEXT', agbVersion: '2026-10',

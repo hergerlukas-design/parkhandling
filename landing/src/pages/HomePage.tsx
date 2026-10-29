@@ -27,7 +27,7 @@ function TariffCard({ tariff, highlight }: { tariff: Tariff; highlight: boolean 
       }`}
     >
       <span className="mb-2 self-start rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-accent">
-        {tariff.parking_type === 'indoor' ? 'Indoor' : tariff.parking_type === 'outdoor_cover' ? 'Außen mit Plane' : 'Außen'}
+        {tariff.parking_type === 'indoor' ? 'Indoor' : tariff.parking_type === 'outdoor_cover' ? 'Outdoor mit Plane' : 'Outdoor'}
       </span>
       <h3 className="text-lg font-semibold">{tariff.label}</h3>
       <p className="mt-1 text-sm text-ink-soft">Shuttle zum Terminal: {tariff.shuttle_text}</p>
@@ -90,7 +90,7 @@ export function HomePage() {
             >
               Jetzt buchen
             </Link>
-            <span className="text-sm text-white/70">Online bezahlen mit PayPal · Bestätigung per E-Mail</span>
+            <span className="text-sm text-white/70">Online bezahlen mit PayPal · Bestätigung per E-Mail · buchbar bis 12 Stunden vor Anreise</span>
           </div>
         </div>
       </section>

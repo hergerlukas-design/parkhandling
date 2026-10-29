@@ -3,6 +3,7 @@
 //
 // Aktionen (POST, JSON mit "action"):
 //  * "tariffs"  → aktive Tarife mit Preisen (öffentlich)
+//  * "availability" → ist die Halle im Zeitraum voll? (Indoor-Tarife dann „Ausverkauft“)
 //  * "create"   → Formular prüfen, Betrag serverseitig berechnen, PayPal-Bestellung anlegen
 //  * "capture"  → Zahlung erfassen, prüfen, Buchung in bookings anlegen, Bestätigungsmail senden
 //
@@ -14,6 +15,7 @@ import { mailerFromEnv } from '../_shared/mailer.ts'
 import {
   berlinToUtcIso,
   type BookingInput,
+  isIsoDate,
   bookingRefFor,
   confirmationFailedMail,
   confirmationMail,
@@ -89,6 +91,26 @@ async function handleTariffs() {
   return json({ tariffs: (await loadTariffs()).map(publicTariff) })
 }
 
+/** Halle im Zeitraum voll? (Anreise/Abholung als Berliner Ortszeit) */
+async function indoorFull(arrivalDate: string, arrivalTime: string, pickupDate: string, pickupTime: string): Promise<boolean> {
+  const { data, error } = await admin.rpc('indoor_full', {
+    p_start: berlinToUtcIso(arrivalDate, arrivalTime),
+    p_end: berlinToUtcIso(pickupDate, pickupTime),
+  })
+  if (error) throw error
+  return data === true
+}
+
+async function handleAvailability(body: { form?: Partial<BookingInput> }) {
+  const f = body.form ?? {}
+  const time = /^([01]\d|2[0-3]):[0-5]\d$/
+  const dates = [f.arrival_date, f.pickup_date].map((d) => (typeof d === 'string' ? d : ''))
+  const times = [f.arrival_time, f.pickup_time].map((t) => (typeof t === 'string' && time.test(t) ? t : ''))
+  if (!dates.every(isIsoDate) || !times.every(Boolean) || dates[1] <= dates[0])
+    return json({ error: 'Zeitraum unvollständig.' }, 422)
+  return json({ indoor_full: await indoorFull(dates[0], times[0], dates[1], times[1]) })
+}
+
 async function handleCreate(req: Request, body: { form?: BookingInput }) {
   const paypalConfig = paypalConfigFromEnv(Deno.env)
   if (!paypalConfig) return json({ error: 'Die Online-Zahlung ist derzeit nicht verfügbar.' }, 503)
@@ -113,6 +135,15 @@ async function handleCreate(req: Request, body: { form?: BookingInput }) {
   if (!value) return json({ error: 'Bitte die markierten Felder prüfen.', fields: errors }, 422)
 
   const tariff = tariffs.find((t) => t.code === value.tariff_code)!
+  if (tariff.parking_type === 'indoor' && (await indoorFull(value.arrival_date, value.arrival_time, value.pickup_date, value.pickup_time)))
+    return json(
+      {
+        error: 'Bitte die markierten Felder prüfen.',
+        fields: { tariff_code: 'Die Halle ist im gewählten Zeitraum ausgebucht. Bitte einen anderen Tarif oder Zeitraum wählen.' },
+      },
+      422,
+    )
+
   const { data: checkout, error: insErr } = await admin
     .from('booking_checkouts')
     .insert({
@@ -520,6 +551,8 @@ Deno.serve(async (req) => {
     switch (body.action) {
       case 'tariffs':
         return await handleTariffs()
+      case 'availability':
+        return await handleAvailability(body)
       case 'create':
         return await handleCreate(req, body)
       case 'capture':

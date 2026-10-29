@@ -1,9 +1,24 @@
 // Buchungsformular der Landingpage: Felder (wie in der Park Handling App), Auswahlwerte und
 // Anzeige-Hilfen. Maßgeblich ist die Edge Function booking-checkout – diese Werte dienen nur der Anzeige.
-import { daysBetween, isIsoDate } from './dates'
+import { berlinDateTime, daysBetween, isIsoDate } from './dates'
 
 export const MIN_DAYS = 5
 export const MAX_DAYS = 30
+/** Online buchbar bis so viele Stunden vor der Anreise (wie in der Edge Function) */
+export const MIN_LEAD_HOURS = 12
+
+/** Frühestmögliche Anreise (Berliner Ortszeit): jetzt + 12 Stunden */
+export function earliestArrival(now: Date = new Date()): { date: string; time: string } {
+  return berlinDateTime(new Date(now.getTime() + MIN_LEAD_HOURS * 3_600_000))
+}
+
+/** Anreise liegt vor der frühestmöglichen; ohne vollständige Angaben false */
+export function arrivalTooSoon(form: Pick<BookingForm, 'arrival_date' | 'arrival_time'>, now: Date = new Date()): boolean {
+  if (!isIsoDate(form.arrival_date)) return false
+  const e = earliestArrival(now)
+  if (form.arrival_date !== e.date) return form.arrival_date < e.date
+  return /^\d{2}:\d{2}$/.test(form.arrival_time) && form.arrival_time < e.time
+}
 
 export const RETURN_OPTIONS = [
   { value: 'shuttle', label: 'Shuttle' },

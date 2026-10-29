@@ -115,6 +115,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [BELEGT] Preise brutto in EUR inkl. Umsatzsteuer (AGB Ziffer 8.1, bestätigt durch den Entwurf). Vorher Kunde: „denke brutto, bin nicht komplett sicher“
 - [ANNAHME] Dauer = Kalendertage zwischen Anreise- und Abholdatum; Uhrzeiten werden als Berliner Ortszeit gespeichert
 - [ANNAHME] Stellplatzart der Buchung folgt dem Tarif: Economy → Außen ohne Plane, Cover (Code `space`) → Außen mit Abdeckplane, Business und Premium → Halle (Indoor)
+- [ANNAHME] Online-Buchung: Halle gilt als voll, wenn im Zeitraum zu irgendeinem Zeitpunkt so viele Indoor-Buchungen (nicht storniert/abgeschlossen) gleichzeitig laufen, wie es aktive, nicht gesperrte Hallenplätze gibt (`indoor_full`); dann sind Business und Premium „Ausverkauft“
+- [BELEGT] Online-Buchung frühestens 12 Stunden vor der Anreise (Review-Notiz Lukas 27.10.2026)
 - [ANNAHME] Buchungsquelle `landing`, Zahlungsreferenz (PayPal-Order-ID) als `external_ref`, Buchungsnummer `PF-<erste 8 Zeichen der Buchungs-ID>`
 - [ANNAHME] Zusatzleistungen (z. B. Fahrzeugaufbereitung) sind online noch nicht buchbar; die Anmerkungen nehmen Wünsche auf
 - [ANNAHME] Absender der Bestätigung: `booking@parkhandling.de` als Platzhalter (Einstellung `booking_confirmation_from`); tatsächlich versendet wird über die Secret-Adresse `MAIL_FROM`, bis die Absenderadresse feststeht

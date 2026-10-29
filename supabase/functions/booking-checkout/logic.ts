@@ -8,6 +8,8 @@ export const TIME_ZONE = 'Europe/Berlin'
 export const MIN_DAYS = 5
 export const MAX_DAYS = 30
 export const MAX_ADVANCE_DAYS = 365
+/** Online buchbar bis so viele Stunden vor der Anreise */
+export const MIN_LEAD_HOURS = 12
 /** Widerrufsfrist in Tagen (AGB Ziffer 12.2 / Belehrung) */
 export const WITHDRAWAL_DAYS = 14
 
@@ -182,6 +184,16 @@ export function validateBooking(
   else if (input.arrival_date > addDays(today, MAX_ADVANCE_DAYS)) e.arrival_date = 'Buchungen sind höchstens 365 Tage im Voraus möglich.'
 
   if (!TIME_RE.test(str(input.arrival_time))) e.arrival_time = 'Bitte eine Uhrzeit wählen.'
+
+  // Vorlauf: Anreise frühestens 12 Stunden nach der Buchung
+  if (!e.arrival_date && !e.arrival_time) {
+    const earliest = Date.parse(acceptedAt) + MIN_LEAD_HOURS * 3_600_000
+    if (Date.parse(berlinToUtcIso(input.arrival_date, str(input.arrival_time))) < earliest) {
+      const msg = `Online buchbar bis ${MIN_LEAD_HOURS} Stunden vor der Anreise.`
+      if (input.arrival_date < todayInBerlin(new Date(earliest))) e.arrival_date = msg
+      else e.arrival_time = msg
+    }
+  }
 
   if (!isIsoDate(input.pickup_date)) e.pickup_date = 'Bitte ein Abholdatum wählen.'
   if (!TIME_RE.test(str(input.pickup_time))) e.pickup_time = 'Bitte eine Uhrzeit wählen.'

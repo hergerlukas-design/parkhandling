@@ -5,6 +5,17 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.10.0 – 29.10.2026
+
+### Neu (Review-Notizen 27.10.2026)
+- Halle ausgebucht (#5, #6): Ist der gewählte Zeitraum vollständig, fragt die Buchungsseite die Hallenbelegung ab. Bei voller Halle sind Business und Premium gesperrt und als „Ausverkauft“ markiert, darüber steht ein Hinweis. Ein schon gewählter Indoor-Tarif wird abgewählt. Ist der vorausgewählte Tarif ausverkauft, stehen wieder alle Tarife zur Wahl
+- Edge Function `booking-checkout`: neue Aktion `availability`; `create` lehnt Indoor-Tarife bei voller Halle ab (gleiche Prüfung serverseitig)
+- Migration `20261029000200_indoor_availability.sql`: Funktion `indoor_full(start, end)`. Kapazität = aktive, nicht gesperrte Hallenplätze; gezählt wird die höchste gleichzeitige Belegung durch Indoor-Buchungen (ohne storniert/abgeschlossen); nur für den service_role
+- Vorlauf 12 Stunden (#7): Anreise frühestens 12 Stunden nach der Buchung. Das Datumsfeld lässt frühere Tage nicht zu, bei zu früher Uhrzeit erscheint ein Hinweis; die Edge Function prüft dasselbe. Auf der Startseite steht „buchbar bis 12 Stunden vor Anreise“
+
+### Geändert
+- Startseite: Kennzeichnung „Outdoor“ und „Outdoor mit Plane“ statt „Außen“ und „Außen mit Plane“ (#8)
+
 ## 0.9.0 – 29.10.2026
 
 ### Geändert (Review-Notizen 27.10.2026)

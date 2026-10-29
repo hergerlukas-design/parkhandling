@@ -46,6 +46,15 @@ export async function fetchTariffs(): Promise<Tariff[]> {
   return res.data.tariffs
 }
 
+/** Halle im Zeitraum ausgebucht? null, wenn die Abfrage nicht klappt (der Server prüft beim Bezahlen erneut) */
+export async function fetchIndoorFull(
+  form: Pick<BookingForm, 'arrival_date' | 'arrival_time' | 'pickup_date' | 'pickup_time'>,
+): Promise<boolean | null> {
+  const { arrival_date, arrival_time, pickup_date, pickup_time } = form
+  const res = await call<{ indoor_full: boolean }>({ action: 'availability', form: { arrival_date, arrival_time, pickup_date, pickup_time } })
+  return res.ok ? res.data.indoor_full : null
+}
+
 export interface CheckoutStarted {
   checkout_id: string
   paypal_order_id: string

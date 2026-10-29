@@ -58,6 +58,38 @@ test('Mit Vorauswahl erscheinen nur der gewählte und höherwertige Tarife', asy
   await expect(offered).toHaveCount(4)
 })
 
+test('Halle ausgebucht: Business und Premium gesperrt, Vorauswahl zeigt wieder alle Tarife', async ({ page }) => {
+  await page.route('**/functions/v1/booking-checkout', async (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 200, body: 'ok' })
+    const body = route.request().postDataJSON() as { action?: string }
+    if (body.action === 'availability')
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ indoor_full: true }) })
+    return route.fallback()
+  })
+  await page.goto('/anfrage?tarif=business')
+  await expect(page.locator('input[name="tariff_code"]')).toHaveCount(2)
+  await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(3))
+  await page.getByLabel('Uhrzeit Anreise').fill('10:00')
+  await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(10))
+  await page.getByLabel('Uhrzeit Abholung').fill('12:00')
+  await expect(page.getByTestId('sold-out')).toContainText('Business und Premium sind nicht buchbar')
+  await expect(page.locator('input[name="tariff_code"]')).toHaveCount(4)
+  await expect(page.locator('input[value="business"]')).toBeDisabled()
+  await expect(page.locator('input[value="business"]')).not.toBeChecked()
+  await expect(page.locator('input[value="premium"]')).toBeDisabled()
+  await expect(page.locator('input[value="economy"]')).toBeEnabled()
+  await expect(page.getByText('Ausverkauft')).toHaveCount(2)
+  await expectNoHorizontalScroll(page)
+})
+
+test('Anreise frühestens 12 Stunden nach der Buchung', async ({ page }) => {
+  await page.goto('/anfrage')
+  await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(-1))
+  await expect(page.getByTestId('lead-time')).toContainText('Online buchbar bis 12 Stunden vor der Anreise')
+  await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(2))
+  await expect(page.getByTestId('lead-time')).toHaveCount(0)
+})
+
 test('Dauer und Preis werden aus dem Zeitraum berechnet', async ({ page }) => {
   await page.goto('/anfrage?tarif=premium')
   await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(3))

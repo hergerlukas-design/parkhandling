@@ -1,13 +1,16 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { usePageTitle } from '../components/usePageTitle'
-import { type FieldErrors, type Tariff, captureCheckout, createCheckout, fetchTariffs } from '../lib/api'
+import { type FieldErrors, type Tariff, captureCheckout, createCheckout, fetchIndoorFull, fetchTariffs } from '../lib/api'
 import {
   CHILD_SEAT_OPTIONS,
   EMPTY_FORM,
   FIELD_ORDER,
   FUEL_OPTIONS,
   MAX_LUGGAGE,
+  MIN_LEAD_HOURS,
+  arrivalTooSoon,
+  earliestArrival,
   earlyStartRelevant,
   type BookingForm,
   MAX_DAYS,
@@ -145,6 +148,8 @@ export function BookingPage() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [tariffs, setTariffs] = useState<Tariff[] | null>(null)
   const [tariffError, setTariffError] = useState<string | null>(null)
+  /** Halle im gewählten Zeitraum ausgebucht (null = unbekannt bzw. Zeitraum unvollständig) */
+  const [indoorFull, setIndoorFull] = useState<boolean | null>(null)
   const [paypalState, setPaypalState] = useState<'idle' | 'loading' | 'ready' | 'unavailable'>('idle')
   const checkoutRef = useRef<string | null>(null)
   const summaryRef = useRef<HTMLDivElement>(null)
@@ -156,6 +161,23 @@ export function BookingPage() {
       .then(setTariffs)
       .catch((err: unknown) => setTariffError(err instanceof Error ? err.message : 'Tarife konnten nicht geladen werden.'))
   }, [])
+
+  // Hallenbelegung für den Zeitraum abfragen, sobald er vollständig ist (kurz verzögert beim Tippen)
+  useEffect(() => {
+    const { arrival_date, arrival_time, pickup_date, pickup_time } = form
+    setIndoorFull(null)
+    if (!arrival_date || !arrival_time || !pickup_date || !pickup_time || pickup_date <= arrival_date) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void fetchIndoorFull({ arrival_date, arrival_time, pickup_date, pickup_time }).then((full) => {
+        if (!cancelled) setIndoorFull(full)
+      })
+    }, 400)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [form.arrival_date, form.arrival_time, form.pickup_date, form.pickup_time])
 
   // PayPal-Buttons einmal rendern. createOrder und onApprove lesen das aktuelle Formular über formRef.
   useEffect(() => {
@@ -227,9 +249,22 @@ export function BookingPage() {
   const days = useMemo(() => rentalDays(form), [form.arrival_date, form.pickup_date])
   const tier = days !== null ? tierForDays(days) : null
   const selectedTariff = tariffs?.find((t) => t.code === form.tariff_code) ?? null
-  // Mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs) nur diesen und höherwertige Tarife anbieten
+  const soldOut = (t: Tariff) => indoorFull === true && t.parking_type === 'indoor'
+  // Mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs) nur diesen und höherwertige Tarife anbieten.
+  // Ist der vorausgewählte ausverkauft, wieder alle zeigen, damit eine Wahl bleibt.
   const presetIndex = tariffs?.findIndex((t) => t.code === presetTariff) ?? -1
-  const offeredTariffs = tariffs && presetIndex > 0 ? tariffs.slice(presetIndex) : tariffs
+  const offeredTariffs =
+    tariffs && presetIndex > 0 && !soldOut(tariffs[presetIndex]) ? tariffs.slice(presetIndex) : tariffs
+  const soldOutLabels = (offeredTariffs ?? []).filter(soldOut).map((t) => t.label)
+
+  // Ausverkauften Tarif nicht ausgewählt lassen
+  useEffect(() => {
+    if (selectedTariff && indoorFull === true && selectedTariff.parking_type === 'indoor')
+      setForm((prev) => ({ ...prev, tariff_code: '' }))
+  }, [indoorFull, selectedTariff])
+
+  const earliest = earliestArrival()
+  const tooSoon = arrivalTooSoon(form)
 
   const set = <K extends keyof BookingForm>(key: K, value: BookingForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -282,7 +317,7 @@ export function BookingPage() {
                 type="date"
                 {...a11y('arrival_date', true)}
                 className={inputClass}
-                min={today}
+                min={earliest.date}
                 max={addDays(today, MAX_ADVANCE_DAYS)}
                 value={form.arrival_date}
                 onChange={(e) => set('arrival_date', e.target.value)}
@@ -330,6 +365,12 @@ export function BookingPage() {
               </strong>
             </p>
           )}
+          {tooSoon && (
+            <p className="text-sm font-medium text-danger" data-testid="lead-time">
+              Online buchbar bis {MIN_LEAD_HOURS} Stunden vor der Anreise, also frühestens {formatDateLongDE(earliest.date)} ab{' '}
+              {earliest.time} Uhr. Für eine kurzfristige Anreise bitte direkt bei uns anfragen.
+            </p>
+          )}
           {days !== null && (days < MIN_DAYS || days > MAX_DAYS) && (
             <p className="text-sm font-medium text-danger">
               {days < MIN_DAYS
@@ -342,12 +383,20 @@ export function BookingPage() {
         <Section title="Tarif" review="tarif">
           {tariffError && <p className="text-sm font-medium text-danger">{tariffError}</p>}
           {!tariffs && !tariffError && <p className="text-sm text-ink-soft">Tarife werden geladen …</p>}
+          {soldOutLabels.length > 0 && (
+            <p role="status" className="rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-sm font-medium text-danger" data-testid="sold-out">
+              Die Halle ist im gewählten Zeitraum ausgebucht: {soldOutLabels.join(' und ')}{' '}
+              {soldOutLabels.length === 1 ? 'ist' : 'sind'} nicht buchbar. Bitte einen anderen Tarif oder Zeitraum wählen.
+            </p>
+          )}
           {offeredTariffs && (
             <div role="radiogroup" aria-label="Tarif" aria-describedby={errors.tariff_code ? 'tariff_code-error' : undefined} className="grid gap-3 md:grid-cols-2">
               {offeredTariffs.map((t, i) => (
                 <label
                   key={t.code}
-                  className="flex min-h-12 cursor-pointer flex-col gap-2 rounded-xl border border-line bg-white p-4 has-checked:border-ink has-checked:bg-paper has-checked:ring-1 has-checked:ring-ink"
+                  className={`flex min-h-12 flex-col gap-2 rounded-xl border border-line bg-white p-4 has-checked:border-ink has-checked:bg-paper has-checked:ring-1 has-checked:ring-ink ${
+                    soldOut(t) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                  }`}
                 >
                   <span className="flex items-start gap-3">
                     <input
@@ -356,11 +405,17 @@ export function BookingPage() {
                       id={i === 0 ? 'tariff_code' : undefined}
                       value={t.code}
                       checked={form.tariff_code === t.code}
+                      disabled={soldOut(t)}
                       onChange={() => set('tariff_code', t.code)}
                       className="mt-1 size-5 accent-ink"
                     />
                     <span className="min-w-0">
-                      <span className="block font-semibold">{t.label}</span>
+                      <span className="block font-semibold">
+                        {t.label}
+                        {soldOut(t) && (
+                          <span className="ml-2 rounded-full bg-danger px-2 py-0.5 align-middle text-xs font-semibold text-white">Ausverkauft</span>
+                        )}
+                      </span>
                       <span className="block text-sm text-ink-soft">{t.shuttle_text} Shuttle zum Terminal</span>
                     </span>
                   </span>
