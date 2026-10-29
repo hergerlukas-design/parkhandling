@@ -14,7 +14,8 @@ import {
 } from './context'
 import { toMarkdown } from './markdown'
 import type { BackupInfo } from './backup'
-import { download, loadBackups, loadNotes, restoreBackup, saveNotes, type StoreMode } from './store'
+import { mergeMarks, missingMarks } from './merge'
+import { download, loadBackups, loadNotes, readLocal, restoreBackup, saveNotes, type StoreMode } from './store'
 import { type Box, EMPTY_FILE, KIND_LABEL, type MarkKind, type Point, type ReviewFile, type ReviewMark } from './types'
 
 type Router = typeof appRouter
@@ -150,6 +151,8 @@ export function ReviewTool({ router }: { router: Router }) {
   const [pendingScroll, setPendingScroll] = useState<string | null>(null)
   const [backups, setBackups] = useState<BackupInfo[] | null>(null)
   const [backupError, setBackupError] = useState('')
+  // Notizen, die früher ohne Dev-Server nur im Browser gespeichert wurden
+  const [browserFile, setBrowserFile] = useState<ReviewFile>(EMPTY_FILE)
   const doc = useDocSize()
   const strokeRef = useRef<Point[] | null>(null)
 
@@ -157,6 +160,7 @@ export function ReviewTool({ router }: { router: Router }) {
     void loadNotes().then(({ file: f, mode: m }) => {
       setFile(f)
       setMode(m)
+      if (m === 'datei') setBrowserFile(readLocal())
       setLoaded(true)
     })
   }, [])
@@ -379,6 +383,11 @@ export function ReviewTool({ router }: { router: Router }) {
     }
   }
 
+  async function importBrowserNotes() {
+    closeEditor()
+    await persist(mergeMarks(file, browserFile))
+  }
+
   function exportFiles() {
     download('NOTES.md', toMarkdown(file, __APP_VERSION__), 'text/markdown')
     download('notes.json', `${JSON.stringify(file, null, 2)}\n`, 'application/json')
@@ -389,6 +398,7 @@ export function ReviewTool({ router }: { router: Router }) {
   const editMark = editId ? file.marks.find((m) => m.id === editId) ?? null : null
   const editorBox = draft?.box ?? editMark?.box ?? null
   const openCount = file.marks.filter((m) => m.status === 'offen').length
+  const browserOnly = mode === 'datei' ? missingMarks(file, browserFile).length : 0
   const listed = file.marks.filter((m) => listAll || m.status === 'offen').sort((a, b) => a.nr - b.nr)
 
   const overlay = (
@@ -572,6 +582,17 @@ export function ReviewTool({ router }: { router: Router }) {
               erledigte zeigen
             </label>
           </div>
+          {browserOnly > 0 && (
+            <div style={{ background: '#fef3c7', border: '1px solid #f5d77a', borderRadius: 10, padding: 8, marginBottom: 8 }}>
+              {browserOnly === 1 ? '1 Notiz liegt' : `${browserOnly} Notizen liegen`} nur im Browser-Speicher (früher ohne Dev-Server
+              gespeichert) und fehlen in <code>landing/review/</code>.
+              <div style={{ marginTop: 6 }}>
+                <button type="button" style={btnActive} onClick={() => void importBrowserNotes()}>
+                  In Datei übernehmen
+                </button>
+              </div>
+            </div>
+          )}
           {listed.length === 0 && <div style={{ color: '#4a4f57' }}>Noch keine Notizen. Werkzeug wählen und markieren.</div>}
           {listed.map((m) => (
             <div key={m.id} style={{ borderTop: '1px solid #eee', padding: '8px 0', opacity: m.status === 'erledigt' ? 0.6 : 1 }}>
@@ -638,7 +659,7 @@ export function ReviewTool({ router }: { router: Router }) {
           {toolButton('text', '▤ Text', 'Text markieren (wie beim Kopieren)')}
           {toolButton('element', '⬚ Element', 'Element anklicken (Button, Bild, Feld …)')}
           <button type="button" style={showList ? btnActive : btn} onClick={() => setShowList(!showList)}>
-            Liste ({openCount})
+            Liste ({openCount}){browserOnly > 0 ? ' ⚠' : ''}
           </button>
           <button
             type="button"

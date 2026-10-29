@@ -13,6 +13,9 @@ Die Version steht ausschließlich in `landing/package.json` und wird im Footer a
 - Migration `20261029000100_tariff_texts.sql` (nur Texte in `booking_tariffs`; von Hand geänderte Texte bleiben unberührt)
 - Buchung mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs): Es erscheinen nur der gewählte und die höherwertigen Tarife, günstigere nicht (#4). Ohne Vorauswahl stehen alle Tarife zur Wahl
 
+### Neu
+- Markier-Werkzeug: Notizen, die früher ohne Dev-Server nur im Browser-Speicher gelandet sind, zeigt die Liste mit Hinweis an (Knopf „Liste“ mit ⚠). „In Datei übernehmen“ holt sie nach `landing/review/`; vorhandene Notizen bleiben unverändert, belegte Nummern werden weitergezählt
+
 ## 0.8.0 – 29.10.2026
 
 ### Neu

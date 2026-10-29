@@ -146,7 +146,9 @@ Gespeichert wird sofort in `landing/review/`:
 | `backup/notes-<Zeitpunkt>.json` | Sicherung der vorherigen Fassung, vor jedem Überschreiben (die letzten 100) |
 
 **Notizen verschwunden?** In der **Liste** auf **„Sicherungen“** klicken und beim passenden Stand
-**„Wiederherstellen“** wählen. Der jetzige Stand wird vorher selbst gesichert.
+**„Wiederherstellen“** wählen. Der jetzige Stand wird vorher selbst gesichert. Liegen Notizen nur im
+Browser-Speicher (früher ohne Dev-Server geschrieben), zeigt die Liste einen Hinweis mit
+**„In Datei übernehmen“**.
 
 Für die Screenshots einmalig `npx playwright install chromium` ausführen; ohne Browser funktioniert
 alles andere trotzdem (Hinweis im Terminal).

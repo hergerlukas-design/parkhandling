@@ -8,7 +8,8 @@ export type StoreMode = 'datei' | 'browser'
 const ENDPOINT = '/__review/notes'
 const LOCAL_KEY = 'pf-review-notes'
 
-function readLocal(): ReviewFile {
+/** Notizen im Browser-Speicher (Ersatzspeicher ohne Dev-Server) */
+export function readLocal(): ReviewFile {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(LOCAL_KEY) ?? 'null')
     return isReviewFile(parsed) ? parsed : EMPTY_FILE

@@ -90,3 +90,31 @@ test('Stift, Text und Element markieren, Notizen landen in NOTES.md', async ({ p
   await expect(page.getByRole('button', { name: /^Liste \(2\)/ })).toBeVisible()
   expect(backups()).toBe(before + 2)
 })
+
+test('Notizen aus dem Browser-Speicher in die Datei übernehmen', async ({ page }) => {
+  const before = readJson().marks.length
+  const browserMark = {
+    id: 'nur-im-browser',
+    nr: 1,
+    page: '/',
+    kind: 'element',
+    note: 'Aus dem Browser gerettet',
+    status: 'offen',
+    createdAt: '2026-10-27T12:00:00.000Z',
+    updatedAt: '2026-10-27T12:00:00.000Z',
+    viewport: { width: 1280, height: 720 },
+    box: { x: 10, y: 10, w: 100, h: 20 },
+    context: { section: 'Startseite: Hero', heading: '', elements: [] },
+  }
+  await page.addInitScript((m) => localStorage.setItem('pf-review-notes', JSON.stringify({ version: 1, marks: [m] })), browserMark)
+  await page.goto('/')
+  await page.getByRole('button', { name: /Markieren/ }).click()
+  await page.getByRole('button', { name: /^Liste .*⚠/ }).click()
+  await expect(page.getByText('1 Notiz liegt nur im Browser-Speicher')).toBeVisible()
+  await page.getByRole('button', { name: 'In Datei übernehmen' }).click()
+  await expect.poll(() => readJson().marks.length).toBe(before + 1)
+  const saved = readJson().marks.find((m: { id: string }) => m.id === 'nur-im-browser')
+  expect(saved.nr).toBeGreaterThan(1)
+  expect(readMd()).toContain('Aus dem Browser gerettet')
+  await expect(page.getByText('nur im Browser-Speicher')).toHaveCount(0)
+})
