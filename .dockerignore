@@ -9,3 +9,4 @@ supabase/migrations
 supabase/tests
 supabase/*.sql
 mockup
+landing

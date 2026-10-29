@@ -28,7 +28,7 @@ Legende: **[OFFEN]** = noch zu klären bzw. bewusst noch nicht umgesetzt · **[E
 
 ## Landingpage
 
-Code liegt noch auf Branch `claude/park-fly-landing-inquiry-uxo28c` (nicht in `main`).
+Code liegt unter `landing/` (eigene Fly-App, Workflow `deploy-landing.yml`).
 
 ### Stufe 2 (Online-Buchung) – vor Go-live zu klären
 - [ERLEDIGT 20.10.] AGB und Widerrufsbelehrung umgesetzt (`/agb`, `/widerruf`). Button-Hinweis: „Mit dem Klick auf PayPal geben Sie eine zahlungspflichtige, verbindliche Buchung ab“. Offen: Anwaltsprüfung, Online-Widerruf nach § 356a BGB

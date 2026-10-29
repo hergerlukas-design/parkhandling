@@ -3,9 +3,14 @@ name: Deploy (Fly.io)
 # Jeder Merge bzw. Push auf main wird geprüft und auf Fly.io ausgeliefert.
 # PRs auf main werden nur geprüft (inkl. Migrationsstand), nicht ausgeliefert.
 # Voraussetzung: Repository-Secrets FLY_API_TOKEN (erzeugen mit `fly tokens create deploy`) und SUPABASE_DB_URL.
+# Änderungen nur an der Landingpage (landing/) bauen die interne App NICHT neu,
+# dafür gibt es den eigenen Workflow deploy-landing.yml.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'landing/**'
+      - '.github/workflows/deploy-landing.yml'
   pull_request:
     branches: [main]
   workflow_dispatch:
