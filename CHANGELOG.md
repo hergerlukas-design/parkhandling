@@ -10,13 +10,14 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Online-Buchungen der Website in der App:**
   - Fahrzeugliste zeigt das Kennzeichen **Website**, Fahrzeug-Detail die Quelle „Online-Buchung (Website)“ und den gebuchten **Tarif** (Economy, Cover, Business, Premium)
   - Flugnummern stehen in den Feldern **Flug hin / Flug zurück** (vorher nur in der Notiz); die Notiz enthält nur noch Wünsche, Kindersitze/Gepäck und die Zustimmungen
-  - Im Tarif enthaltene Leistungen werden gebucht und erscheinen als Aufgabe. Premium: **Servicearbeiten** (Luftdruck und Betriebsflüssigkeiten prüfen, CarCover); die Grundreinigung ist wie bei jeder Buchung dabei. Zuordnung je Tarif in `booking_tariffs.included_services`
+  - Im Tarif enthaltene Leistungen werden gebucht und erscheinen als Aufgabe. Premium: **Servicearbeiten** (Luftdruck und Betriebsflüssigkeiten prüfen, CarCover); Cover, Business und Premium bekommen wie jede Buchung die Grundreinigung, **Economy nicht** (keine Reinigung im Tarif). Zuordnung je Tarif in `booking_tariffs.included_services` und `excluded_services`
 - **Anfragen von der Website:** Knopf **Anfragen** in der Fahrzeugliste (gelb mit Anzahl, wenn neue da sind). Je Anfrage Zeitraum, Parkplatz, Kontakt, Wünsche und Nachricht; Knöpfe **In Buchung übernehmen** (Buchungsformular vorbelegt, danach Status „Übernommen“ mit Link zur Buchung), **Kontaktiert**, **Ablehnen**
 - **Widerruf sichtbar:** Ist für eine Online-Buchung ein Widerruf eingegangen, zeigt das Fahrzeug-Detail oben einen roten Hinweis mit Eingang, Frist und Begründung. Die Buchung wird nicht automatisch storniert
 
 ### Datenbank
 - Migrationen der Landingpage (bisher nur auf dem Landing-Branch): `20261009000400_inquiries`, `20261020000100_booking_checkout`, `20261020000200_booking_withdrawals`, `20261020000300_checkout_confirmation_state`, `20261021000100_review_notes`, `20261029000100_tariff_texts`, `20261029000200_indoor_availability`
 - Migration `20261029000300_landing_booking_fields.sql` (additiv): Spalte `bookings.tariff_code`, `booking_tariffs.included_services`, Trigger `bookings_tariff_services`; übernimmt Tarif und Flugnummern bestehender Online-Buchungen aus der Notiz
+- Migration `20261029000400_tariff_without_default_services.sql` (additiv): `booking_tariffs.excluded_services` (Economy: `{GRUND}`), `after_booking_insert_defaults` lässt ausgeschlossene Standardleistungen aus (create or replace, gleiche Signatur); offene Grundreinigung bestehender Economy-Buchungen wird storniert
 - Edge Function `booking-checkout` neu ausrollen (schreibt Tarif und Flugnummern in eigene Felder)
 
 ## 0.32.0 – 28.10.2026

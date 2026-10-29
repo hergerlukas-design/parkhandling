@@ -40,7 +40,18 @@ values ('landing', 'T-ECONOMY', 'Test', 'M-LP 2', '2030-04-01 08:00+02', '2030-0
 select pg_temp.assert_eq(
   (select count(*) from public.booking_services bs join public.bookings b on b.id = bs.booking_id
    where b.external_ref = 'T-ECONOMY'),
-  1::bigint, 'Economy: nur Standard');
+  0::bigint, 'Economy: ohne Grundreinigung');
+select pg_temp.assert_eq(
+  (select count(*) from public.tasks t join public.bookings b on b.id = t.booking_id where b.external_ref = 'T-ECONOMY'),
+  0::bigint, 'Economy: keine Aufgabe');
+
+-- Buchung ohne Tarif behält die Grundreinigung
+insert into public.bookings (source, external_ref, customer_name, plate, start_at, end_at, parking_type)
+values ('manual', 'T-OHNE', 'Test', 'M-LP 5', '2030-04-01 08:00+02', '2030-04-08 08:00+02', 'outdoor');
+select pg_temp.assert_eq(
+  (select array_agg(s.code) from public.booking_services bs join public.services s on s.id = bs.service_id
+   join public.bookings b on b.id = bs.booking_id where b.external_ref = 'T-OHNE'),
+  array['GRUND'], 'ohne Tarif: Grundreinigung');
 
 -- Unbekannter Code im Tarif wird übergangen
 update public.booking_tariffs set included_services = '[{"code": "GIBTESNICHT"}]' where code = 'business';
