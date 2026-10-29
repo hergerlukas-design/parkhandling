@@ -14,6 +14,10 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Anfragen von der Website:** Knopf **Anfragen** in der Fahrzeugliste (gelb mit Anzahl, wenn neue da sind). Je Anfrage Zeitraum, Parkplatz, Kontakt, Wünsche und Nachricht; Knöpfe **In Buchung übernehmen** (Buchungsformular vorbelegt, danach Status „Übernommen“ mit Link zur Buchung), **Kontaktiert**, **Ablehnen**
 - **Widerruf sichtbar:** Ist für eine Online-Buchung ein Widerruf eingegangen, zeigt das Fahrzeug-Detail oben einen roten Hinweis mit Eingang, Frist und Begründung. Die Buchung wird nicht automatisch storniert
 
+
+### Geändert
+- **Einstellungen in drei Reitern** statt einer langen Seite: **Allgemein** (App & Version, Konto), **Team & Benachrichtigungen** (Benachrichtigungen auf diesem Gerät, Push-Verwaltung, Personal) und **Halle & Stellplätze** (Aufteilung Halle/Außenfläche, Stellplätze/QR-Codes). Auf dem Smartphone heißen sie kurz Allgemein · Team · Halle. Der Reiter steht in der Adresse (z. B. `/einstellungen?tab=halle`); „Zurück“ von den Stellplatz-QR-Codes führt dorthin. Reine Fahrer sehen den Reiter Halle nicht
+- Hinweis „Leistungskatalog und Mail-Testadresse folgen in Phase 1“ entfernt
 ### Datenbank
 - Migrationen der Landingpage (bisher nur auf dem Landing-Branch): `20261009000400_inquiries`, `20261020000100_booking_checkout`, `20261020000200_booking_withdrawals`, `20261020000300_checkout_confirmation_state`, `20261021000100_review_notes`, `20261029000100_tariff_texts`, `20261029000200_indoor_availability`
 - Migration `20261029000300_landing_booking_fields.sql` (additiv): Spalte `bookings.tariff_code`, `booking_tariffs.included_services`, Trigger `bookings_tariff_services`; übernimmt Tarif und Flugnummern bestehender Online-Buchungen aus der Notiz
