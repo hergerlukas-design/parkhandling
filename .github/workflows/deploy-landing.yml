@@ -36,7 +36,8 @@ defaults:
 jobs:
   check:
     name: Typecheck, Tests, Build, E2E
-    runs-on: ubuntu-latest
+    # Playwright 1.56 kennt ubuntu-latest (26.04) noch nicht; bis zu einem Playwright-Update fest auf 24.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
