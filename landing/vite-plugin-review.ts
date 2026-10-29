@@ -1,15 +1,35 @@
 // Vite-Plugin für das Markier-Werkzeug (nur Dev-Server, nie im Build):
 //  * GET/PUT /__review/notes liest bzw. schreibt landing/review/notes.json
+//  * sichert vor jedem Überschreiben die bisherige Fassung in landing/review/backup/
+//    (GET /__review/backups listet, POST /__review/restore stellt eine Sicherung wieder her)
 //  * schreibt daneben landing/review/NOTES.md (Aufbereitung für Claude Code)
 //  * erzeugt im Hintergrund Screenshots offener Markierungen (review/screens/<nr>.png) mit Playwright.
 //    Fehlt der Browser (npx playwright install chromium), wird ohne Screenshots weitergearbeitet.
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { join } from 'node:path'
 import type { Plugin, ViteDevServer } from 'vite'
+import { backupInfo, backupName, backupsToPrune, isBackupName, shouldBackup, type BackupInfo } from './src/review-tool/backup.ts'
 import { toMarkdown } from './src/review-tool/markdown.ts'
 import { EMPTY_FILE, isReviewFile, type ReviewFile } from './src/review-tool/types.ts'
 
 const MAX_BODY = 5 * 1024 * 1024
+
+function send(res: ServerResponse, status: number, body: unknown) {
+  res.statusCode = status
+  res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Cache-Control', 'no-store')
+  res.end(JSON.stringify(body))
+}
+
+function readBody(req: IncomingMessage, done: (raw: string) => void) {
+  let raw = ''
+  req.on('data', (chunk: Buffer) => {
+    raw += chunk.toString('utf-8')
+    if (raw.length > MAX_BODY) req.destroy()
+  })
+  req.on('end', () => done(raw))
+}
 
 export function reviewNotes(appVersion: string): Plugin {
   let dir = ''
@@ -22,6 +42,7 @@ export function reviewNotes(appVersion: string): Plugin {
   const jsonPath = () => join(dir, 'notes.json')
   const screensDir = () => join(dir, 'screens')
   const shotPath = (nr: number) => join(screensDir(), `${nr}.png`)
+  const backupDir = () => join(dir, 'backup')
 
   function read(): ReviewFile {
     try {
@@ -118,6 +139,37 @@ export function reviewNotes(appVersion: string): Plugin {
     }
   }
 
+  /** Bisherige Fassung sichern (falls sinnvoll), alte Sicherungen über der Höchstzahl löschen */
+  function backup(next: string) {
+    const previous = existsSync(jsonPath()) ? readFileSync(jsonPath(), 'utf-8') : null
+    if (!shouldBackup(previous, next)) return
+    mkdirSync(backupDir(), { recursive: true })
+    const names = readdirSync(backupDir())
+    writeFileSync(join(backupDir(), backupName(new Date(), new Set(names))), previous!)
+    for (const old of backupsToPrune(readdirSync(backupDir()))) unlinkSync(join(backupDir(), old))
+  }
+
+  function write(file: ReviewFile) {
+    const next = `${JSON.stringify(file, null, 2)}\n`
+    mkdirSync(dir, { recursive: true })
+    backup(next)
+    writeFileSync(jsonPath(), next)
+    pruneScreens(file)
+    writeMarkdown(file)
+    scheduleShots()
+  }
+
+  /** Sicherungen, neueste zuerst */
+  function listBackups(): BackupInfo[] {
+    if (!existsSync(backupDir())) return []
+    return readdirSync(backupDir())
+      .filter(isBackupName)
+      .sort()
+      .reverse()
+      .map((name) => backupInfo(name, readFileSync(join(backupDir(), name), 'utf-8')))
+      .filter((b): b is BackupInfo => b !== null)
+  }
+
   function scheduleShots() {
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => void runShots(), 1500)
@@ -131,33 +183,47 @@ export function reviewNotes(appVersion: string): Plugin {
       // REVIEW_DIR nur für den automatischen Test, damit echte Notizen unberührt bleiben
       dir = process.env.REVIEW_DIR ?? join(s.config.root, 'review')
       s.middlewares.use('/__review/notes', (req, res) => {
-        const send = (status: number, body: unknown) => {
-          res.statusCode = status
-          res.setHeader('Content-Type', 'application/json')
-          res.setHeader('Cache-Control', 'no-store')
-          res.end(JSON.stringify(body))
-        }
-        if (req.method === 'GET') return send(200, read())
-        if (req.method !== 'PUT') return send(405, { error: 'Methode nicht erlaubt' })
-        let raw = ''
-        req.on('data', (chunk: Buffer) => {
-          raw += chunk.toString('utf-8')
-          if (raw.length > MAX_BODY) req.destroy()
-        })
-        req.on('end', () => {
+        if (req.method === 'GET') return send(res, 200, read())
+        if (req.method !== 'PUT') return send(res, 405, { error: 'Methode nicht erlaubt' })
+        readBody(req, (raw) => {
           let file: unknown
           try {
             file = JSON.parse(raw)
           } catch {
-            return send(400, { error: 'Ungültiges JSON' })
+            return send(res, 400, { error: 'Ungültiges JSON' })
           }
-          if (!isReviewFile(file)) return send(400, { error: 'Unbekanntes Format' })
-          mkdirSync(dir, { recursive: true })
-          writeFileSync(jsonPath(), `${JSON.stringify(file, null, 2)}\n`)
-          pruneScreens(file)
-          writeMarkdown(file)
-          scheduleShots()
-          send(200, { ok: true, path: 'review/NOTES.md' })
+          if (!isReviewFile(file)) return send(res, 400, { error: 'Unbekanntes Format' })
+          write(file)
+          send(res, 200, { ok: true, path: 'review/NOTES.md' })
+        })
+      })
+      s.middlewares.use('/__review/backups', (req, res) => {
+        if (req.method !== 'GET') return send(res, 405, { error: 'Methode nicht erlaubt' })
+        send(res, 200, { backups: listBackups() })
+      })
+      s.middlewares.use('/__review/restore', (req, res) => {
+        if (req.method !== 'POST') return send(res, 405, { error: 'Methode nicht erlaubt' })
+        readBody(req, (raw) => {
+          let name: unknown
+          try {
+            name = (JSON.parse(raw) as { name?: unknown }).name
+          } catch {
+            return send(res, 400, { error: 'Ungültiges JSON' })
+          }
+          // nur Dateinamen aus review/backup/, keine Pfade
+          if (typeof name !== 'string' || !isBackupName(name) || !existsSync(join(backupDir(), name)))
+            return send(res, 404, { error: 'Sicherung nicht gefunden' })
+          let file: unknown
+          try {
+            file = JSON.parse(readFileSync(join(backupDir(), name), 'utf-8'))
+          } catch {
+            return send(res, 422, { error: 'Sicherung ist beschädigt' })
+          }
+          if (!isReviewFile(file)) return send(res, 422, { error: 'Sicherung ist beschädigt' })
+          // aktuelle Fassung wird dabei selbst gesichert, die Wiederherstellung ist also umkehrbar
+          write(file)
+          server.config.logger.info(`[review] Sicherung ${name} wiederhergestellt`)
+          send(res, 200, { file })
         })
       })
     },

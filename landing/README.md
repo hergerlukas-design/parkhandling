@@ -143,6 +143,10 @@ Gespeichert wird sofort in `landing/review/`:
 | `NOTES.md` | Aufbereitung für Claude Code: Seite, Notiz, Abschnitt, Überschrift, markierter Text, Elemente mit CSS-Pfad |
 | `notes.json` | Rohdaten (Koordinaten, Striche, Status) |
 | `screens/<nr>.png` | Screenshot jeder offenen Markierung, automatisch im Hintergrund |
+| `backup/notes-<Zeitpunkt>.json` | Sicherung der vorherigen Fassung, vor jedem Überschreiben (die letzten 100) |
+
+**Notizen verschwunden?** In der **Liste** auf **„Sicherungen“** klicken und beim passenden Stand
+**„Wiederherstellen“** wählen. Der jetzige Stand wird vorher selbst gesichert.
 
 Für die Screenshots einmalig `npx playwright install chromium` ausführen; ohne Browser funktioniert
 alles andere trotzdem (Hinweis im Terminal).

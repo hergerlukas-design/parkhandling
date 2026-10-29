@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 
@@ -72,4 +72,21 @@ test('Stift, Text und Element markieren, Notizen landen in NOTES.md', async ({ p
   await expect.poll(() => existsSync(join(dir, 'screens', '2.png')), { timeout: 30_000 }).toBe(true)
   await expect.poll(() => readMd(), { timeout: 10_000 }).toContain('![Markierung #3](screens/3.png)')
   expect(existsSync(join(dir, 'screens', '1.png'))).toBe(false)
+
+  // Sicherung: Löschen legt eine Kopie an, „Wiederherstellen“ holt die Notiz zurück
+  const backups = () => (existsSync(join(dir, 'backup')) ? readdirSync(join(dir, 'backup')).length : 0)
+  const before = backups()
+  expect(before).toBeGreaterThan(0)
+  page.on('dialog', (d) => void d.accept())
+  await page.getByRole('button', { name: /Markieren/ }).click()
+  await page.getByRole('button', { name: /^Liste/ }).click()
+  await page.getByRole('button', { name: 'Löschen' }).first().click()
+  await expect.poll(() => readJson().marks.length).toBe(2)
+  expect(backups()).toBe(before + 1)
+  await page.getByRole('button', { name: 'Sicherungen' }).click()
+  await expect(page.getByText('3 Notizen (2 offen)').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Wiederherstellen' }).first().click()
+  await expect.poll(() => readJson().marks.length).toBe(3)
+  await expect(page.getByRole('button', { name: /^Liste \(2\)/ })).toBeVisible()
+  expect(backups()).toBe(before + 2)
 })

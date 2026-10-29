@@ -1,5 +1,6 @@
 // Speichern der Notizen: im Dev-Server als Datei (landing/review/, über das Vite-Plugin),
 // sonst ersatzweise im Browser (localStorage) mit Export als Datei.
+import type { BackupInfo } from './backup'
 import { EMPTY_FILE, isReviewFile, type ReviewFile } from './types'
 
 export type StoreMode = 'datei' | 'browser'
@@ -44,6 +45,25 @@ export async function saveNotes(file: ReviewFile): Promise<StoreMode> {
     // Speicher gesperrt – Export bleibt möglich
   }
   return 'browser'
+}
+
+/** Sicherungen in landing/review/backup/ (nur Dev-Server), neueste zuerst */
+export async function loadBackups(): Promise<BackupInfo[]> {
+  const res = await fetch('/__review/backups', { cache: 'no-store' })
+  if (!res.ok) throw new Error(`Sicherungen nicht lesbar (${res.status})`)
+  return ((await res.json()) as { backups: BackupInfo[] }).backups
+}
+
+/** Sicherung zurückspielen; die bisherige Fassung wird dabei selbst gesichert */
+export async function restoreBackup(name: string): Promise<ReviewFile> {
+  const res = await fetch('/__review/restore', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+  const data = (await res.json()) as { file?: unknown; error?: string }
+  if (!res.ok || !isReviewFile(data.file)) throw new Error(data.error ?? 'Wiederherstellen fehlgeschlagen')
+  return data.file
 }
 
 export function download(filename: string, content: string, type: string) {

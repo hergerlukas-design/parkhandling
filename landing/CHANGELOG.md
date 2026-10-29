@@ -5,6 +5,13 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.8.0 – 29.10.2026
+
+### Neu
+- Markier-Werkzeug: Sicherungskopien der Notizen. Vor jedem Überschreiben von `landing/review/notes.json` wird die bisherige Fassung nach `landing/review/backup/notes-<Zeitpunkt>.json` kopiert (nur wenn sie Notizen enthält und sich etwas ändert, die letzten 100 bleiben)
+- In der Liste der Knopf „Sicherungen“: zeigt alle Sicherungen mit Zeitpunkt und Anzahl Notizen, „Wiederherstellen“ holt einen Stand zurück. Der jetzige Stand wird dabei selbst gesichert, das Zurückholen lässt sich also rückgängig machen
+- Test `npm run test:review` prüft Löschen und Wiederherstellen
+
 ## 0.7.0 – 26.10.2026
 
 ### Neu

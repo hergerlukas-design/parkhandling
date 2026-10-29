@@ -13,7 +13,8 @@ import {
   unionBox,
 } from './context'
 import { toMarkdown } from './markdown'
-import { download, loadNotes, saveNotes, type StoreMode } from './store'
+import type { BackupInfo } from './backup'
+import { download, loadBackups, loadNotes, restoreBackup, saveNotes, type StoreMode } from './store'
 import { type Box, EMPTY_FILE, KIND_LABEL, type MarkKind, type Point, type ReviewFile, type ReviewMark } from './types'
 
 type Router = typeof appRouter
@@ -147,6 +148,8 @@ export function ReviewTool({ router }: { router: Router }) {
   const [hover, setHover] = useState<Box | null>(null)
   const [stroke, setStroke] = useState<Point[] | null>(null)
   const [pendingScroll, setPendingScroll] = useState<string | null>(null)
+  const [backups, setBackups] = useState<BackupInfo[] | null>(null)
+  const [backupError, setBackupError] = useState('')
   const doc = useDocSize()
   const strokeRef = useRef<Point[] | null>(null)
 
@@ -350,6 +353,29 @@ export function ReviewTool({ router }: { router: Router }) {
     } else {
       setPendingScroll(mark.id)
       void router.navigate(mark.page)
+    }
+  }
+
+  async function toggleBackups() {
+    if (backups) return setBackups(null)
+    setBackupError('')
+    try {
+      setBackups(await loadBackups())
+    } catch (e) {
+      setBackupError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  async function restore(b: BackupInfo) {
+    const when = new Date(b.savedAt).toLocaleString('de-DE')
+    if (!window.confirm(`Stand vom ${when} (${b.marks} Notizen) wiederherstellen? Der jetzige Stand wird vorher gesichert.`)) return
+    closeEditor()
+    setBackupError('')
+    try {
+      setFile(await restoreBackup(b.name))
+      setBackups(await loadBackups())
+    } catch (e) {
+      setBackupError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -577,11 +603,32 @@ export function ReviewTool({ router }: { router: Router }) {
             ) : (
               <>Nur im Browser gespeichert (kein Dev-Server). Bitte exportieren und nach <code>landing/review/</code> legen.</>
             )}
-            <div style={{ marginTop: 6 }}>
+            <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button type="button" style={btn} onClick={exportFiles}>
                 Exportieren (NOTES.md + notes.json)
               </button>
+              {mode === 'datei' && (
+                <button type="button" style={backups ? btnActive : btn} onClick={() => void toggleBackups()}>
+                  Sicherungen
+                </button>
+              )}
             </div>
+            {backupError && <div style={{ marginTop: 6, color: '#b42318' }}>{backupError}</div>}
+            {backups && (
+              <div style={{ marginTop: 6 }}>
+                {backups.length === 0 && <div>Noch keine Sicherungen. Sie entstehen bei jeder Änderung an gespeicherten Notizen.</div>}
+                {backups.map((b) => (
+                  <div key={b.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, borderTop: '1px solid #eee', padding: '4px 0' }}>
+                    <span>
+                      {new Date(b.savedAt).toLocaleString('de-DE')} · {b.marks} {b.marks === 1 ? 'Notiz' : 'Notizen'} ({b.open} offen)
+                    </span>
+                    <button type="button" style={btn} onClick={() => void restore(b)}>
+                      Wiederherstellen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
