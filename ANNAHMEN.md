@@ -149,3 +149,54 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Shuttle/Hol- & Bringservice ist in der Navigation von Phase 1 ausgeblendet (laut Startauftrag nicht Teil von Phase 1)
 - [ANNAHME] Supabase-Region EU (Frankfurt) – das bestehende Projekt `parkhandling` liegt laut Supabase in `eu-west-1` (Irland); Region nur bei Neuanlage wählbar
 - [ANNAHME] Nur Testdaten bis Datenschutz und Hosting geklärt sind
+
+## Landingpage (Stufe 1, `landing/` 0.1.0)
+- [ANNAHME] Unterordner-Struktur: Die Landingpage liegt im Repo `parkhandling` unter `landing/`, als eigenständige App (eigenes `package.json`, `CHANGELOG.md`, `README.md`, eigene Fly-App `parkhandling-landing`, Build-Kontext nur `landing/`). Kein Import aus `src/`; gemeinsam genutzt wird nur `supabase/`
+- [ANNAHME] Eigene Versionierung: Version der Landingpage nur in `landing/package.json` (Start `0.1.0`), Anzeige im Footer über `__APP_VERSION__`. Die Version der internen App bleibt davon unberührt
+- [ANNAHME] Eigene Tabelle `inquiries` statt `bookings`, damit der Status-Flow der internen App unverändert bleibt. Status `new`, `contacted`, `converted`, `rejected`; Übernahme in eine Buchung über `converted_booking_id` (manuell, Stufe 2). Zusätzliche Spalte `notification_status` (Ergebnis der Betriebsmail)
+- [ANNAHME] Bestätigungsmail an den Kunden aus (`settings.inquiry_customer_confirmation = false`), bis Mail-Anbieter und Datenschutz geklärt sind. Benachrichtigung an den Betrieb geht an `settings.inquiry_notify_address`, solange `null` an `settings.mail_test_address`
+- [ANNAHME] Preise werden nicht angezeigt, sondern „auf Anfrage“ (Preisliste offen)
+- [ANNAHME] Kennzeichen als Freitext, max. 15 Zeichen, in Großbuchstaben gespeichert; Vor- und Nachname max. 100, E-Mail max. 254, Telefon max. 30 Zeichen
+- [ANNAHME] Kennzeichen, Vor- und Nachname, E-Mail, Anreise, Abholung und Stellplatzart sind Pflicht; Telefon, Leistungen und Nachricht optional
+- [ANNAHME] Abholung muss mindestens einen Tag nach der Anreise liegen (gleicher Tag nicht möglich); Anreise heute ist erlaubt, höchstens 365 Tage im Voraus. Nur Datum, keine Uhrzeit (Uhrzeit/Flug in der Nachricht)
+- [ANNAHME] Datumsfeld als natives Datumsfeld des Browsers (zeigt in deutschen Browsern TT.MM.JJJJ); zusätzlich wird das gewählte Datum als „Mo., 12.10.2026“ angezeigt
+- [ANNAHME] Spam-Schutz: Honeypot und zu schnelles Ausfüllen (< 3 s, im Browser gemessen) werden still verworfen (Antwort wie Erfolg, nichts gespeichert). Rate-Limit zählt jeden Versuch, auch verworfene; IP wird nur als HMAC gespeichert und nach einem Tag gelöscht
+- [ANNAHME] UTM: neue UTM-Parameter ersetzen die gespeicherten der Sitzung vollständig (letzte Anzeige zählt); Referrer nur von fremden Seiten, beim ersten Aufruf der Sitzung
+- [ANNAHME] Keine Webfonts (Systemschrift) und keine externen Ressourcen, damit keine Daten an Dritte gehen; Content-Security-Policy erlaubt nur die eigene Seite und Supabase
+- [ANNAHME] Bis zum Go-live `noindex` (Meta-Tag, `X-Robots-Tag`, `robots.txt`). Automatisches Deployment vorbereitet, aber aus (`LANDING_DEPLOY_ENABLED`)
+- [ANNAHME] Edge Function `inquiry-submit` wird ohne JWT-Prüfung deployt (`--no-verify-jwt`), da die Seite anonym sendet
+
+## Landingpage Online-Buchung (Stufe 2, `landing/` 0.3.0)
+- [BELEGT] Der Kunde landet über den Button „Jetzt buchen“ auf der Jimdo-Website auf der Buchungsseite der Landingpage, gibt Daten ein und bezahlt mit PayPal (auch Kreditkarte über PayPal)
+- [BELEGT] Die Buchung geht nach der Zahlung direkt in die Park Handling App (Tabelle `bookings`) und ist sofort bestätigt; die Bestätigungsmail geht sofort an den Kunden
+- [BELEGT] Preise: vier Tarife laut Preiskategorien-Vorlage, Dauerklassen 5–8 / 9–15 / 16–30 Tage. Unter 5 Tagen kein Preis (keine Online-Buchung), über 30 Tage ist der Monatstarif nicht vorgesehen
+- [BELEGT] Der Hol- & Bringservice ist als Rückgabe-Option wählbar, Shuttle ist im Tarif enthalten
+- [BELEGT] Preise brutto in EUR inkl. Umsatzsteuer (AGB Ziffer 8.1, bestätigt durch den Entwurf). Vorher Kunde: „denke brutto, bin nicht komplett sicher“
+- [ANNAHME] Dauer = Kalendertage zwischen Anreise- und Abholdatum; Uhrzeiten werden als Berliner Ortszeit gespeichert
+- [ANNAHME] Stellplatzart der Buchung folgt dem Tarif: Economy → Außen ohne Plane, Cover (Code `space`) → Außen mit Abdeckplane, Business und Premium → Halle (Indoor)
+- [ANNAHME] Online-Buchung: Halle gilt als voll, wenn im Zeitraum zu irgendeinem Zeitpunkt so viele Indoor-Buchungen (nicht storniert/abgeschlossen) gleichzeitig laufen, wie es aktive, nicht gesperrte Hallenplätze gibt (`indoor_full`); dann sind Business und Premium „Ausverkauft“
+- [BELEGT] Online-Buchung frühestens 12 Stunden vor der Anreise (Review-Notiz Lukas 27.10.2026)
+- [ANNAHME] Buchungsquelle `landing`, Zahlungsreferenz (PayPal-Order-ID) als `external_ref`, Buchungsnummer `PF-<erste 8 Zeichen der Buchungs-ID>`
+- [ANNAHME] Zusatzleistungen (z. B. Fahrzeugaufbereitung) sind online noch nicht buchbar; die Anmerkungen nehmen Wünsche auf
+- [ANNAHME] Absender der Bestätigung: `booking@parkhandling.de` als Platzhalter (Einstellung `booking_confirmation_from`); tatsächlich versendet wird über die Secret-Adresse `MAIL_FROM`, bis die Absenderadresse feststeht
+- [ANNAHME] Sandbox-Zahlungen über `PAYPAL_ENV=sandbox`, Standard. Live erst nach Freigabe
+- [ANNAHME] Die bestehende Anfrage-Funktion und die Tabelle `inquiries` bleiben vorerst unverändert im Repo, werden aber nicht mehr genutzt
+- [BELEGT] AGB und Widerrufsbelehrung umgesetzt (`/agb`, `/widerruf`, Stand 2026-10, aus `legal/AGB_2026-10.txt`, erzeugt mit `scripts/build-legal.py`). Der interne Abschnitt „Zusatzleistungen und Umsetzung“ steht nicht auf der Seite und nicht in der Mail
+- [BELEGT] Vertragsschluss mit Zugang der Buchungsbestätigung. Die Mail nimmt die Buchung ausdrücklich an und enthält AGB und Widerrufsbelehrung im Volltext (AGB Ziffer 2.2, 2.3)
+- [BELEGT] Zustimmung zur Pflicht-Checkbox für AGB und Kenntnis der Widerrufsbelehrung; Zustimmung zum frühen Leistungsbeginn nur bei Anreise innerhalb von 14 Tagen, nicht vorangekreuzt (AGB 12.2, Entwurf „Umsetzung“)
+- [BELEGT] Stornierung kostenlos bis 24 Stunden vor Leistungsbeginn in Textform, insbesondere per E-Mail (AGB 10.1). Kein Online-Storno-Button
+- [BELEGT] Shuttle: Flugnummern Hin- und Rückflug Pflicht; Kindersitze 0–3 und Gepäckstücke werden erfasst (AGB 4.1, 7.4). Die Angaben stehen in den Notizen der Buchung, nicht in eigenen Spalten
+- [BELEGT] Online-Widerruf auf `/widerruf` gebaut (Eingangsbestätigung, § 356a BGB). AGB-Text verweist auf „Widerruf“ der Landingpage, nicht mehr auf parkhandling.de
+- [OFFEN] Endgültige Domain der Landingpage für den vollständigen Link in den AGB
+- [BELEGT] Vorschau für Freigaben ohne Fly.io: Dev-Server mit öffentlichem Tunnel, Kommentare im Review-Modus (`?review=<Token>`, Tabelle `review_notes`, Function `review-notes`)
+- [BELEGT] Mailausfall nach Zahlung: Status am Zwischenspeicher, Hinweis an den Betrieb, erneute Anforderung durch den Kunden. Kein automatischer Wiederholversuch
+- [OFFEN] Rechtliche Prüfung durch einen Rechtsanwalt vor Go-live (der Entwurf verlangt sie selbst). Schlichtungsangabe fehlt im Entwurf
+- [OFFEN] Fahrzeugmaße werden nicht erfasst (AGB 4.1). Mechanische Parksysteme (AGB 5.3) sind nicht online buchbar
+- [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain
+- [OFFEN] Ob die Buchung mit Zahlung auch bei Park OS-Buchungen gilt; Park OS liefert eigene Buchungen (Schnittstelle/E-Mail noch offen)
+- [ANNAHME] Review-Notizen (landing 0.7.0): Markier-Werkzeug (Stift, Text, Element) nur im Dev-Server, nicht im Produktions-Build. Notizen als Dateien in `landing/review/` (`NOTES.md` für Claude Code, `notes.json`, Screenshots), Umsetzung mit `/review-umsetzen`. Markierungen beziehen sich auf die Bildschirmbreite beim Markieren; auf deutlich anderer Breite werden sie blass angezeigt. Der bisherige Review-Modus mit Supabase (`?review=<Token>`, 0.6.0) bleibt unverändert bestehen
+
+## Landingpage-Daten in der App (0.33.0)
+- [ANNAHME] Im Tarif enthaltene Leistungen (`booking_tariffs.included_services`): nur Premium bucht zusätzlich **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover). Cover, Business und Premium bekommen die Standard-Grundreinigung („Grob-Reinigung“ ist keine eigene Leistung). [BELEGT 29.10.2026] Economy enthält keine Reinigung, also auch keine Grundreinigung (`excluded_services`)
+- [ANNAHME] Anfrage → Buchung: Parkplatz „egal“ wird Außen, Hol- & Bring geht vor Shuttle, ohne Transferwunsch „Selbst“. Aufbereitungswunsch und Nachricht landen in der Notiz (Umfang mit dem Kunden klären); Uhrzeiten fehlen in der Anfrage
+- [ANNAHME] Ein Online-Widerruf wird nur angezeigt; Stornieren und Erstatten entscheidet das Personal

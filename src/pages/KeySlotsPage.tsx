@@ -41,7 +41,7 @@ export function KeySlotsPage() {
     <div className="min-h-full bg-ground print:bg-white">
       <style>{'@page { size: A4; margin: 15mm 7mm; }'}</style>
       <header className="flex flex-wrap items-center gap-3 border-b border-line bg-surface px-4 py-3 print:hidden">
-        <Link to="/einstellungen" className="touch-target inline-flex items-center gap-1 text-sm text-subtle">
+        <Link to="/einstellungen?tab=halle" className="touch-target inline-flex items-center gap-1 text-sm text-subtle">
           <Icon name="close" className="size-5" /> Zurück
         </Link>
         <h1 className="text-lg font-semibold">Stellplätze & Schlüsselfächer</h1>
