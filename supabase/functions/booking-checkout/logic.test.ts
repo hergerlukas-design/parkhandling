@@ -1,5 +1,5 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
-import { berlinToUtcIso, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
+import { berlinToUtcIso, bookingRow, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
 
 /** Buchungszeitpunkt passend zu „heute“ 20.10.2026 */
 const NOW = '2026-10-20T08:00:00.000Z'
@@ -114,4 +114,16 @@ Deno.test('Bestätigung erneut anfordern: Prüfung der Eingaben', () => {
 Deno.test('Hinweis an den Betrieb nennt Buchung und Fehler', () => {
   const m = confirmationFailedMail({ bookingRef: 'PF-1A2B3C4D', customerName: 'Max', email: 'a@b.de', amount: 148, error: 'Resend 500' })
   if (!m.subject.includes('NICHT versendet') || !m.text.includes('Resend 500')) throw new Error('Inhalt')
+})
+
+Deno.test('Buchungszeile: Tarif und Flugnummern in eigenen Feldern, nicht in der Notiz', () => {
+  const v = validateBooking({ ...base, notes: 'Dachbox' }, '2026-10-20', tariffs, NOW).value!
+  const row = bookingRow(v, tariffs[0], 'ORDER-1', '2026-10', NOW)
+  if (row.tariff_code !== 'premium' || row.parking_type !== 'indoor') throw new Error('Tarif')
+  if (row.flight_out !== 'LH1234' || row.flight_return !== 'LH1235') throw new Error(`Flüge ${row.flight_out}/${row.flight_return}`)
+  if (row.notes.includes('Tarif') || row.notes.includes('Flug')) throw new Error('Notiz doppelt')
+  if (!row.notes.startsWith('Dachbox\n') || !row.notes.includes('Vorzeitiger Leistungsbeginn: ')) throw new Error('Notiz')
+  if (row.source !== 'landing' || row.payment_status !== 'paid' || row.external_ref !== 'ORDER-1') throw new Error('Kopf')
+  const self = bookingRow({ ...v, return_mode: 'self' }, tariffs[0], 'ORDER-2', '2026-10', NOW)
+  if (self.flight_out !== null || self.flight_return !== null) throw new Error('ohne Shuttle keine Flüge')
 })

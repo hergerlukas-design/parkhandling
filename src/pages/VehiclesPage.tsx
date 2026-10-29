@@ -4,8 +4,10 @@ import { IMPORT_FLAG_LABEL, type ImportFlag } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
 import { ImportDialog } from '../components/bookings/ImportDialog'
 import { ImportReviewDialog } from '../components/bookings/ImportReviewDialog'
+import { InquiriesDialog } from '../components/bookings/InquiriesDialog'
 import { ParkosImportDialog } from '../components/bookings/ParkosImportDialog'
 import { countOpenImports } from '../lib/imports'
+import { countNewInquiries, LANDING_SOURCE } from '../lib/landing'
 import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
 import {
@@ -67,6 +69,11 @@ function SourceBadges({ b }: { b: BookingListItem }) {
           Parkos
         </span>
       )}
+      {b.source === LANDING_SOURCE && (
+        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
+          Website
+        </span>
+      )}
       {flags.length > 0 && (
         <span
           title={flags.map((f) => IMPORT_FLAG_LABEL[f as ImportFlag] ?? f).join(', ')}
@@ -93,8 +100,9 @@ export function VehiclesPage() {
   const [next, setNext] = useState<BookingCursor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [dialog, setDialog] = useState<'new' | 'import' | 'parkos' | 'review' | null>(null)
+  const [dialog, setDialog] = useState<'new' | 'import' | 'parkos' | 'review' | 'inquiries' | null>(null)
   const [openImports, setOpenImports] = useState(0)
+  const [newInquiries, setNewInquiries] = useState(0)
   const requestId = useRef(0)
 
   useEffect(() => {
@@ -125,6 +133,7 @@ export function VehiclesPage() {
     void load(null)
     countByChip(debounced).then(setCounts).catch(() => undefined)
     countOpenImports().then(setOpenImports).catch(() => undefined)
+    countNewInquiries().then(setNewInquiries).catch(() => undefined)
   }, [load, debounced])
 
   useEffect(() => {
@@ -151,6 +160,12 @@ export function VehiclesPage() {
               {openImports} prüfen
             </Button>
           )}
+          <Button
+            className={`flex-1 md:flex-none ${newInquiries > 0 ? 'border-warn bg-warn-soft text-warn-ink' : ''}`}
+            onClick={() => setDialog('inquiries')}
+          >
+            Anfragen{newInquiries > 0 && ` (${newInquiries} neu)`}
+          </Button>
           <Button className="flex-1 md:flex-none" onClick={() => setDialog('parkos')}>
             Parkos-Mail
           </Button>
@@ -291,6 +306,7 @@ export function VehiclesPage() {
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} onDone={reload} />}
       {dialog === 'parkos' && <ParkosImportDialog onClose={() => setDialog(null)} onDone={reload} />}
       {dialog === 'review' && <ImportReviewDialog onClose={() => setDialog(null)} onChanged={reload} />}
+      {dialog === 'inquiries' && <InquiriesDialog onClose={() => setDialog(null)} onChanged={reload} />}
     </div>
   )
 }

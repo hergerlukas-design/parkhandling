@@ -308,6 +308,59 @@ export function validateBooking(
   }
 }
 
+/** Flugnummer wie in der App (Großbuchstaben, ohne Leerzeichen: „LH 1234“ → „LH1234“) */
+export function normalizeFlightNo(value: string | null): string | null {
+  const v = (value ?? '').toUpperCase().replace(/\s+/g, '')
+  return v || null
+}
+
+/**
+ * Zeile für bookings nach erfolgter Zahlung. Tarif und Flugnummern stehen in eigenen Feldern
+ * (die App zeigt sie an, im Tarif enthaltene Leistungen bucht ein Trigger); die Notiz enthält
+ * nur, was es dafür nicht gibt. Die Zeile „Vorzeitiger Leistungsbeginn“ wertet der Widerruf aus.
+ */
+export function bookingRow(
+  value: NormalizedBooking,
+  tariff: Pick<TariffRow, 'code' | 'parking_type'>,
+  orderId: string,
+  agbVersion: string,
+  receivedAt: string = new Date().toISOString(),
+) {
+  const shuttle = value.return_mode === 'shuttle'
+  const notes = [
+    value.notes,
+    `Kindersitze: ${value.child_seats} · Gepäckstücke: ${value.luggage}`,
+    `AGB ${agbVersion} akzeptiert (${value.accepted_at}), Widerrufsbelehrung zur Kenntnis genommen`,
+    `Vorzeitiger Leistungsbeginn: ${value.early_start ? 'ausdrücklich zugestimmt' : 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+  return {
+    source: 'landing',
+    external_ref: orderId,
+    received_at: receivedAt,
+    customer_name: value.customer_name,
+    company: value.company,
+    customer_email: value.email,
+    customer_phone: value.phone,
+    plate: value.plate,
+    vehicle_model: value.vehicle_model,
+    fuel_type: value.fuel_type,
+    persons: value.persons,
+    start_at: berlinToUtcIso(value.arrival_date, value.arrival_time),
+    end_at: berlinToUtcIso(value.pickup_date, value.pickup_time),
+    parking_type: tariff.parking_type,
+    tariff_code: tariff.code,
+    return_mode: value.return_mode,
+    flight_out: shuttle ? normalizeFlightNo(value.flight_outbound) : null,
+    flight_return: shuttle ? normalizeFlightNo(value.flight_return) : null,
+    status: 'booked',
+    price_total: value.amount,
+    payment_status: 'paid',
+    notes,
+  }
+}
+
 const RETURN_LABEL: Record<ReturnMode, string> = {
   shuttle: 'Shuttle zum Terminal',
   pickup_delivery: 'Hol- & Bringservice',

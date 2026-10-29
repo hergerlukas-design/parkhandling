@@ -7,6 +7,7 @@ import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
 import { cancelBooking, confirmImportFlag, getBookingDetail, type BookingDetail } from '../lib/bookings'
+import { listWithdrawals, tariffLabel, type Withdrawal } from '../lib/landing'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
@@ -53,6 +54,7 @@ const SOURCE_LABEL: Record<string, string> = {
   csv: 'CSV-Import',
   demo: 'Demo-Daten',
   parkos: 'Parkos',
+  landing: 'Online-Buchung (Website)',
 }
 
 function fmtValue(key: string, v: unknown): string {
@@ -142,13 +144,21 @@ export function VehicleDetailPage() {
   const [busy, setBusy] = useState(false)
   const [protocols, setProtocols] = useState<ProtocolRow[]>([])
   const [trips, setTrips] = useState<BookingTrip[]>([])
+  const [tariff, setTariff] = useState<string | null>(null)
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
 
   const load = useCallback(() => {
     if (!id) return
     getBookingDetail(id).then(setData).catch((e: Error) => setError(e.message))
     listProtocols(id).then(setProtocols).catch(() => undefined)
     loadBookingTrips(id).then(setTrips).catch(() => setTrips([]))
+    listWithdrawals(id).then(setWithdrawals).catch(() => setWithdrawals([]))
   }, [id])
+
+  const tariffCode = data?.booking.tariff_code
+  useEffect(() => {
+    tariffLabel(tariffCode).then(setTariff).catch(() => setTariff(null))
+  }, [tariffCode])
 
   useEffect(load, [load])
 
@@ -266,6 +276,17 @@ export function VehicleDetailPage() {
         </div>
       )}
 
+      {withdrawals.map((w) => (
+        <div key={w.id} className="rounded-xl border border-danger bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+          <p>
+            <strong>Widerruf eingegangen</strong> am {formatDateTime(w.received_at)} ({w.booking_ref},{' '}
+            {w.within_period ? 'innerhalb der 14-Tage-Frist' : 'nach Ablauf der 14-Tage-Frist'}).
+            {!closed && ' Buchung prüfen, ggf. stornieren und Zahlung erstatten.'}
+          </p>
+          {w.reason && <p className="mt-1">Begründung: {w.reason}</p>}
+        </div>
+      ))}
+
       {b.notes?.startsWith('⚠') && (
         <p className="rounded-xl border border-warn bg-warn-soft px-4 py-2 text-sm text-warn-ink">
           Kennzeichen aus dem Import nicht eindeutig – bitte prüfen und über „Bearbeiten“ korrigieren.
@@ -320,6 +341,7 @@ export function VehicleDetailPage() {
                   <Row label="Sprache">{LANGUAGE_LABEL[b.customer_language] ?? b.customer_language}</Row>
                 )}
                 <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
+                {(tariff || b.tariff_code) && <Row label="Tarif">{tariff ?? b.tariff_code}</Row>}
                 <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
                 <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
               </div>

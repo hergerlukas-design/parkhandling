@@ -29,15 +29,23 @@ import { Button, Dialog, ErrorList, Field, Select, TextInput } from '../ui'
  */
 export function BookingFormDialog({
   initial,
+  draftKey,
+  title,
   onClose,
   onSaved,
 }: {
   initial?: ManualBookingForm
+  /** eigener Entwurf, z. B. je Anfrage, damit die Vorbelegung nicht von „Neue Buchung“ überdeckt wird */
+  draftKey?: string
+  title?: string
   onClose: () => void
   onSaved: (id: string) => void
 }) {
   const editing = !!initial?.id
-  const draft = useDraft<ManualBookingForm>(editing ? `booking-edit-${initial!.id}` : 'booking-new', initial ?? emptyManualForm())
+  const draft = useDraft<ManualBookingForm>(
+    draftKey ?? (editing ? `booking-edit-${initial!.id}` : 'booking-new'),
+    initial ?? emptyManualForm(),
+  )
   const form = draft.value
   const [catalog, setCatalog] = useState<Service[]>([])
   const [errors, setErrors] = useState<string[]>([])
@@ -110,7 +118,7 @@ export function BookingFormDialog({
 
   return (
     <Dialog
-      title={editing ? `Buchung bearbeiten · ${initial!.plate}` : 'Neue Buchung'}
+      title={title ?? (editing ? `Buchung bearbeiten · ${initial!.plate}` : 'Neue Buchung')}
       onClose={onClose}
       footer={
         <>

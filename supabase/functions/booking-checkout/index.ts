@@ -17,6 +17,7 @@ import {
   type BookingInput,
   isIsoDate,
   bookingRefFor,
+  bookingRow,
   confirmationFailedMail,
   confirmationMail,
   type NormalizedBooking,
@@ -219,39 +220,9 @@ async function handleCapture(body: { checkout_id?: string; paypal_order_id?: str
   const value = checkout.payload as NormalizedBooking
   const { data: tariff } = await admin.from('booking_tariffs').select('*').eq('code', checkout.tariff_code).single()
 
-  const notes = [
-    `Tarif: ${tariff.label}`,
-    value.return_mode === 'shuttle' ? `Flug Hinflug: ${value.flight_outbound ?? '–'} · Rückflug: ${value.flight_return ?? '–'}` : null,
-    `Kindersitze: ${value.child_seats} · Gepäckstücke: ${value.luggage}`,
-    `AGB ${AGB_VERSION} akzeptiert (${value.accepted_at}), Widerrufsbelehrung zur Kenntnis genommen`,
-    `Vorzeitiger Leistungsbeginn: ${value.early_start ? 'ausdrücklich zugestimmt' : 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'}`,
-    value.notes,
-  ]
-    .filter(Boolean)
-    .join('\n')
   const { data: booking, error: bookErr } = await admin
     .from('bookings')
-    .insert({
-      source: 'landing',
-      external_ref: orderId,
-      received_at: new Date().toISOString(),
-      customer_name: value.customer_name,
-      company: value.company,
-      customer_email: value.email,
-      customer_phone: value.phone,
-      plate: value.plate,
-      vehicle_model: value.vehicle_model,
-      fuel_type: value.fuel_type,
-      persons: value.persons,
-      start_at: berlinToUtcIso(value.arrival_date, value.arrival_time),
-      end_at: berlinToUtcIso(value.pickup_date, value.pickup_time),
-      parking_type: tariff.parking_type,
-      return_mode: value.return_mode,
-      status: 'booked',
-      price_total: value.amount,
-      payment_status: 'paid',
-      notes,
-    })
+    .insert(bookingRow(value, tariff, orderId, AGB_VERSION))
     .select('id')
     .single()
 

@@ -72,6 +72,8 @@ export interface Booking extends Row {
   portal_payout: number | null
   /** Hinweise aus dem Import, z. B. plate_unverified */
   import_flags: string[]
+  /** Tarif der Online-Buchung (Landingpage, seit 0.33.0; ältere Datenbank: fehlt) */
+  tariff_code?: string | null
 }
 
 export interface Service extends Row {

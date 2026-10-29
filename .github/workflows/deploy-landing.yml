@@ -53,7 +53,7 @@ jobs:
       - run: npm run test:review
 
   edge-function:
-    name: Edge Function inquiry-submit (Deno)
+    name: Edge Functions inquiry-submit, booking-checkout (Deno)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -63,8 +63,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno test --no-lock inquiry-submit/
-      - run: deno check --no-lock inquiry-submit/index.ts
+      - run: deno test --no-lock inquiry-submit/ booking-checkout/
+      - run: deno check --no-lock inquiry-submit/index.ts booking-checkout/index.ts
 
   deploy:
     name: Fly.io

@@ -195,3 +195,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [OFFEN] Absenderadresse der Buchungsbestätigung, Mail-Anbieter (Resend) und Domain
 - [OFFEN] Ob die Buchung mit Zahlung auch bei Park OS-Buchungen gilt; Park OS liefert eigene Buchungen (Schnittstelle/E-Mail noch offen)
 - [ANNAHME] Review-Notizen (landing 0.7.0): Markier-Werkzeug (Stift, Text, Element) nur im Dev-Server, nicht im Produktions-Build. Notizen als Dateien in `landing/review/` (`NOTES.md` für Claude Code, `notes.json`, Screenshots), Umsetzung mit `/review-umsetzen`. Markierungen beziehen sich auf die Bildschirmbreite beim Markieren; auf deutlich anderer Breite werden sie blass angezeigt. Der bisherige Review-Modus mit Supabase (`?review=<Token>`, 0.6.0) bleibt unverändert bestehen
+
+## Landingpage-Daten in der App (0.33.0)
+- [ANNAHME] Im Tarif enthaltene Leistungen (`booking_tariffs.included_services`): nur Premium bucht zusätzlich **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover). Die Reinigung aller Tarife deckt die Standard-Grundreinigung ab; „Grob-Reinigung“ (Cover, Business) ist keine eigene Leistung
+- [ANNAHME] Anfrage → Buchung: Parkplatz „egal“ wird Außen, Hol- & Bring geht vor Shuttle, ohne Transferwunsch „Selbst“. Aufbereitungswunsch und Nachricht landen in der Notiz (Umfang mit dem Kunden klären); Uhrzeiten fehlen in der Anfrage
+- [ANNAHME] Ein Online-Widerruf wird nur angezeigt; Stornieren und Erstatten entscheidet das Personal
