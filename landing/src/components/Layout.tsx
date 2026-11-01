@@ -1,9 +1,16 @@
 import { useEffect } from 'react'
 import { Link, Outlet, useLocation } from 'react-router'
+import { initIframeResize } from '../lib/iframe-resize'
 import { ReviewPanel } from './ReviewPanel'
 
 export function Layout() {
   const { pathname } = useLocation()
+
+  // Einmalig beim ersten Render starten; im iframe: Höhe an Jimdo melden
+  useEffect(() => {
+    initIframeResize()
+  }, [])
+
   // Effekt gibt bewusst nichts zurück: React erwartet undefined oder eine Aufräum-Funktion
   useEffect(() => {
     window.scrollTo(0, 0)

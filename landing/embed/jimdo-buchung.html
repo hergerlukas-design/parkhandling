@@ -1,0 +1,63 @@
+<!--
+  Park & Fly München – Jimdo Buchungs-Embed
+  ==========================================
+  Dieses Snippet in Jimdo einfügen:
+    Inhalt → Element hinzufügen → Widget / HTML → Code einfügen
+
+  Vor dem Einfügen die URL in Zeile 15 auf deine tatsächliche
+  Landing-Page-Adresse anpassen, z. B.:
+    https://parkhandling-landing.fly.dev/anfrage
+  oder deine eigene Domain:
+    https://buchen.park-fly-muenchen.de/anfrage
+
+  Optional: ?tarif=economy|space|business|premium vorauswählen,
+  z. B. …/anfrage?tarif=economy
+-->
+
+<div id="pf-booking-wrap" style="width:100%;position:relative;">
+  <iframe
+    id="pf-booking-frame"
+    src="https://parkhandling-landing.fly.dev/anfrage"
+    title="Jetzt buchen – Park & Fly München"
+    allow="payment"
+    referrerpolicy="no-referrer-when-downgrade"
+    style="
+      display: block;
+      width: 100%;
+      min-height: 800px;
+      border: none;
+      border-radius: 12px;
+      overflow: hidden;
+    "
+    loading="lazy"
+  ></iframe>
+</div>
+
+<script>
+(function () {
+  var frame = document.getElementById('pf-booking-frame');
+  if (!frame) return;
+
+  // UTM-Parameter von der aktuellen Jimdo-URL an den iframe weiterreichen
+  (function forwardUtm() {
+    var keys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    var params = new URLSearchParams(window.location.search);
+    var utmParts = [];
+    keys.forEach(function (k) {
+      if (params.has(k)) utmParts.push(k + '=' + encodeURIComponent(params.get(k)));
+    });
+    if (utmParts.length > 0) {
+      var src = frame.src;
+      frame.src = src + (src.indexOf('?') === -1 ? '?' : '&') + utmParts.join('&');
+    }
+  })();
+
+  // Automatische Höhenanpassung: Die Landing-App sendet ihre Scrollhöhe per postMessage
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'parkfly-resize') return;
+    var h = parseInt(e.data.height, 10);
+    if (isNaN(h) || h < 400) return;
+    frame.style.height = (h + 32) + 'px'; // +32px Puffer für Scrollleisten-Rounding
+  });
+})();
+</script>
