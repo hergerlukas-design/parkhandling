@@ -16,11 +16,11 @@ import {
   MAX_DAYS,
   MIN_DAYS,
   RETURN_OPTIONS,
-  INCLUDED_DAYS,
-  priceForDays,
+  type PriceTier,
+  TIER_LABEL,
   formatEuro,
   rentalDays,
-  bookableDays,
+  tierForDays,
 } from '../lib/booking'
 import { addDays, formatDateLongDE, todayInBerlin } from '../lib/dates'
 import { type PayPalActions, loadPayPal, paypalClientId, type PayPalNamespace } from '../lib/paypal'
@@ -127,6 +127,10 @@ function ConsentRow({
       )}
     </div>
   )
+}
+
+function priceForTier(t: Tariff, tier: PriceTier): number {
+  return tier === 'week' ? t.price_week : tier === 'holiday' ? t.price_holiday : t.price_month
 }
 
 export function BookingPage() {
@@ -243,7 +247,7 @@ export function BookingPage() {
   }, [clientId, tariffs, navigate])
 
   const days = useMemo(() => rentalDays(form), [form.arrival_date, form.pickup_date])
-  const pricedDays = days !== null && bookableDays(days) ? days : null
+  const tier = days !== null ? tierForDays(days) : null
   const selectedTariff = tariffs?.find((t) => t.code === form.tariff_code) ?? null
   const soldOut = (t: Tariff) => indoorFull === true && t.parking_type === 'indoor'
   // Mit Vorauswahl (Link „Jetzt buchen“ eines Tarifs) nur diesen und höherwertige Tarife anbieten.
@@ -371,7 +375,7 @@ export function BookingPage() {
             <p className="text-sm font-medium text-danger">
               {days < MIN_DAYS
                 ? `Online buchbar ab ${MIN_DAYS} Tagen. Bei kürzerer Dauer bitte direkt bei uns anfragen.`
-                : `Online buchbar bis höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt bei uns anfragen.`}
+                : `Der Monatstarif gilt höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt bei uns anfragen.`}
             </p>
           )}
         </Section>
@@ -417,10 +421,15 @@ export function BookingPage() {
                   </span>
                   <span className="text-sm text-ink-soft">{t.included_text}</span>
                   <span className="text-sm" data-testid={`price-${t.code}`}>
-                    {pricedDays !== null && <strong>{formatEuro(priceForDays(t, pricedDays))} </strong>}
-                    <span className={pricedDays !== null ? 'text-ink-soft' : undefined}>
-                      {formatEuro(t.base_price)} bis {INCLUDED_DAYS} Tage · {formatEuro(t.extra_day_price)} je weiterem Tag
-                    </span>
+                    {tier ? (
+                      <strong>{formatEuro(priceForTier(t, tier))} </strong>
+                    ) : (
+                      <span>
+                        {formatEuro(t.price_week)} (5–8 Tage) · {formatEuro(t.price_holiday)} (9–15) ·{' '}
+                        {formatEuro(t.price_month)} (16–30)
+                      </span>
+                    )}
+                    {tier && <span className="text-ink-soft">{TIER_LABEL[tier]}</span>}
                   </span>
                 </label>
               ))}
@@ -431,9 +440,9 @@ export function BookingPage() {
               {errors.tariff_code}
             </p>
           )}
-          {selectedTariff && pricedDays !== null && (
+          {selectedTariff && tier && (
             <p className="rounded-lg bg-paper px-3 py-2 text-sm" data-testid="total">
-              Gesamtpreis: <strong>{formatEuro(priceForDays(selectedTariff, pricedDays))}</strong>
+              Gesamtpreis: <strong>{formatEuro(priceForTier(selectedTariff, tier))}</strong>
             </p>
           )}
         </Section>

@@ -14,10 +14,9 @@ export interface Tariff {
   parking_type: 'indoor' | 'outdoor_cover' | 'outdoor'
   shuttle_text: string
   included_text: string
-  /** Grundpreis für bis zu 5 Tage */
-  base_price: number
-  /** Preis je weiterem Tag ab dem 6. Tag */
-  extra_day_price: number
+  price_week: number
+  price_holiday: number
+  price_month: number
 }
 
 export type FieldErrors = Partial<Record<string, string>>

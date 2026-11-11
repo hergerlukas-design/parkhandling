@@ -22,8 +22,6 @@ export const DEFAULT_BOOKING_ORIGINS = [
   'https://parkhandling-rechner.pplx.app',
   'https://parkhandling.fly.dev',
   'https://www.parkhandling.de',
-  // Landingpage im Repo (landing/, Fly-App parkhandling-landing) – nutzt create/capture/withdraw/resend
-  'https://parkhandling-landing.fly.dev',
 ]
 
 export function parseAllowedOrigins(raw: string | undefined | null): string[] {

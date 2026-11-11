@@ -184,12 +184,13 @@ gesperrte Stellplätze je Bereich (Halle, Außen A mit Plane, Außen B ohne Plan
 durch Komma getrennt; ohne Secret gilt die Standardliste aus `supabase/functions/_shared/cors.ts`:
 
 ```bash
-supabase secrets set BOOKING_ALLOWED_ORIGINS="https://parkhandling-rechner.pplx.app,https://parkhandling.fly.dev,https://www.parkhandling.de,https://parkhandling-landing.fly.dev"
+supabase secrets set BOOKING_ALLOWED_ORIGINS="https://parkhandling-rechner.pplx.app,https://parkhandling.fly.dev,https://www.parkhandling.de"
 supabase functions deploy booking-checkout --no-verify-jwt
 ```
 
-Für die lokale Entwicklung der Landingpage `http://localhost:5173` ergänzen (am Staging-Projekt). Die übrigen
-Edge Functions der App (`media-sign`, `protocol-mail`, …) sind davon nicht betroffen.
+Die Landingpage im Repo (`landing/`, `parkhandling-landing.fly.dev`) wird nicht mehr benutzt und steht nicht in der
+Liste; ihre Aufrufe werden damit abgelehnt. Die übrigen Edge Functions der App (`media-sign`, `protocol-mail`, …)
+sind davon nicht betroffen.
 
 ### Im Dashboard
 

@@ -32,8 +32,13 @@ export const FUEL_OPTIONS = [
   { value: 'hybrid', label: 'Hybrid' },
 ] as const
 
-/** So viele Tage deckt der Grundpreis ab; jeder weitere Tag kostet extra (wie in der Edge Function) */
-export const INCLUDED_DAYS = 5
+export type PriceTier = 'week' | 'holiday' | 'month'
+
+export const TIER_LABEL: Record<PriceTier, string> = {
+  week: 'Wochenpreis (5 bis 8 Tage)',
+  holiday: 'Ferienpreis (9 bis 15 Tage)',
+  month: 'Monatspreis (16 bis 30 Tage)',
+}
 
 export interface BookingForm {
   arrival_date: string
@@ -111,14 +116,11 @@ export function rentalDays(form: Pick<BookingForm, 'arrival_date' | 'pickup_date
   return days > 0 ? days : null
 }
 
-/** Online buchbar? (Mindest- und Höchstdauer) */
-export function bookableDays(days: number): boolean {
-  return days >= MIN_DAYS && days <= MAX_DAYS
-}
-
-/** Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag; maßgeblich ist die Berechnung des Servers */
-export function priceForDays(tariff: { base_price: number; extra_day_price: number }, days: number): number {
-  return Math.round((tariff.base_price + Math.max(0, days - INCLUDED_DAYS) * tariff.extra_day_price) * 100) / 100
+export function tierForDays(days: number): PriceTier | null {
+  if (days < MIN_DAYS || days > MAX_DAYS) return null
+  if (days <= 8) return 'week'
+  if (days <= 15) return 'holiday'
+  return 'month'
 }
 
 export function formatEuro(amount: number): string {
