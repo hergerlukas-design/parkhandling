@@ -136,4 +136,24 @@ describe('periodRange', () => {
     const data = buildToday([], [], [], range, now, [job])
     expect(data.alerts[0]).toMatchObject({ tone: 'danger', title: 'Shuttle 17:00 überbucht', href: '/shuttle' })
   })
+
+  it('meldet Website-Buchungen, die nach 24 Stunden noch unbezahlt sind', () => {
+    const website = (patch: Partial<BookingListItem>) =>
+      booking({ source: 'website', status: 'booked', payment_status: 'open', start_at: '2026-10-20T08:00:00Z', end_at: '2026-10-27T08:00:00Z', ...patch })
+    const old = website({ external_ref: 'PF-1A2B3C4D', received_at: '2026-10-05T08:00:00Z' })
+    const data = buildToday(
+      [
+        old,
+        website({ received_at: '2026-10-06T08:00:00Z' }), // erst seit 2 Stunden offen
+        website({ received_at: '2026-10-01T08:00:00Z', payment_status: 'paid' }),
+        website({ received_at: '2026-10-01T08:00:00Z', status: 'cancelled' }),
+        booking({ source: 'parkos', status: 'booked', payment_status: 'open', received_at: '2026-10-01T08:00:00Z', start_at: '2026-10-20T08:00:00Z', end_at: '2026-10-27T08:00:00Z' }),
+      ],
+      [], [], range, now,
+    )
+    const unpaid = data.alerts.filter((a) => a.title.includes('Website-Buchung unbezahlt'))
+    expect(unpaid).toHaveLength(1)
+    expect(unpaid[0]).toMatchObject({ tone: 'warn', title: `${old.plate} · Website-Buchung unbezahlt`, href: `/fahrzeuge/${old.id}` })
+    expect(unpaid[0].text).toContain('PF-1A2B3C4D')
+  })
 })

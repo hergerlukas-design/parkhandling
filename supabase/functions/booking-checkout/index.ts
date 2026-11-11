@@ -3,17 +3,29 @@
 //
 // Aktionen (POST, JSON mit "action"):
 //  * "tariffs"  → aktive Tarife mit Preisen (öffentlich)
-//  * "availability" → ist die Halle im Zeitraum voll? (Indoor-Tarife dann „Ausverkauft“)
+//  * "availability" → je Tarif: im Zeitraum frei? (dazu indoor_full für ältere Aufrufer)
 //  * "create"   → Formular prüfen, Betrag serverseitig berechnen, PayPal-Bestellung anlegen
 //  * "capture"  → Zahlung erfassen, prüfen, Buchung in bookings anlegen, Bestätigungsmail senden
+//  * "register" → Buchung aus dem Website-Rechner direkt anlegen (ohne PayPal-Order, Zahlung offen,
+//                 keine Mail); liefert Buchungsnummer und Betrag für form.taxi und paypal.me
+//  * "withdraw" / "resend" → Online-Widerruf, Bestätigung erneut senden
 //
 // Secrets: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_ENV (sandbox|live),
-//          MAIL_FROM, RESEND_API_KEY (für die Bestätigung), optional INQUIRY_IP_SALT
+//          MAIL_FROM, RESEND_API_KEY (für die Bestätigung), optional INQUIRY_IP_SALT,
+//          BOOKING_ALLOWED_ORIGINS (erlaubte Herkünfte für CORS, durch Komma getrennt)
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { corsHeaders, json } from '../_shared/cors.ts'
+import { bookingCorsHeaders, json, originAllowed, parseAllowedOrigins, withBookingCors } from '../_shared/cors.ts'
 import { mailerFromEnv } from '../_shared/mailer.ts'
 import {
+  areaFullMessage,
   berlinToUtcIso,
+  chargingDescription,
+  CHECKOUT_RULES,
+  normalizeRegisterInput,
+  REGISTER_RULES,
+  registerRow,
+  type ValidationOptions,
+  WEBSITE_SOURCE,
   type BookingInput,
   isIsoDate,
   bookingRefFor,
@@ -82,6 +94,8 @@ function publicTariff(t: TariffRow) {
     parking_type: t.parking_type,
     shuttle_text: t.shuttle_text,
     included_text: t.included_text,
+    base_price: Number(t.base_price),
+    extra_day_price: Number(t.extra_day_price),
     price_week: Number(t.price_week),
     price_holiday: Number(t.price_holiday),
     price_month: Number(t.price_month),
@@ -92,11 +106,18 @@ async function handleTariffs() {
   return json({ tariffs: (await loadTariffs()).map(publicTariff) })
 }
 
-/** Halle im Zeitraum voll? (Anreise/Abholung als Berliner Ortszeit) */
-async function indoorFull(arrivalDate: string, arrivalTime: string, pickupDate: string, pickupTime: string): Promise<boolean> {
-  const { data, error } = await admin.rpc('indoor_full', {
+/** Bereich (indoor / outdoor_cover / outdoor) im Zeitraum voll? (Anreise/Abholung als Berliner Ortszeit) */
+async function areaFull(
+  parkingType: string,
+  arrivalDate: string,
+  arrivalTime: string,
+  pickupDate: string,
+  pickupTime: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc('area_full', {
     p_start: berlinToUtcIso(arrivalDate, arrivalTime),
     p_end: berlinToUtcIso(pickupDate, pickupTime),
+    p_parking_type: parkingType,
   })
   if (error) throw error
   return data === true
@@ -109,13 +130,30 @@ async function handleAvailability(body: { form?: Partial<BookingInput> }) {
   const times = [f.arrival_time, f.pickup_time].map((t) => (typeof t === 'string' && time.test(t) ? t : ''))
   if (!dates.every(isIsoDate) || !times.every(Boolean) || dates[1] <= dates[0])
     return json({ error: 'Zeitraum unvollständig.' }, 422)
-  return json({ indoor_full: await indoorFull(dates[0], times[0], dates[1], times[1]) })
+  const tariffs = await loadTariffs()
+  const types = [...new Set(['indoor', ...tariffs.map((t) => t.parking_type)])]
+  const full = Object.fromEntries(
+    await Promise.all(types.map(async (type) => [type, await areaFull(type, dates[0], times[0], dates[1], times[1])] as const)),
+  )
+  return json({
+    tariffs: tariffs.map((t) => ({ code: t.code, available: !full[t.parking_type] })),
+    // Abwärtskompatibel: ältere Aufrufer werten nur die Halle aus
+    indoor_full: full.indoor,
+  })
 }
 
-async function handleCreate(req: Request, body: { form?: BookingInput }) {
-  const paypalConfig = paypalConfigFromEnv(Deno.env)
-  if (!paypalConfig) return json({ error: 'Die Online-Zahlung ist derzeit nicht verfügbar.' }, 503)
-
+/**
+ * Gemeinsame Prüfung für create und register: Rate-Limit, Validierung (Honeypot, Vorlauf,
+ * Mindestdauer), Betrag serverseitig, Kapazität des Bereichs. Liefert die geprüfte Buchung
+ * oder die fertige Fehlerantwort.
+ */
+async function prepareBooking(
+  req: Request,
+  body: { form?: BookingInput },
+  /** Läuft nach der Validierung und vor der Kapazitätsprüfung; eine Antwort beendet die Prüfung */
+  beforeCapacity?: (value: NormalizedBooking, tariff: TariffRow) => Promise<Response | null>,
+  rules: ValidationOptions = CHECKOUT_RULES,
+): Promise<{ value: NormalizedBooking; tariff: TariffRow; ipHash: string } | Response> {
   const ipHash = `booking:${await hashIp(clientIp(req))}`
   const { data: allowed, error: rateErr } = await admin.rpc('inquiry_rate_check', {
     p_ip_hash: ipHash,
@@ -132,18 +170,27 @@ async function handleCreate(req: Request, body: { form?: BookingInput }) {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date())
-  const { errors, value } = validateBooking(body.form ?? ({} as BookingInput), today, tariffs)
+  const { errors, value } = validateBooking(body.form ?? ({} as BookingInput), today, tariffs, new Date().toISOString(), rules)
   if (!value) return json({ error: 'Bitte die markierten Felder prüfen.', fields: errors }, 422)
 
   const tariff = tariffs.find((t) => t.code === value.tariff_code)!
-  if (tariff.parking_type === 'indoor' && (await indoorFull(value.arrival_date, value.arrival_time, value.pickup_date, value.pickup_time)))
+  const early = await beforeCapacity?.(value, tariff)
+  if (early) return early
+  if (await areaFull(tariff.parking_type, value.arrival_date, value.arrival_time, value.pickup_date, value.pickup_time))
     return json(
-      {
-        error: 'Bitte die markierten Felder prüfen.',
-        fields: { tariff_code: 'Die Halle ist im gewählten Zeitraum ausgebucht. Bitte einen anderen Tarif oder Zeitraum wählen.' },
-      },
+      { error: 'Bitte die markierten Felder prüfen.', fields: { tariff_code: areaFullMessage(tariff.parking_type) } },
       422,
     )
+  return { value, tariff, ipHash }
+}
+
+async function handleCreate(req: Request, body: { form?: BookingInput }) {
+  const paypalConfig = paypalConfigFromEnv(Deno.env)
+  if (!paypalConfig) return json({ error: 'Die Online-Zahlung ist derzeit nicht verfügbar.' }, 503)
+
+  const prepared = await prepareBooking(req, body)
+  if (prepared instanceof Response) return prepared
+  const { value, tariff } = prepared
 
   const { data: checkout, error: insErr } = await admin
     .from('booking_checkouts')
@@ -174,6 +221,69 @@ async function handleCreate(req: Request, body: { form?: BookingInput }) {
   await admin.from('booking_checkouts').update({ paypal_order_id: orderId, updated_at: new Date().toISOString() }).eq('id', checkout.id)
 
   return json({ checkout_id: checkout.id, paypal_order_id: orderId, amount: value.amount })
+}
+
+/** Wiederholtes Absenden (Doppelklick, Netzwerk-Wiederholung) innerhalb dieser Zeit legt keine zweite Buchung an */
+const REGISTER_DEDUPE_MS = 15 * 60 * 1000
+
+/**
+ * Buchung aus dem Website-Rechner: direkt in bookings (Quelle „website“, Zahlung offen).
+ * Keine PayPal-Order und keine Mail – der Rechner sendet weiter über form.taxi und öffnet paypal.me
+ * mit dem hier gelieferten Betrag.
+ */
+async function handleRegister(req: Request, body: { form?: BookingInput }) {
+  // Wiederholung zuerst erkennen: sonst könnte die eigene erste Buchung den Bereich „voll“ machen
+  // Formular des Rechners: Datums-/Zeitformate, ein Feld für beide Flugnummern, Standardwerte
+  const form = normalizeRegisterInput(body.form ?? {})
+  const prepared = await prepareBooking(req, { form }, registeredRecently, REGISTER_RULES)
+  if (prepared instanceof Response) return prepared
+  const { value, tariff } = prepared
+
+  // Die ID wird vorab vergeben, damit die PF-Nummer als external_ref gespeichert wird.
+  // (source, external_ref) ist eindeutig; trifft die Nummer eine vorhandene, wird neu gewürfelt.
+  let bookingId = ''
+  for (let attempt = 0; ; attempt++) {
+    bookingId = crypto.randomUUID()
+    const { error } = await admin.from('bookings').insert(registerRow(value, tariff, bookingId, AGB_VERSION))
+    if (!error) break
+    if (error.code !== '23505' || attempt >= 2) throw error
+  }
+
+  if (value.charging) {
+    // Leistung „Laden“ buchen → Aufgabe „Laden“ (Trigger). Der Betrag bleibt unverändert.
+    const { data: service } = await admin.from('services').select('id').eq('code', 'LADEN').eq('active', true).maybeSingle()
+    const { error: svcErr } = service
+      ? await admin
+          .from('booking_services')
+          .upsert(
+            { booking_id: bookingId, service_id: service.id, description: chargingDescription(value) },
+            { onConflict: 'booking_id,service_id' },
+          )
+      : { error: { message: 'Leistung LADEN fehlt oder ist inaktiv' } }
+    // Die Buchung steht bereits; der Ladewunsch steht zusätzlich in der Notiz
+    if (svcErr) console.error('register: charging service not booked', bookingId, svcErr.message)
+  }
+
+  return json({ booking_ref: bookingRefFor(bookingId), amount: value.amount })
+}
+
+/** Dieselbe Buchung (Kennzeichen, E-Mail, Zeitraum, Tarif) kurz zuvor schon registriert? Dann deren Nummer liefern. */
+async function registeredRecently(value: NormalizedBooking, tariff: TariffRow): Promise<Response | null> {
+  const { data: recent } = await admin
+    .from('bookings')
+    .select('id, price_total')
+    .eq('source', WEBSITE_SOURCE)
+    .eq('plate', value.plate)
+    .ilike('customer_email', escapeLike(value.email))
+    .eq('start_at', berlinToUtcIso(value.arrival_date, value.arrival_time))
+    .eq('end_at', berlinToUtcIso(value.pickup_date, value.pickup_time))
+    .eq('tariff_code', tariff.code)
+    .neq('status', 'cancelled')
+    .gte('received_at', new Date(Date.now() - REGISTER_DEDUPE_MS).toISOString())
+    .order('received_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return recent ? json({ booking_ref: bookingRefFor(recent.id), amount: Number(recent.price_total), duplicate: true }) : null
 }
 
 async function bookingRef(id: string): Promise<string> {
@@ -502,8 +612,19 @@ async function sendWithdrawalMails(
   }
 }
 
+const allowedOrigins = parseAllowedOrigins(Deno.env.get('BOOKING_ALLOWED_ORIGINS'))
+
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const origin = req.headers.get('origin')
+  // Preflight: Allow-Origin nur für freigegebene Herkünfte, sonst lehnt der Browser ab
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: bookingCorsHeaders(origin, allowedOrigins) })
+  // Browser-Anfragen fremder Seiten auch serverseitig ablehnen (ohne Origin: Server-zu-Server, Tests)
+  if (origin !== null && !originAllowed(origin, allowedOrigins))
+    return withBookingCors(json({ error: 'Herkunft nicht erlaubt' }, 403), origin, allowedOrigins)
+  return withBookingCors(await handle(req), origin, allowedOrigins)
+})
+
+async function handle(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'Methode nicht erlaubt' }, 405)
 
   let body: {
@@ -528,6 +649,8 @@ Deno.serve(async (req) => {
         return await handleCreate(req, body)
       case 'capture':
         return await handleCapture(body)
+      case 'register':
+        return await handleRegister(req, body)
       case 'withdraw':
         return await handleWithdraw(req, body)
       case 'resend':
@@ -539,4 +662,4 @@ Deno.serve(async (req) => {
     console.error('booking-checkout failed', err instanceof Error ? err.message : err)
     return json({ error: 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.' }, 500)
   }
-})
+}

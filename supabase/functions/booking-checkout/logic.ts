@@ -1,27 +1,39 @@
 // Reine Logik der Online-Buchung (ohne Deno-/Supabase-Abhängigkeiten, damit testbar).
-// Regeln laut Preiskategorien-Vorlage und ANNAHMEN.md (Landingpage, Stufe 2):
-//  * Dauer in Kalendertagen zwischen Anreise und Abholung
-//  * 5–8 Tage → Wochenpreis, 9–15 → Ferienpreis, 16–30 → Monatspreis; sonst keine Online-Buchung
-//  * Preise brutto in EUR (Annahme, noch zu bestätigen)
+// Regeln (Preismodell der Website, ANNAHMEN.md):
+//  * Dauer wie im Website-Rechner: Anreise- und Abreisetag zählen jeweils als voller Tag
+//    (Abholdatum − Anreisedatum + 1, Uhrzeiten zählen nicht)
+//  * Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag; Mindestdauer 5, höchstens 30 Tage
+//  * Preise brutto in EUR
 
 export const TIME_ZONE = 'Europe/Berlin'
 export const MIN_DAYS = 5
 export const MAX_DAYS = 30
+/** So viele Tage deckt der Grundpreis ab; jeder weitere Tag kostet extra_day_price */
+export const INCLUDED_DAYS = 5
 export const MAX_ADVANCE_DAYS = 365
 /** Online buchbar bis so viele Stunden vor der Anreise */
 export const MIN_LEAD_HOURS = 12
 /** Widerrufsfrist in Tagen (AGB Ziffer 12.2 / Belehrung) */
 export const WITHDRAWAL_DAYS = 14
 
-export const MAX_CHILD_SEATS = 3
+export const MAX_CHILD_SEATS = 5
 export const MAX_LUGGAGE = 30
-export const LIMITS = { plate: 15, name: 100, company: 100, email: 254, phone: 30, vehicle: 60, notes: 1000 }
+export const LIMITS = { plate: 15, name: 100, company: 100, email: 254, phone: 30, vehicle: 60, notes: 1000, chargingTarget: 40 }
 
 export const RETURN_MODES = ['shuttle', 'pickup_delivery', 'self'] as const
 export const FUEL_TYPES = ['combustion', 'electric', 'hybrid'] as const
 export type ReturnMode = (typeof RETURN_MODES)[number]
 export type FuelType = (typeof FUEL_TYPES)[number]
-export type Tier = 'week' | 'holiday' | 'month'
+export const LANGUAGES = ['de', 'en'] as const
+export type Language = (typeof LANGUAGES)[number]
+
+/** Tarif-Codes, die der Website-Rechner anders nennt (?tarif=carcover → space) */
+export const TARIFF_ALIASES: Record<string, string> = { carcover: 'space' }
+
+export function normalizeTariffCode(code: unknown): string {
+  const c = typeof code === 'string' ? code.trim().toLowerCase() : ''
+  return TARIFF_ALIASES[c] ?? c
+}
 
 export interface TariffRow {
   code: string
@@ -29,9 +41,14 @@ export interface TariffRow {
   parking_type: 'indoor' | 'outdoor_cover' | 'outdoor'
   shuttle_text: string
   included_text: string
-  price_week: number
-  price_holiday: number
-  price_month: number
+  /** Grundpreis für bis zu 5 Tage */
+  base_price: number
+  /** Preis je weiterem Tag ab dem 6. Tag */
+  extra_day_price: number
+  /** Altes Modell nach Dauerklassen, nicht mehr genutzt */
+  price_week?: number
+  price_holiday?: number
+  price_month?: number
   active: boolean
   sort_order: number
 }
@@ -65,6 +82,12 @@ export interface BookingInput {
   flight_return: string
   child_seats: number | string
   luggage: number | string
+  /** Laden gewünscht (Website-Rechner); Abrechnung bei Rückgabe, der Betrag ändert sich nicht */
+  charging?: boolean | string
+  /** Ladeziel, z. B. „80 %“ */
+  charging_target?: string | number
+  /** Sprache des Kunden: de | en */
+  language?: string
   /** Honeypot – muss leer sein */
   website: string
 }
@@ -88,14 +111,78 @@ export interface NormalizedBooking {
   return_mode: ReturnMode
   notes: string | null
   days: number
-  tier: Tier
   amount: number
   early_start: boolean
   flight_outbound: string | null
   flight_return: string | null
   child_seats: number
   luggage: number
+  charging?: boolean
+  charging_target?: string | null
+  language?: Language | null
+  /** Anreise innerhalb der Widerrufsfrist, aber keine ausdrückliche Zustimmung übermittelt (nur register) */
+  early_start_unconfirmed?: boolean
   accepted_at: string
+}
+
+/** Prüfregeln: checkout = Landingpage (streng), register = Website-Rechner (an dessen Formular angepasst) */
+export interface ValidationOptions {
+  /** Shuttle verlangt beide Flugnummern (Rechner: freiwillig, fehlende werden in der Notiz vermerkt) */
+  requireFlights: boolean
+  /** Anreise innerhalb von 14 Tagen verlangt das Häkchen consent_early_start (Rechner hat es nicht) */
+  requireEarlyStartConsent: boolean
+}
+
+export const CHECKOUT_RULES: ValidationOptions = { requireFlights: true, requireEarlyStartConsent: true }
+export const REGISTER_RULES: ValidationOptions = { requireFlights: false, requireEarlyStartConsent: false }
+
+/** Zusätzliche Felder, die der Website-Rechner so sendet */
+export interface RegisterExtras {
+  /** Ein gemeinsames Feld für beide Flüge, z. B. „LH 2020 / LH 2021“ */
+  flights?: string
+}
+
+/** „TT.MM.JJJJ“ oder „JJJJ-MM-TT“ → „JJJJ-MM-TT“; sonst unverändert (die Prüfung meldet den Fehler) */
+export function normalizeDate(value: unknown): string {
+  const v = typeof value === 'string' ? value.trim() : ''
+  const de = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v)
+  if (de) return `${de[3]}-${de[2].padStart(2, '0')}-${de[1].padStart(2, '0')}`
+  return v.slice(0, 10)
+}
+
+/** „9:00“, „09:00 Uhr“, „09:00:00“ → „09:00“; sonst unverändert */
+export function normalizeTime(value: unknown): string {
+  const v = typeof value === 'string' ? value.trim() : ''
+  const m = /^(\d{1,2})[:.](\d{2})(?::\d{2})?(?:\s*uhr)?$/i.exec(v)
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : v
+}
+
+/** „LH 2020 / LH 2021“ → [„LH 2020“, „LH 2021“] (Trenner: / , ; oder „und“) */
+export function splitFlights(value: unknown): [string, string] {
+  const v = typeof value === 'string' ? value.trim() : ''
+  const parts = v.split(/\s*(?:\/|,|;|\bund\b|\band\b)\s*/i).filter(Boolean)
+  return [parts[0] ?? '', parts[1] ?? '']
+}
+
+/**
+ * Eingaben des Website-Rechners vereinheitlichen, bevor sie geprüft werden: Datums- und Zeitformate,
+ * ein gemeinsames Flugnummern-Feld, fehlende Personen (1) und Gepäckstücke (0).
+ */
+export function normalizeRegisterInput(input: Partial<BookingInput> & RegisterExtras): BookingInput {
+  const f = { ...input } as BookingInput & RegisterExtras
+  f.arrival_date = normalizeDate(f.arrival_date)
+  f.pickup_date = normalizeDate(f.pickup_date)
+  f.arrival_time = normalizeTime(f.arrival_time)
+  f.pickup_time = normalizeTime(f.pickup_time)
+  const blank = (v: unknown) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
+  if (blank(f.flight_outbound) && blank(f.flight_return) && !blank(f.flights)) {
+    ;[f.flight_outbound, f.flight_return] = splitFlights(f.flights)
+  }
+  if (blank(f.persons)) f.persons = 1
+  if (blank(f.luggage)) f.luggage = 0
+  if (blank(f.child_seats)) f.child_seats = 0
+  for (const k of ['company', 'phone', 'vehicle_model', 'fuel_type', 'notes', 'website'] as const) if (blank(f[k])) f[k] = ''
+  return f
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -123,20 +210,25 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((b - a) / 86_400_000)
 }
 
+/** Berechnete Tage wie im Website-Rechner: Anreise- und Abreisetag zählen jeweils als voller Tag */
+export function rentalDays(arrival: string, pickup: string): number {
+  return daysBetween(arrival, pickup) + 1
+}
+
 /** Heutiges Datum in Europe/Berlin als YYYY-MM-DD */
 export function todayInBerlin(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
-export function tierForDays(days: number): Tier | null {
-  if (days < MIN_DAYS || days > MAX_DAYS) return null
-  if (days <= 8) return 'week'
-  if (days <= 15) return 'holiday'
-  return 'month'
+/** Online buchbar? (Mindest- und Höchstdauer) */
+export function bookableDays(days: number): boolean {
+  return Number.isInteger(days) && days >= MIN_DAYS && days <= MAX_DAYS
 }
 
-export function priceFor(tariff: Pick<TariffRow, 'price_week' | 'price_holiday' | 'price_month'>, tier: Tier): number {
-  return tier === 'week' ? tariff.price_week : tier === 'holiday' ? tariff.price_holiday : tariff.price_month
+/** Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag, auf Cent gerundet */
+export function priceFor(tariff: Pick<TariffRow, 'base_price' | 'extra_day_price'>, days: number): number {
+  const extra = Math.max(0, days - INCLUDED_DAYS)
+  return Math.round((Number(tariff.base_price) + extra * Number(tariff.extra_day_price)) * 100) / 100
 }
 
 /** Wandzeit in Berlin zu einem UTC-Zeitpunkt → Offset in Minuten */
@@ -173,6 +265,7 @@ export function validateBooking(
   today: string,
   tariffs: TariffRow[],
   acceptedAt: string = new Date().toISOString(),
+  rules: ValidationOptions = CHECKOUT_RULES,
 ): { errors: BookingErrors; value: NormalizedBooking | null } {
   const e: BookingErrors = {}
   const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
@@ -200,13 +293,13 @@ export function validateBooking(
 
   let days = 0
   if (isIsoDate(input.arrival_date) && isIsoDate(input.pickup_date)) {
-    days = daysBetween(input.arrival_date, input.pickup_date)
+    days = rentalDays(input.arrival_date, input.pickup_date)
     if (days <= 0) e.pickup_date = 'Die Abholung muss nach der Anreise liegen.'
     else if (days < MIN_DAYS) e.pickup_date = `Online buchbar ab ${MIN_DAYS} Tagen. Bei kürzerer Dauer bitte direkt anfragen.`
-    else if (days > MAX_DAYS) e.pickup_date = `Der Monatstarif gilt höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt anfragen.`
+    else if (days > MAX_DAYS) e.pickup_date = `Online buchbar bis höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt anfragen.`
   }
 
-  const tariff = tariffs.find((t) => t.code === str(input.tariff_code) && t.active)
+  const tariff = tariffs.find((t) => t.code === normalizeTariffCode(input.tariff_code) && t.active)
   if (!tariff) e.tariff_code = 'Bitte einen Tarif wählen.'
 
   const plate = str(input.plate).toUpperCase()
@@ -250,13 +343,14 @@ export function validateBooking(
   // Anreise innerhalb der Widerrufsfrist: Leistungsbeginn nur mit ausdrücklicher Zustimmung
   const earlyStart =
     isIsoDate(input.arrival_date) && input.arrival_date >= today && daysBetween(today, input.arrival_date) < WITHDRAWAL_DAYS
-  if (earlyStart && input.consent_early_start !== true)
+  const earlyConsent = input.consent_early_start === true
+  if (earlyStart && !earlyConsent && rules.requireEarlyStartConsent)
     e.consent_early_start = 'Bitte der Leistung vor Ablauf der Widerrufsfrist ausdrücklich zustimmen.'
 
   const flightOut = str(input.flight_outbound)
   const flightBack = str(input.flight_return)
   const flightRe = /^[A-Za-z0-9 \-]{2,20}$/
-  if (ret === 'shuttle') {
+  if (ret === 'shuttle' && rules.requireFlights) {
     if (!flightRe.test(flightOut)) e.flight_outbound = 'Bitte die Flugnummer des Hinflugs angeben (z. B. LH 1234).'
     if (!flightRe.test(flightBack)) e.flight_return = 'Bitte die Flugnummer des Rückflugs angeben (z. B. LH 1235).'
   } else {
@@ -272,10 +366,17 @@ export function validateBooking(
   if (input.luggage === '' || input.luggage == null || !Number.isInteger(luggage) || luggage < 0 || luggage > MAX_LUGGAGE)
     e.luggage = `Bitte die Anzahl der Gepäckstücke angeben (0 bis ${MAX_LUGGAGE}).`
 
+  const charging = input.charging === true || (typeof input.charging === 'string' && /^(true|1|ja|yes)$/i.test(input.charging.trim()))
+  const chargingTarget =
+    typeof input.charging_target === 'number' ? `${input.charging_target} %` : str(input.charging_target)
+  if (chargingTarget.length > LIMITS.chargingTarget) e.charging_target = `Höchstens ${LIMITS.chargingTarget} Zeichen.`
+
+  const language = str(input.language).toLowerCase()
+  if (language && !(LANGUAGES as readonly string[]).includes(language)) e.language = 'Ungültige Auswahl.'
+
   if (Object.keys(e).length > 0 || !tariff) return { errors: e, value: null }
 
-  const tier = tierForDays(days)
-  if (!tier) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
+  if (!bookableDays(days)) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
 
   return {
     errors: {},
@@ -296,13 +397,16 @@ export function validateBooking(
       return_mode: ret as ReturnMode,
       notes: notes || null,
       days,
-      tier,
-      amount: priceFor(tariff, tier),
+      amount: priceFor(tariff, days),
       early_start: earlyStart,
       flight_outbound: flightOut || null,
       flight_return: flightBack || null,
       child_seats: childSeats,
       luggage,
+      charging,
+      charging_target: charging ? chargingTarget || null : null,
+      language: (language || null) as Language | null,
+      early_start_unconfirmed: earlyStart && !earlyConsent,
       accepted_at: acceptedAt,
     },
   }
@@ -330,8 +434,18 @@ export function bookingRow(
   const notes = [
     value.notes,
     `Kindersitze: ${value.child_seats} · Gepäckstücke: ${value.luggage}`,
+    value.charging
+      ? `Laden: ja${value.charging_target ? ` · Ladeziel: ${value.charging_target}` : ''} (${CHARGING_BILLING_NOTE})`
+      : null,
     `AGB ${agbVersion} akzeptiert (${value.accepted_at}), Widerrufsbelehrung zur Kenntnis genommen`,
-    `Vorzeitiger Leistungsbeginn: ${value.early_start ? 'ausdrücklich zugestimmt' : 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'}`,
+    shuttle && (!value.flight_outbound || !value.flight_return) ? 'Flugnummern fehlen – bitte beim Kunden erfragen' : null,
+    `Vorzeitiger Leistungsbeginn: ${
+      !value.early_start
+        ? 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'
+        : value.early_start_unconfirmed
+          ? 'Anreise innerhalb der Widerrufsfrist, keine ausdrückliche Zustimmung übermittelt'
+          : 'ausdrücklich zugestimmt'
+    }`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -357,8 +471,45 @@ export function bookingRow(
     status: 'booked',
     price_total: value.amount,
     payment_status: 'paid',
+    customer_language: value.language ?? null,
     notes,
   }
+}
+
+/** Abrechnung des Ladens bei Rückgabe; der Buchungsbetrag enthält es nicht */
+export const CHARGING_BILLING_NOTE = 'Abrechnung bei Rückgabe: 0,69 €/kWh + 10,00 € je Ladevorgang'
+
+/** Quelle der Buchungen aus dem Website-Rechner (register) */
+export const WEBSITE_SOURCE = 'website'
+
+/**
+ * Zeile für bookings aus dem Website-Rechner (Aktion register): ohne PayPal-Order, Zahlung offen.
+ * Die Buchungs-ID wird vorab vergeben, damit die PF-Nummer als external_ref gespeichert werden kann.
+ */
+export function registerRow(
+  value: NormalizedBooking,
+  tariff: Pick<TariffRow, 'code' | 'parking_type'>,
+  id: string,
+  agbVersion: string,
+  receivedAt: string = new Date().toISOString(),
+) {
+  return {
+    ...bookingRow(value, tariff, bookingRefFor(id), agbVersion, receivedAt),
+    id,
+    source: WEBSITE_SOURCE,
+    payment_status: 'open',
+  }
+}
+
+/** Beschreibung der gebuchten Leistung „Laden“ */
+export function chargingDescription(value: Pick<NormalizedBooking, 'charging_target'>): string {
+  return [value.charging_target ? `Ladeziel: ${value.charging_target}` : null, CHARGING_BILLING_NOTE].filter(Boolean).join(' · ')
+}
+
+/** Meldung, wenn der Bereich des Tarifs im Zeitraum ausgebucht ist */
+export function areaFullMessage(parkingType: TariffRow['parking_type']): string {
+  const area = parkingType === 'indoor' ? 'Die Halle ist' : parkingType === 'outdoor_cover' ? 'Der Außenbereich mit Plane ist' : 'Der Außenbereich ist'
+  return `${area} im gewählten Zeitraum ausgebucht. Bitte einen anderen Tarif oder Zeitraum wählen.`
 }
 
 const RETURN_LABEL: Record<ReturnMode, string> = {

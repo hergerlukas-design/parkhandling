@@ -3,6 +3,28 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.34.0 – 11.11.2026
+
+### Neu
+- **Buchungen aus dem Website-Rechner im Dashboard.** Der Rechner meldet jede Buchung vor form.taxi und paypal.me an die Edge Function `booking-checkout` (neue Aktion `register`). Die Buchung steht sofort in der Fahrzeugliste mit dem Kennzeichen **Website**, der Buchungsnummer **PF-XXXXXXXX** und Zahlung **Offen**
+- **Zahlung erhalten:** Knopf im Fahrzeug-Detail (Admin/Personal) setzt die Zahlung auf „Bezahlt“; der Wechsel steht im Verlauf
+- **Braucht Aufmerksamkeit:** Website-Buchungen, deren Zahlung nach 24 Stunden noch offen ist
+- **Laden aus dem Rechner:** Mit Ladewunsch wird die Leistung „Laden“ gebucht (Aufgabe „Laden“, Ladeziel in der Beschreibung). Der Buchungsbetrag bleibt unverändert, abgerechnet wird bei Rückgabe (0,69 €/kWh + 10,00 € je Ladevorgang)
+- **Kapazität für alle Bereiche:** Halle, Außen A (mit Plane) und Außen B (ohne Plane). `availability` meldet je Tarif `available`; `create` und `register` lehnen ausgebuchte Tarife ab
+- PF-Nummer auch bei früheren Buchungen der Landingpage in Liste und Detail sichtbar
+
+### Geändert
+- **Preismodell wie auf der Website:** Grundpreis bis 5 Tage plus Preis je weiterem Tag (Economy 49,00 / 7,50 · CarCover 59,00 / 9,00 · Business 89,00 / 12,50 · Premium 98,00 / 14,00). Gilt für alle Aktionen der Edge Function (`register`, `create`)
+- Tarif „Cover“ heißt **CarCover** (Code bleibt `space`, `carcover` wird als Alias akzeptiert)
+- Kindersitze online 0 bis 5 (vorher 0 bis 3)
+- **An das Formular des Rechners angepasst** (`register`): Anreise- und Abreisetag zählen jeweils als voller Tag (wie im Rechner), ein gemeinsames Feld `flights` für beide Flugnummern, Datum auch als `TT.MM.JJJJ`. Fehlende Flugnummern und die fehlende Zustimmung zum frühen Leistungsbeginn (gibt es im Rechner nicht) blockieren die Buchung nicht mehr, sondern stehen in der Notiz. Pflicht bleiben Zeitraum, Tarif, Kennzeichen, Name, E-Mail und die drei Zustimmungen
+- `booking-checkout` antwortet nur noch freigegebenen Herkünften (Secret `BOOKING_ALLOWED_ORIGINS`), nicht mehr `*`
+- **Die Landingpage (`landing/`) wird nicht mehr benutzt:** Gebucht wird nur noch über den Website-Rechner und form.taxi. Ihre Adresse steht nicht in der Liste der Herkünfte, ihr Code bleibt unverändert im Repo
+
+### Datenbank
+- Migration `20261111000100_website_register.sql` (additiv): `booking_tariffs.base_price` und `extra_day_price` mit den Preisen der Website, Name „CarCover“, RPC `area_full(p_start, p_end, p_parking_type)`. `price_week/holiday/month` und `indoor_full` bleiben bestehen
+- Edge Function `booking-checkout` neu ausrollen (`--no-verify-jwt`), Secret `BOOKING_ALLOWED_ORIGINS` setzen. Feldliste für den Rechner: README, Abschnitt „Website-Rechner“
+
 ## 0.33.0 – 29.10.2026
 
 ### Neu

@@ -107,6 +107,98 @@ Ereignisse, Empfänger und Vorlaufzeiten stellen Admins unter *Einstellungen →
 dort stehen auch die angemeldeten Geräte und die letzten 50 Meldungen mit Status. Ohne Schritt 1–4 läuft
 die App unverändert, Meldungen bleiben dann nur in der Outbox liegen.
 
+## Website-Rechner: Buchungen ins Dashboard (`booking-checkout`, Aktion `register`)
+
+Der externe Rechner (`https://parkhandling-rechner.pplx.app/?tarif=economy|carcover|business|premium`) sendet
+Buchungen weiter per form.taxi und öffnet danach paypal.me. **Davor** meldet er die Buchung an die Edge Function
+`booking-checkout`. Sie prüft die Angaben, berechnet den Betrag, prüft die Kapazität und legt die Buchung im
+Dashboard an (Quelle „Website“, Zahlung „Offen“). Das Backend versendet dafür keine Mail und legt keine
+PayPal-Order an.
+
+```
+POST https://<projekt>.supabase.co/functions/v1/booking-checkout
+Content-Type: application/json
+apikey: <anon key>            Authorization: Bearer <anon key>
+
+{ "action": "register", "form": { … } }
+```
+
+Antwort `200`: `{ "booking_ref": "PF-1A2B3C4D", "amount": 64.00 }`. Der Rechner verwendet **diesen** Betrag
+und diese Nummer für form.taxi und `paypal.me/CarHandling/{amount}EUR`. Wird dieselbe Buchung (Kennzeichen,
+E-Mail, Zeitraum, Tarif) innerhalb von 15 Minuten erneut gesendet, kommt dieselbe Nummer mit
+`"duplicate": true` zurück; es entsteht keine zweite Buchung.
+
+Fehler: `422` mit `{ "error": "…", "fields": { "<feldname>": "Meldung" } }` (Eingaben; ausgebuchter Bereich als
+Feldfehler `tariff_code`), `429` (mehr als 10 Versuche je Stunde und IP), `403` (Herkunft nicht freigegeben).
+
+### Felder in `form` (finale Liste)
+
+| Feld | Typ / Werte | Pflicht | Hinweis |
+|---|---|---|---|
+| `arrival_date` | `YYYY-MM-DD` (auch `TT.MM.JJJJ`) | ja | nicht in der Vergangenheit, höchstens 365 Tage voraus |
+| `arrival_time` | `HH:MM` (24 h, Berliner Zeit; auch `9:00`, `09:00 Uhr`) | ja | Anreise frühestens 12 Stunden nach dem Absenden |
+| `pickup_date` | wie `arrival_date` | ja | 5 bis 30 berechnete Tage (Anreise- und Abreisetag zählen voll) |
+| `pickup_time` | `HH:MM` | ja | |
+| `tariff_code` | `economy` \| `carcover` \| `business` \| `premium` | ja | `carcover` ist ein Alias für `space` (beide gültig) |
+| `plate` | Text, höchstens 15 Zeichen | ja | wird in Großbuchstaben gespeichert |
+| `first_name`, `last_name` | Text, je höchstens 100 Zeichen | ja | |
+| `email` | E-Mail | ja | |
+| `phone` | Ziffern, Leerzeichen, `+ ( ) / -`, 5 bis 30 Zeichen | nein | |
+| `company` | Text, höchstens 100 Zeichen | nein | |
+| `vehicle_model` | Text, höchstens 60 Zeichen | nein | |
+| `fuel_type` | `combustion` \| `electric` \| `hybrid` \| `""` | nein | |
+| `persons` | Ganzzahl 1 bis 50 | nein (Standard 1) | |
+| `return_mode` | `shuttle` \| `self` \| `pickup_delivery` | ja | Rückgabe Shuttle / selbst |
+| `flights` | ein Feld für beide Flüge, z. B. `LH 2020 / LH 2021` (Trenner `/` `,` `;` „und“) | nein | wie im Rechner; alternativ getrennt `flight_outbound`, `flight_return`. Fehlen sie bei Shuttle, wird die Buchung angenommen und „Flugnummern fehlen“ in der Notiz vermerkt |
+| `child_seats` | Ganzzahl 0 bis 5 | nein (Standard 0) | |
+| `luggage` | Ganzzahl 0 bis 30 | nein (Standard 0) | |
+| `notes` | Text, höchstens 1000 Zeichen | nein | Anmerkungen |
+| `charging` | `true` \| `false` | nein | `true` bucht die Leistung „Laden“ (Aufgabe „Laden“); der Betrag ändert sich nicht |
+| `charging_target` | Text bis 40 Zeichen (`"80 %"`) oder Zahl (`80` → „80 %“) | nein | Ladeziel, nur mit `charging: true` |
+| `language` | `de` \| `en` | nein | Sprache des Kunden (`bookings.customer_language`) |
+| `consent_privacy` | `true` | ja | Datenschutzhinweis |
+| `consent_agb` | `true` | ja | AGB akzeptiert |
+| `consent_withdrawal` | `true` | ja | Widerrufsbelehrung zur Kenntnis genommen |
+| `consent_early_start` | `true` | nein | Zustimmung zum Leistungsbeginn vor Ablauf der Widerrufsfrist. Der Rechner fragt sie nicht ab; fehlt sie bei Anreise in weniger als 14 Tagen, steht das in der Notiz der Buchung |
+| `website` | leerer Text | – | Honeypot: muss leer bleiben oder fehlen |
+
+Unbekannte Felder werden ignoriert. Die Zustimmungen stehen mit Zeitpunkt und AGB-Stand in der Notiz der Buchung.
+
+### Preis und Tage
+
+`Betrag = base_price + max(0, Tage − 5) × extra_day_price`, `Tage = pickup_date − arrival_date + 1` wie im Rechner:
+Anreise- und Abreisetag zählen jeweils als voller Tag, Uhrzeiten zählen nicht. Economy 49,00 / 7,50 · CarCover 59,00 / 9,00 · Business 89,00 / 12,50 · Premium 98,00 / 14,00
+(Tabelle `booking_tariffs`). Beispiel: Economy, Anreise 01.12., Abreise 07.12. = 7 Tage → 64,00 €. Die Aktion `tariffs` liefert `base_price` und
+`extra_day_price` je Tarif.
+
+### Verfügbarkeit
+
+`{ "action": "availability", "form": { "arrival_date", "arrival_time", "pickup_date", "pickup_time" } }` liefert
+`{ "tariffs": [{ "code": "economy", "available": true }, …], "indoor_full": false }`. Kapazität = aktive, nicht
+gesperrte Stellplätze je Bereich (Halle, Außen A mit Plane, Außen B ohne Plane) gegen überlappende Buchungen
+(RPC `area_full`). `create` und `register` lehnen ausgebuchte Tarife mit `422` ab.
+
+### CORS
+
+`booking-checkout` antwortet nur freigegebenen Herkünften (kein `*`). Liste im Secret `BOOKING_ALLOWED_ORIGINS`,
+durch Komma getrennt; ohne Secret gilt die Standardliste aus `supabase/functions/_shared/cors.ts`:
+
+```bash
+supabase secrets set BOOKING_ALLOWED_ORIGINS="https://parkhandling-rechner.pplx.app,https://parkhandling.fly.dev,https://www.parkhandling.de"
+supabase functions deploy booking-checkout --no-verify-jwt
+```
+
+Die Landingpage im Repo (`landing/`, `parkhandling-landing.fly.dev`) wird nicht mehr benutzt und steht nicht in der
+Liste; ihre Aufrufe werden damit abgelehnt. Die übrigen Edge Functions der App (`media-sign`, `protocol-mail`, …)
+sind davon nicht betroffen.
+
+### Im Dashboard
+
+Website-Buchungen tragen in der Fahrzeugliste das Kennzeichen **Website** und die PF-Nummer (auch über die Suche
+zu finden). Im Fahrzeug-Detail setzt **Zahlung erhalten** (Admin/Personal) den Zahlungsstatus auf „Bezahlt“; der
+Wechsel steht im Verlauf. Ist eine Website-Buchung nach 24 Stunden noch offen, erscheint sie auf „Heute“ unter
+**Braucht Aufmerksamkeit**. Neue Buchungen lösen wie jede Buchung die Push-Meldung „Neue Buchung“ aus.
+
 ## Prüfen
 
 ```bash

@@ -226,6 +226,12 @@ export async function cancelBooking(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/** „Zahlung erhalten“: Zahlungsstatus auf bezahlt setzen (der Wechsel steht per Trigger im Verlauf). */
+export async function markPaymentReceived(id: string): Promise<void> {
+  const { error } = await db().rpc('upsert_booking', { p_booking: { id, payment_status: 'paid' }, p_source: 'manual' })
+  if (error) throw new Error(error.message)
+}
+
 /** Import-Hinweis (z. B. „Kennzeichen prüfen“) als geprüft bestätigen; gibt die offenen Hinweise zurück. */
 export async function confirmImportFlag(id: string, flag: string): Promise<string[]> {
   const { data, error } = await db().rpc('confirm_booking_import_flag', { p_id: id, p_flag: flag })

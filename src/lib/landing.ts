@@ -14,6 +14,26 @@ function db() {
 }
 
 export const LANDING_SOURCE = 'landing'
+/** Buchungen aus dem Website-Rechner (Edge Function booking-checkout, Aktion register) */
+export const WEBSITE_SOURCE = 'website'
+
+/** Online-Buchung der Website: Landingpage (PayPal-Checkout) oder Website-Rechner */
+export function isWebsiteBooking(source: string): boolean {
+  return source === LANDING_SOURCE || source === WEBSITE_SOURCE
+}
+
+/**
+ * Buchungsnummer PF-XXXXXXXX einer Online-Buchung. Der Website-Rechner speichert sie als
+ * external_ref; bei der Landingpage ergibt sie sich aus der Buchungs-ID (external_ref = PayPal-Order).
+ */
+export function websiteBookingRef(b: { id: string; source: string; external_ref: string | null }): string | null {
+  if (b.source === WEBSITE_SOURCE) return b.external_ref ?? `PF-${b.id.slice(0, 8).toUpperCase()}`
+  if (b.source === LANDING_SOURCE) return `PF-${b.id.slice(0, 8).toUpperCase()}`
+  return null
+}
+
+/** Website-Buchung mit offener Zahlung gilt nach so vielen Stunden als auffällig */
+export const WEBSITE_UNPAID_ALERT_HOURS = 24
 
 export type InquiryStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type InquiryService = 'shuttle' | 'detailing' | 'pickup_delivery'

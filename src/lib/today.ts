@@ -1,5 +1,6 @@
 import { berlinDayStart, type BookingListItem } from './bookings'
 import { formatDate, formatTime } from './format'
+import { WEBSITE_SOURCE, WEBSITE_UNPAID_ALERT_HOURS } from './landing'
 import { loadBoard, type BoardSlot } from './siteplan'
 import { loadTaskBoard, type BoardTask } from './tasks'
 import { supabase } from './supabase'
@@ -194,6 +195,22 @@ export function buildToday(
   for (const e of events.filter((x) => x.kind === 'out' && x.unpaid && x.at >= nowIso)) {
     alerts.push({ tone: 'warn', title: `${e.plate} · Zahlung offen`, text: `Abholung ${formatTime(e.at)} – Zahlung vor Übergabe klären.`, href: `/fahrzeuge/${e.bookingId}` })
   }
+  // Website-Buchung seit über 24 Stunden unbezahlt (Zahlung läuft über paypal.me, Eingang wird von Hand bestätigt)
+  const unpaidBefore = new Date(now.getTime() - WEBSITE_UNPAID_ALERT_HOURS * 3600000).toISOString()
+  for (const b of live.filter(
+    (x) =>
+      x.source === WEBSITE_SOURCE &&
+      x.payment_status === 'open' &&
+      x.status !== 'completed' &&
+      (x.received_at ?? x.created_at) < unpaidBefore,
+  )) {
+    alerts.push({
+      tone: 'warn',
+      title: `${b.plate} · Website-Buchung unbezahlt`,
+      text: `${b.external_ref ?? 'Buchung'} vom ${formatDate(b.received_at ?? b.created_at).slice(0, 6)} – Zahlungseingang prüfen und „Zahlung erhalten“ setzen.`,
+      href: `/fahrzeuge/${b.id}`,
+    })
+  }
   // Shuttle heute/morgen überbucht
   for (const j of shuttle.filter((x) => x.status !== 'done' && x.status !== 'cancelled' && !isValet(x) && capacityState(x) === 'over')) {
     const today = j.scheduled_at < range.tomorrow
@@ -243,7 +260,8 @@ export function buildToday(
 export async function loadToday(period: DashboardPeriod = { view: 'tag', offset: 0 }): Promise<TodayData> {
   const range = periodRange(period)
   const weekAgo = berlinDayStart(-7)
-  const [day, overdue, tasks, slots, shuttle] = await Promise.all([
+  const unpaidBefore = new Date(Date.now() - WEBSITE_UNPAID_ALERT_HOURS * 3600000).toISOString()
+  const [day, overdue, unpaid, tasks, slots, shuttle] = await Promise.all([
     db()
       .from('booking_list')
       .select('*')
@@ -260,13 +278,23 @@ export async function loadToday(period: DashboardPeriod = { view: 'tag', offset:
       .gte('start_at', weekAgo)
       .lt('start_at', range.today)
       .limit(100),
+    // Website-Buchungen mit offener Zahlung, älter als 24 Stunden (unabhängig vom gewählten Zeitraum)
+    db()
+      .from('booking_list')
+      .select('*')
+      .eq('source', WEBSITE_SOURCE)
+      .eq('payment_status', 'open')
+      .not('status', 'in', '(cancelled,completed)')
+      .lt('received_at', unpaidBefore)
+      .order('received_at', { ascending: true })
+      .limit(50),
     loadTaskBoard(),
     loadBoard(),
     loadTransportBoard(range.today, range.dayAfter).catch(() => [] as TransportJob[]),
   ])
-  const failed = [day, overdue].find((r) => r.error)
+  const failed = [day, overdue, unpaid].find((r) => r.error)
   if (failed?.error) throw new Error(failed.error.message)
   const unique = new Map<string, BookingListItem>()
-  for (const b of [...(day.data ?? []), ...(overdue.data ?? [])] as BookingListItem[]) unique.set(b.id, b)
+  for (const b of [...(day.data ?? []), ...(overdue.data ?? []), ...(unpaid.data ?? [])] as BookingListItem[]) unique.set(b.id, b)
   return buildToday([...unique.values()], tasks, slots, range, new Date(), shuttle)
 }

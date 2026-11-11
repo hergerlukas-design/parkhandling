@@ -200,3 +200,16 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Im Tarif enthaltene Leistungen (`booking_tariffs.included_services`): nur Premium bucht zusätzlich **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover). Cover, Business und Premium bekommen die Standard-Grundreinigung („Grob-Reinigung“ ist keine eigene Leistung). [BELEGT 29.10.2026] Economy enthält keine Reinigung, also auch keine Grundreinigung (`excluded_services`)
 - [ANNAHME] Anfrage → Buchung: Parkplatz „egal“ wird Außen, Hol- & Bring geht vor Shuttle, ohne Transferwunsch „Selbst“. Aufbereitungswunsch und Nachricht landen in der Notiz (Umfang mit dem Kunden klären); Uhrzeiten fehlen in der Anfrage
 - [ANNAHME] Ein Online-Widerruf wird nur angezeigt; Stornieren und Erstatten entscheidet das Personal
+
+## Website-Rechner im Dashboard (0.34.0)
+- [BELEGT] Preismodell: Grundpreis bis 5 Tage plus Preis je weiterem Tag, Mindestdauer 5, höchstens 30 Tage (Vorgabe 11.11.2026)
+- [BELEGT] Tageszählung wie im Rechner: „Anreise- und Abreisetag zählen jeweils als voller Tag“ (Abholdatum − Anreisedatum + 1). Gilt für `register` und `create`
+- [ANNAHME] `register` richtet sich nach dem Formular des Rechners (Stand 11.11.2026): ein Feld für beide Flugnummern; kein Häkchen für den frühen Leistungsbeginn. Fehlende Flugnummern und diese fehlende Zustimmung blockieren nicht, sondern stehen in der Notiz. Empfehlung: das Häkchen im Rechner ergänzen (Widerrufsrecht bei Anreise innerhalb von 14 Tagen)
+- [BELEGT] Die Landingpage (`landing/`) wird nicht mehr benutzt (12.11.2026): Gebucht wird nur über den Website-Rechner und form.taxi. Ihr Code bleibt unverändert im Repo, ihre Adresse ist für `booking-checkout` nicht freigegeben. `create`/`capture` bleiben in der Function erhalten und rechnen nach dem neuen Preismodell
+- [ANNAHME] `included_text` je Tarif bleibt unverändert: Die Website-Texte lagen nicht vor. Pflege in `booking_tariffs.included_text`
+- [ANNAHME] PF-Nummer einer Website-Buchung: aus der vorab vergebenen Buchungs-ID, gespeichert als `external_ref` (Quelle `website`)
+- [ANNAHME] Wiederholtes Absenden derselben Buchung innerhalb von 15 Minuten liefert die vorhandene Nummer statt einer zweiten Buchung
+- [ANNAHME] Ladeziel als freier Text bis 40 Zeichen (Zahl wird zu „n %“). Ohne aktive Leistung `LADEN` steht der Ladewunsch nur in der Notiz
+- [ANNAHME] CORS-Liste gilt nur für `booking-checkout`; die Funktionen der App bleiben unverändert
+- [OFFEN] Online-Widerruf und „Bestätigung erneut senden“ finden nur Buchungen der Quelle `landing` und waren nur über die Landingpage erreichbar. Für Buchungen aus dem Rechner gibt es derzeit keinen Online-Widerruf (Widerruf per E-Mail laut Belehrung)
+- [OFFEN] Zahlungseingang über paypal.me wird nicht automatisch abgeglichen; „Zahlung erhalten“ setzt das Personal
