@@ -49,7 +49,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      # Browser getrennt von den Systempaketen installieren: Die Bibliotheken für Chromium bringt das
+      # Runner-Image mit, apt lädt nur Zusatzschriften nach. Ist der Ubuntu-Spiegel nicht erreichbar
+      # (DNS-Fehler auf dem Runner), sollen die E2E-Tests trotzdem laufen statt vorher abzubrechen.
+      - run: npx playwright install chromium
+      - run: npx playwright install-deps chromium || echo "::warning::Systempakete für Playwright nicht installiert (Paketspiegel nicht erreichbar)"
       - run: npm run test:e2e
       - run: npm run test:review
 
