@@ -200,3 +200,15 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Im Tarif enthaltene Leistungen (`booking_tariffs.included_services`): nur Premium bucht zusätzlich **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover). Cover, Business und Premium bekommen die Standard-Grundreinigung („Grob-Reinigung“ ist keine eigene Leistung). [BELEGT 29.10.2026] Economy enthält keine Reinigung, also auch keine Grundreinigung (`excluded_services`)
 - [ANNAHME] Anfrage → Buchung: Parkplatz „egal“ wird Außen, Hol- & Bring geht vor Shuttle, ohne Transferwunsch „Selbst“. Aufbereitungswunsch und Nachricht landen in der Notiz (Umfang mit dem Kunden klären); Uhrzeiten fehlen in der Anfrage
 - [ANNAHME] Ein Online-Widerruf wird nur angezeigt; Stornieren und Erstatten entscheidet das Personal
+
+## Website-Rechner im Dashboard (0.34.0)
+- [BELEGT] Preismodell: Grundpreis bis 5 Tage plus Preis je weiterem Tag, Mindestdauer 5, höchstens 30 Tage (Vorgabe 11.11.2026)
+- [ANNAHME] Tageszählung: Abholdatum minus Anreisedatum in Kalendertagen, Uhrzeiten zählen nicht (Economy, 7 Tage → 64,00 €). Der Quelltext des Rechners war bei der Umsetzung nicht einsehbar; zählt er anders (z. B. angefangene 24 Stunden oder beide Tage inklusive), muss `daysBetween` in `booking-checkout/logic.ts` angepasst werden
+- [ANNAHME] Das neue Preismodell gilt auch für die Landingpage im Repo (`create`), damit Anzeige und Abbuchung übereinstimmen
+- [ANNAHME] `included_text` je Tarif bleibt unverändert: Die Website-Texte lagen nicht vor. Pflege in `booking_tariffs.included_text`
+- [ANNAHME] PF-Nummer einer Website-Buchung: aus der vorab vergebenen Buchungs-ID, gespeichert als `external_ref` (Quelle `website`)
+- [ANNAHME] Wiederholtes Absenden derselben Buchung innerhalb von 15 Minuten liefert die vorhandene Nummer statt einer zweiten Buchung
+- [ANNAHME] Ladeziel als freier Text bis 40 Zeichen (Zahl wird zu „n %“). Ohne aktive Leistung `LADEN` steht der Ladewunsch nur in der Notiz
+- [ANNAHME] CORS-Liste gilt nur für `booking-checkout`; die Funktionen der App bleiben unverändert. Standardliste zusätzlich mit `https://parkhandling-landing.fly.dev`, sonst wäre die Buchung über die Landingpage gesperrt
+- [ANNAHME] Online-Widerruf und „Bestätigung erneut senden“ gelten weiter nur für Buchungen der Landingpage (Quelle `landing`); Website-Buchungen laufen über form.taxi
+- [OFFEN] Zahlungseingang über paypal.me wird nicht automatisch abgeglichen; „Zahlung erhalten“ setzt das Personal

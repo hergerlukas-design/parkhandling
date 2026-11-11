@@ -88,8 +88,8 @@ gespeichert, `notification_status = 'not_configured'`.
 
 ### Online-Buchung (Stufe 2)
 
-Migration `../supabase/migrations/20261020000100_booking_checkout.sql` legt `booking_tariffs` (Tarife mit
-Preisen je Dauer, Pflege über Admin) und `booking_checkouts` (Zwischenspeicher bis zur Zahlung) an.
+Migration `../supabase/migrations/20261020000100_booking_checkout.sql` legt `booking_tariffs` (Tarife; Preis seit
+`20261111000100_website_register.sql` als Grundpreis bis 5 Tage plus Preis je weiterem Tag, Pflege über Admin) und `booking_checkouts` (Zwischenspeicher bis zur Zahlung) an.
 Die Edge Function `booking-checkout` läuft ohne JWT-Prüfung:
 
 ```bash
@@ -101,6 +101,7 @@ supabase functions deploy booking-checkout --no-verify-jwt
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | PayPal-REST-Zugang (nur serverseitig) |
 | `PAYPAL_ENV` | `sandbox` (Standard) oder `live` |
 | `MAIL_FROM`, `RESEND_API_KEY` | Bestätigungsmail an den Kunden |
+| `BOOKING_ALLOWED_ORIGINS` | Erlaubte Herkünfte (CORS), durch Komma getrennt. Muss die Adresse der Landingpage enthalten; Standardliste in `supabase/functions/_shared/cors.ts`. Für `npm run dev` zusätzlich `http://localhost:5173` |
 
 Frontend: `VITE_PAYPAL_CLIENT_ID` in `landing/.env` (öffentlich). Ohne Wert zeigt die Seite
 „Die Online-Zahlung ist derzeit nicht verfügbar“.

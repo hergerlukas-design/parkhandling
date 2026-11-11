@@ -4,10 +4,10 @@ import { expect, type Page, test } from '@playwright/test'
 const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8')) as { version: string }
 
 const TARIFFS = [
-  { code: 'economy', label: 'Economy', parking_type: 'outdoor', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz, abgesperrtes Gelände', price_week: 89, price_holiday: 129, price_month: 179 },
-  { code: 'space', label: 'Cover', parking_type: 'outdoor_cover', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz', price_week: 95, price_holiday: 138, price_month: 199 },
-  { code: 'business', label: 'Business', parking_type: 'indoor', shuttle_text: 'Alle 30 Minuten', included_text: 'Innenstellplatz im Park-Regal', price_week: 125, price_holiday: 195, price_month: 299 },
-  { code: 'premium', label: 'Premium', parking_type: 'indoor', shuttle_text: 'Direkt', included_text: 'Innenstellplatz im Park-Regal, CarCover Satin Indoor', price_week: 148, price_holiday: 249, price_month: 369 },
+  { code: 'economy', label: 'Economy', parking_type: 'outdoor', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz, abgesperrtes Gelände', base_price: 49, extra_day_price: 7.5 },
+  { code: 'space', label: 'CarCover', parking_type: 'outdoor_cover', shuttle_text: 'Alle 60 Minuten', included_text: 'Geräumiger Außenstellplatz', base_price: 59, extra_day_price: 9 },
+  { code: 'business', label: 'Business', parking_type: 'indoor', shuttle_text: 'Alle 30 Minuten', included_text: 'Innenstellplatz im Park-Regal', base_price: 89, extra_day_price: 12.5 },
+  { code: 'premium', label: 'Premium', parking_type: 'indoor', shuttle_text: 'Direkt', included_text: 'Innenstellplatz im Park-Regal, CarCover Satin Indoor', base_price: 98, extra_day_price: 14 },
 ]
 
 function isoInDays(days: number): string {
@@ -95,15 +95,15 @@ test('Dauer und Preis werden aus dem Zeitraum berechnet', async ({ page }) => {
   await page.getByLabel('Anreise', { exact: true }).fill(isoInDays(3))
   await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(10))
   await expect(page.getByTestId('duration')).toContainText('7 Tage')
-  await expect(page.getByTestId('total')).toContainText('148,00')
+  await expect(page.getByTestId('total')).toContainText('126,00')
 
-  // 12 Tage → Ferienpreis
+  // 12 Tage → 7 weitere Tage
   await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(15))
-  await expect(page.getByTestId('total')).toContainText('249,00')
+  await expect(page.getByTestId('total')).toContainText('196,00')
 
-  // 17 Tage → Monatspreis
+  // 17 Tage → 12 weitere Tage
   await page.getByLabel('Abholung', { exact: true }).fill(isoInDays(20))
-  await expect(page.getByTestId('total')).toContainText('369,00')
+  await expect(page.getByTestId('total')).toContainText('266,00')
 })
 
 test('Zu kurze Dauer wird sofort erklärt', async ({ page }) => {

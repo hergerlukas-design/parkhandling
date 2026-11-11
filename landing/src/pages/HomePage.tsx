@@ -32,12 +32,10 @@ function TariffCard({ tariff, highlight }: { tariff: Tariff; highlight: boolean 
       <h3 className="text-lg font-semibold">{tariff.label}</h3>
       <p className="mt-1 text-sm text-ink-soft">Shuttle zum Terminal: {tariff.shuttle_text}</p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-ink-soft">5–8 Tage</dt>
-        <dd className="text-right font-semibold">{formatEuro(tariff.price_week)}</dd>
-        <dt className="text-ink-soft">9–15 Tage</dt>
-        <dd className="text-right font-semibold">{formatEuro(tariff.price_holiday)}</dd>
-        <dt className="text-ink-soft">16–30 Tage</dt>
-        <dd className="text-right font-semibold">{formatEuro(tariff.price_month)}</dd>
+        <dt className="text-ink-soft">bis 5 Tage</dt>
+        <dd className="text-right font-semibold">{formatEuro(tariff.base_price)}</dd>
+        <dt className="text-ink-soft">jeder weitere Tag</dt>
+        <dd className="text-right font-semibold">{formatEuro(tariff.extra_day_price)}</dd>
       </dl>
       <ul className="mt-3 space-y-1.5 text-sm">
         {points.map((p) => (

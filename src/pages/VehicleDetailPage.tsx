@@ -6,8 +6,9 @@ import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
 import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
-import { cancelBooking, confirmImportFlag, getBookingDetail, type BookingDetail } from '../lib/bookings'
-import { listWithdrawals, tariffLabel, type Withdrawal } from '../lib/landing'
+import { isStaffProfile, useAuth } from '../lib/auth'
+import { cancelBooking, confirmImportFlag, getBookingDetail, markPaymentReceived, type BookingDetail } from '../lib/bookings'
+import { listWithdrawals, tariffLabel, websiteBookingRef, type Withdrawal } from '../lib/landing'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
@@ -55,6 +56,7 @@ const SOURCE_LABEL: Record<string, string> = {
   demo: 'Demo-Daten',
   parkos: 'Parkos',
   landing: 'Online-Buchung (Website)',
+  website: 'Website-Rechner',
 }
 
 function fmtValue(key: string, v: unknown): string {
@@ -134,6 +136,7 @@ function tripDayParam(at: string): string {
 
 export function VehicleDetailPage() {
   const { id } = useParams()
+  const { profile } = useAuth()
   const [data, setData] = useState<BookingDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
@@ -211,6 +214,18 @@ export function VehicleDetailPage() {
     }
   }
 
+  async function doPaymentReceived() {
+    setBusy(true)
+    try {
+      await markPaymentReceived(b.id)
+      load()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function doCancel() {
     setBusy(true)
     try {
@@ -233,7 +248,7 @@ export function VehicleDetailPage() {
         </Link>
         <h1 className="font-mono text-2xl font-bold">{b.plate}</h1>
         <span className="text-sm text-subtle">
-          {[b.vehicle_model, b.external_ref && `Buchung ${b.external_ref}`].filter(Boolean).join(' · ')}
+          {[b.vehicle_model, (websiteBookingRef(b) ?? b.external_ref) && `Buchung ${websiteBookingRef(b) ?? b.external_ref}`].filter(Boolean).join(' · ')}
         </span>
         <StatusBadge status={b.status} />
         <div className="ml-auto flex flex-wrap gap-2">
@@ -343,7 +358,17 @@ export function VehicleDetailPage() {
                 <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
                 {(tariff || b.tariff_code) && <Row label="Tarif">{tariff ?? b.tariff_code}</Row>}
                 <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
-                <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
+                {websiteBookingRef(b) && (
+                  <Row label="Buchungs-Nr."><span className="font-mono">{websiteBookingRef(b)}</span></Row>
+                )}
+                <Row label="Zahlung">
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    <PaymentBadge status={b.payment_status} />
+                    {(b.payment_status === 'open' || b.payment_status === 'partial') && b.status !== 'cancelled' && isStaffProfile(profile) && (
+                      <Button variant="primary" disabled={busy} onClick={doPaymentReceived}>Zahlung erhalten</Button>
+                    )}
+                  </span>
+                </Row>
               </div>
               {b.notes && (
                 <div>

@@ -5,6 +5,14 @@ internen App. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung/Text, `minor` = neue Funktion, `major` = Breaking Change.
 Die Version steht ausschließlich in `landing/package.json` und wird im Footer angezeigt.
 
+## 0.11.0 – 11.11.2026
+
+### Geändert
+- **Preismodell wie auf der Website:** Grundpreis bis 5 Tage plus Preis je weiterem Tag statt Wochen-, Ferien- und Monatspreis. Tarifkarten und Buchungsseite zeigen beide Werte, der Gesamtpreis folgt der Dauer (maßgeblich bleibt die Berechnung des Servers)
+- Tarif „Cover“ heißt „CarCover“ (Name kommt aus `booking_tariffs`)
+- Meldung bei mehr als 30 Tagen ohne Bezug auf den Monatstarif
+- Edge Function `booking-checkout`: CORS nur noch für freigegebene Herkünfte (Secret `BOOKING_ALLOWED_ORIGINS`; die Adresse der Landingpage muss enthalten sein), Kapazitätsprüfung auch für die Außenbereiche
+
 ## 0.10.0 – 29.10.2026
 
 ### Neu (Review-Notizen 27.10.2026)

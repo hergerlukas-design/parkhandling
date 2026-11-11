@@ -7,7 +7,7 @@ import { ImportReviewDialog } from '../components/bookings/ImportReviewDialog'
 import { InquiriesDialog } from '../components/bookings/InquiriesDialog'
 import { ParkosImportDialog } from '../components/bookings/ParkosImportDialog'
 import { countOpenImports } from '../lib/imports'
-import { countNewInquiries, LANDING_SOURCE } from '../lib/landing'
+import { countNewInquiries, isWebsiteBooking, websiteBookingRef } from '../lib/landing'
 import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
 import {
@@ -69,10 +69,13 @@ function SourceBadges({ b }: { b: BookingListItem }) {
           Parkos
         </span>
       )}
-      {b.source === LANDING_SOURCE && (
-        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Website
-        </span>
+      {isWebsiteBooking(b.source) && (
+        <>
+          <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
+            Website
+          </span>
+          <span className="ml-1.5 align-middle font-mono text-[11px] font-normal text-subtle">{websiteBookingRef(b)}</span>
+        </>
       )}
       {flags.length > 0 && (
         <span

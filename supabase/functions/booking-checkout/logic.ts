@@ -1,27 +1,38 @@
 // Reine Logik der Online-Buchung (ohne Deno-/Supabase-Abhängigkeiten, damit testbar).
-// Regeln laut Preiskategorien-Vorlage und ANNAHMEN.md (Landingpage, Stufe 2):
-//  * Dauer in Kalendertagen zwischen Anreise und Abholung
-//  * 5–8 Tage → Wochenpreis, 9–15 → Ferienpreis, 16–30 → Monatspreis; sonst keine Online-Buchung
-//  * Preise brutto in EUR (Annahme, noch zu bestätigen)
+// Regeln (Preismodell der Website, ANNAHMEN.md):
+//  * Dauer in Kalendertagen zwischen Anreise und Abholung (Abholdatum − Anreisedatum, Uhrzeiten zählen nicht)
+//  * Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag; Mindestdauer 5, höchstens 30 Tage
+//  * Preise brutto in EUR
 
 export const TIME_ZONE = 'Europe/Berlin'
 export const MIN_DAYS = 5
 export const MAX_DAYS = 30
+/** So viele Tage deckt der Grundpreis ab; jeder weitere Tag kostet extra_day_price */
+export const INCLUDED_DAYS = 5
 export const MAX_ADVANCE_DAYS = 365
 /** Online buchbar bis so viele Stunden vor der Anreise */
 export const MIN_LEAD_HOURS = 12
 /** Widerrufsfrist in Tagen (AGB Ziffer 12.2 / Belehrung) */
 export const WITHDRAWAL_DAYS = 14
 
-export const MAX_CHILD_SEATS = 3
+export const MAX_CHILD_SEATS = 5
 export const MAX_LUGGAGE = 30
-export const LIMITS = { plate: 15, name: 100, company: 100, email: 254, phone: 30, vehicle: 60, notes: 1000 }
+export const LIMITS = { plate: 15, name: 100, company: 100, email: 254, phone: 30, vehicle: 60, notes: 1000, chargingTarget: 40 }
 
 export const RETURN_MODES = ['shuttle', 'pickup_delivery', 'self'] as const
 export const FUEL_TYPES = ['combustion', 'electric', 'hybrid'] as const
 export type ReturnMode = (typeof RETURN_MODES)[number]
 export type FuelType = (typeof FUEL_TYPES)[number]
-export type Tier = 'week' | 'holiday' | 'month'
+export const LANGUAGES = ['de', 'en'] as const
+export type Language = (typeof LANGUAGES)[number]
+
+/** Tarif-Codes, die der Website-Rechner anders nennt (?tarif=carcover → space) */
+export const TARIFF_ALIASES: Record<string, string> = { carcover: 'space' }
+
+export function normalizeTariffCode(code: unknown): string {
+  const c = typeof code === 'string' ? code.trim().toLowerCase() : ''
+  return TARIFF_ALIASES[c] ?? c
+}
 
 export interface TariffRow {
   code: string
@@ -29,9 +40,14 @@ export interface TariffRow {
   parking_type: 'indoor' | 'outdoor_cover' | 'outdoor'
   shuttle_text: string
   included_text: string
-  price_week: number
-  price_holiday: number
-  price_month: number
+  /** Grundpreis für bis zu 5 Tage */
+  base_price: number
+  /** Preis je weiterem Tag ab dem 6. Tag */
+  extra_day_price: number
+  /** Altes Modell nach Dauerklassen, nicht mehr genutzt */
+  price_week?: number
+  price_holiday?: number
+  price_month?: number
   active: boolean
   sort_order: number
 }
@@ -65,6 +81,12 @@ export interface BookingInput {
   flight_return: string
   child_seats: number | string
   luggage: number | string
+  /** Laden gewünscht (Website-Rechner); Abrechnung bei Rückgabe, der Betrag ändert sich nicht */
+  charging?: boolean | string
+  /** Ladeziel, z. B. „80 %“ */
+  charging_target?: string | number
+  /** Sprache des Kunden: de | en */
+  language?: string
   /** Honeypot – muss leer sein */
   website: string
 }
@@ -88,13 +110,15 @@ export interface NormalizedBooking {
   return_mode: ReturnMode
   notes: string | null
   days: number
-  tier: Tier
   amount: number
   early_start: boolean
   flight_outbound: string | null
   flight_return: string | null
   child_seats: number
   luggage: number
+  charging?: boolean
+  charging_target?: string | null
+  language?: Language | null
   accepted_at: string
 }
 
@@ -128,15 +152,15 @@ export function todayInBerlin(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
-export function tierForDays(days: number): Tier | null {
-  if (days < MIN_DAYS || days > MAX_DAYS) return null
-  if (days <= 8) return 'week'
-  if (days <= 15) return 'holiday'
-  return 'month'
+/** Online buchbar? (Mindest- und Höchstdauer) */
+export function bookableDays(days: number): boolean {
+  return Number.isInteger(days) && days >= MIN_DAYS && days <= MAX_DAYS
 }
 
-export function priceFor(tariff: Pick<TariffRow, 'price_week' | 'price_holiday' | 'price_month'>, tier: Tier): number {
-  return tier === 'week' ? tariff.price_week : tier === 'holiday' ? tariff.price_holiday : tariff.price_month
+/** Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag, auf Cent gerundet */
+export function priceFor(tariff: Pick<TariffRow, 'base_price' | 'extra_day_price'>, days: number): number {
+  const extra = Math.max(0, days - INCLUDED_DAYS)
+  return Math.round((Number(tariff.base_price) + extra * Number(tariff.extra_day_price)) * 100) / 100
 }
 
 /** Wandzeit in Berlin zu einem UTC-Zeitpunkt → Offset in Minuten */
@@ -203,10 +227,10 @@ export function validateBooking(
     days = daysBetween(input.arrival_date, input.pickup_date)
     if (days <= 0) e.pickup_date = 'Die Abholung muss nach der Anreise liegen.'
     else if (days < MIN_DAYS) e.pickup_date = `Online buchbar ab ${MIN_DAYS} Tagen. Bei kürzerer Dauer bitte direkt anfragen.`
-    else if (days > MAX_DAYS) e.pickup_date = `Der Monatstarif gilt höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt anfragen.`
+    else if (days > MAX_DAYS) e.pickup_date = `Online buchbar bis höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt anfragen.`
   }
 
-  const tariff = tariffs.find((t) => t.code === str(input.tariff_code) && t.active)
+  const tariff = tariffs.find((t) => t.code === normalizeTariffCode(input.tariff_code) && t.active)
   if (!tariff) e.tariff_code = 'Bitte einen Tarif wählen.'
 
   const plate = str(input.plate).toUpperCase()
@@ -272,10 +296,17 @@ export function validateBooking(
   if (input.luggage === '' || input.luggage == null || !Number.isInteger(luggage) || luggage < 0 || luggage > MAX_LUGGAGE)
     e.luggage = `Bitte die Anzahl der Gepäckstücke angeben (0 bis ${MAX_LUGGAGE}).`
 
+  const charging = input.charging === true || (typeof input.charging === 'string' && /^(true|1|ja|yes)$/i.test(input.charging.trim()))
+  const chargingTarget =
+    typeof input.charging_target === 'number' ? `${input.charging_target} %` : str(input.charging_target)
+  if (chargingTarget.length > LIMITS.chargingTarget) e.charging_target = `Höchstens ${LIMITS.chargingTarget} Zeichen.`
+
+  const language = str(input.language).toLowerCase()
+  if (language && !(LANGUAGES as readonly string[]).includes(language)) e.language = 'Ungültige Auswahl.'
+
   if (Object.keys(e).length > 0 || !tariff) return { errors: e, value: null }
 
-  const tier = tierForDays(days)
-  if (!tier) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
+  if (!bookableDays(days)) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
 
   return {
     errors: {},
@@ -296,13 +327,15 @@ export function validateBooking(
       return_mode: ret as ReturnMode,
       notes: notes || null,
       days,
-      tier,
-      amount: priceFor(tariff, tier),
+      amount: priceFor(tariff, days),
       early_start: earlyStart,
       flight_outbound: flightOut || null,
       flight_return: flightBack || null,
       child_seats: childSeats,
       luggage,
+      charging,
+      charging_target: charging ? chargingTarget || null : null,
+      language: (language || null) as Language | null,
       accepted_at: acceptedAt,
     },
   }
@@ -330,6 +363,9 @@ export function bookingRow(
   const notes = [
     value.notes,
     `Kindersitze: ${value.child_seats} · Gepäckstücke: ${value.luggage}`,
+    value.charging
+      ? `Laden: ja${value.charging_target ? ` · Ladeziel: ${value.charging_target}` : ''} (${CHARGING_BILLING_NOTE})`
+      : null,
     `AGB ${agbVersion} akzeptiert (${value.accepted_at}), Widerrufsbelehrung zur Kenntnis genommen`,
     `Vorzeitiger Leistungsbeginn: ${value.early_start ? 'ausdrücklich zugestimmt' : 'nicht relevant (Anreise außerhalb der Widerrufsfrist)'}`,
   ]
@@ -357,8 +393,45 @@ export function bookingRow(
     status: 'booked',
     price_total: value.amount,
     payment_status: 'paid',
+    customer_language: value.language ?? null,
     notes,
   }
+}
+
+/** Abrechnung des Ladens bei Rückgabe; der Buchungsbetrag enthält es nicht */
+export const CHARGING_BILLING_NOTE = 'Abrechnung bei Rückgabe: 0,69 €/kWh + 10,00 € je Ladevorgang'
+
+/** Quelle der Buchungen aus dem Website-Rechner (register) */
+export const WEBSITE_SOURCE = 'website'
+
+/**
+ * Zeile für bookings aus dem Website-Rechner (Aktion register): ohne PayPal-Order, Zahlung offen.
+ * Die Buchungs-ID wird vorab vergeben, damit die PF-Nummer als external_ref gespeichert werden kann.
+ */
+export function registerRow(
+  value: NormalizedBooking,
+  tariff: Pick<TariffRow, 'code' | 'parking_type'>,
+  id: string,
+  agbVersion: string,
+  receivedAt: string = new Date().toISOString(),
+) {
+  return {
+    ...bookingRow(value, tariff, bookingRefFor(id), agbVersion, receivedAt),
+    id,
+    source: WEBSITE_SOURCE,
+    payment_status: 'open',
+  }
+}
+
+/** Beschreibung der gebuchten Leistung „Laden“ */
+export function chargingDescription(value: Pick<NormalizedBooking, 'charging_target'>): string {
+  return [value.charging_target ? `Ladeziel: ${value.charging_target}` : null, CHARGING_BILLING_NOTE].filter(Boolean).join(' · ')
+}
+
+/** Meldung, wenn der Bereich des Tarifs im Zeitraum ausgebucht ist */
+export function areaFullMessage(parkingType: TariffRow['parking_type']): string {
+  const area = parkingType === 'indoor' ? 'Die Halle ist' : parkingType === 'outdoor_cover' ? 'Der Außenbereich mit Plane ist' : 'Der Außenbereich ist'
+  return `${area} im gewählten Zeitraum ausgebucht. Bitte einen anderen Tarif oder Zeitraum wählen.`
 }
 
 const RETURN_LABEL: Record<ReturnMode, string> = {

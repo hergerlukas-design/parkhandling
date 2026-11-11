@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { arrivalTooSoon, earliestArrival, formatEuro, rentalDays, tierForDays } from './booking'
+import { arrivalTooSoon, bookableDays, earliestArrival, formatEuro, priceForDays, rentalDays } from './booking'
 
-describe('tierForDays', () => {
-  it('ordnet die Dauerklassen der Vorlage zu', () => {
-    expect(tierForDays(4)).toBeNull()
-    expect(tierForDays(5)).toBe('week')
-    expect(tierForDays(8)).toBe('week')
-    expect(tierForDays(9)).toBe('holiday')
-    expect(tierForDays(15)).toBe('holiday')
-    expect(tierForDays(16)).toBe('month')
-    expect(tierForDays(30)).toBe('month')
-    expect(tierForDays(31)).toBeNull()
+describe('Preismodell', () => {
+  it('ist von 5 bis 30 Tagen online buchbar', () => {
+    expect(bookableDays(4)).toBe(false)
+    expect(bookableDays(5)).toBe(true)
+    expect(bookableDays(30)).toBe(true)
+    expect(bookableDays(31)).toBe(false)
+  })
+
+  it('rechnet Grundpreis bis 5 Tage plus Preis je weiterem Tag', () => {
+    const economy = { base_price: 49, extra_day_price: 7.5 }
+    expect(priceForDays(economy, 5)).toBe(49)
+    expect(priceForDays(economy, 6)).toBe(56.5)
+    expect(priceForDays(economy, 7)).toBe(64)
+    expect(priceForDays(economy, 14)).toBe(116.5)
+    expect(priceForDays({ base_price: 98, extra_day_price: 14 }, 14)).toBe(224)
   })
 })
 
