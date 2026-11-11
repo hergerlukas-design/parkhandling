@@ -51,7 +51,7 @@ async function onSubmit() {
     booking = await registerBooking({
       arrival_date: '2026-12-01',   // YYYY-MM-DD
       arrival_time: '10:00',        // HH:MM
-      pickup_date: '2026-12-08',
+      pickup_date: '2026-12-07',     // 01.12. bis 07.12. = 7 Tage (Anreise- und Abreisetag zählen voll)
       pickup_time: '12:00',
       tariff_code: 'economy',       // economy | carcover | business | premium
       plate: 'M-AB 1234',
@@ -64,8 +64,7 @@ async function onSubmit() {
       fuel_type: '',                // combustion | electric | hybrid | ''
       persons: 2,
       return_mode: 'shuttle',       // shuttle | self
-      flight_outbound: 'LH 1234',   // bei shuttle Pflicht
-      flight_return: 'LH 1235',
+      flights: 'LH 2020 / LH 2021', // ein Feld wie im Rechner; fehlt es, wird es in der Notiz vermerkt
       child_seats: 0,               // 0 bis 5
       luggage: 2,                   // 0 bis 30
       notes: '',
@@ -75,7 +74,7 @@ async function onSubmit() {
       consent_privacy: true,
       consent_agb: true,
       consent_withdrawal: true,
-      consent_early_start: true,    // Pflicht, wenn die Anreise in weniger als 14 Tagen liegt
+      consent_early_start: true,    // optional; gibt es im Rechner nicht, dann weglassen
       website: '',                  // Honeypot, leer lassen
     })
   } catch (err) {

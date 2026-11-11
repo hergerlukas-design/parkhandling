@@ -135,9 +135,9 @@ Feldfehler `tariff_code`), `429` (mehr als 10 Versuche je Stunde und IP), `403` 
 
 | Feld | Typ / Werte | Pflicht | Hinweis |
 |---|---|---|---|
-| `arrival_date` | `YYYY-MM-DD` | ja | nicht in der Vergangenheit, höchstens 365 Tage voraus |
-| `arrival_time` | `HH:MM` (24 h, Berliner Zeit) | ja | Anreise frühestens 12 Stunden nach dem Absenden |
-| `pickup_date` | `YYYY-MM-DD` | ja | 5 bis 30 Tage nach `arrival_date` |
+| `arrival_date` | `YYYY-MM-DD` (auch `TT.MM.JJJJ`) | ja | nicht in der Vergangenheit, höchstens 365 Tage voraus |
+| `arrival_time` | `HH:MM` (24 h, Berliner Zeit; auch `9:00`, `09:00 Uhr`) | ja | Anreise frühestens 12 Stunden nach dem Absenden |
+| `pickup_date` | wie `arrival_date` | ja | 5 bis 30 berechnete Tage (Anreise- und Abreisetag zählen voll) |
 | `pickup_time` | `HH:MM` | ja | |
 | `tariff_code` | `economy` \| `carcover` \| `business` \| `premium` | ja | `carcover` ist ein Alias für `space` (beide gültig) |
 | `plate` | Text, höchstens 15 Zeichen | ja | wird in Großbuchstaben gespeichert |
@@ -147,11 +147,11 @@ Feldfehler `tariff_code`), `429` (mehr als 10 Versuche je Stunde und IP), `403` 
 | `company` | Text, höchstens 100 Zeichen | nein | |
 | `vehicle_model` | Text, höchstens 60 Zeichen | nein | |
 | `fuel_type` | `combustion` \| `electric` \| `hybrid` \| `""` | nein | |
-| `persons` | Ganzzahl 1 bis 50 | ja | |
+| `persons` | Ganzzahl 1 bis 50 | nein (Standard 1) | |
 | `return_mode` | `shuttle` \| `self` \| `pickup_delivery` | ja | Rückgabe Shuttle / selbst |
-| `flight_outbound`, `flight_return` | Flugnummer, 2 bis 20 Zeichen (`LH 1234`) | bei `shuttle` ja | sonst optional |
+| `flights` | ein Feld für beide Flüge, z. B. `LH 2020 / LH 2021` (Trenner `/` `,` `;` „und“) | nein | wie im Rechner; alternativ getrennt `flight_outbound`, `flight_return`. Fehlen sie bei Shuttle, wird die Buchung angenommen und „Flugnummern fehlen“ in der Notiz vermerkt |
 | `child_seats` | Ganzzahl 0 bis 5 | nein (Standard 0) | |
-| `luggage` | Ganzzahl 0 bis 30 | ja | |
+| `luggage` | Ganzzahl 0 bis 30 | nein (Standard 0) | |
 | `notes` | Text, höchstens 1000 Zeichen | nein | Anmerkungen |
 | `charging` | `true` \| `false` | nein | `true` bucht die Leistung „Laden“ (Aufgabe „Laden“); der Betrag ändert sich nicht |
 | `charging_target` | Text bis 40 Zeichen (`"80 %"`) oder Zahl (`80` → „80 %“) | nein | Ladeziel, nur mit `charging: true` |
@@ -159,16 +159,16 @@ Feldfehler `tariff_code`), `429` (mehr als 10 Versuche je Stunde und IP), `403` 
 | `consent_privacy` | `true` | ja | Datenschutzhinweis |
 | `consent_agb` | `true` | ja | AGB akzeptiert |
 | `consent_withdrawal` | `true` | ja | Widerrufsbelehrung zur Kenntnis genommen |
-| `consent_early_start` | `true` | bei Anreise in weniger als 14 Tagen | Zustimmung zum Leistungsbeginn vor Ablauf der Widerrufsfrist |
+| `consent_early_start` | `true` | nein | Zustimmung zum Leistungsbeginn vor Ablauf der Widerrufsfrist. Der Rechner fragt sie nicht ab; fehlt sie bei Anreise in weniger als 14 Tagen, steht das in der Notiz der Buchung |
 | `website` | leerer Text | – | Honeypot: muss leer bleiben oder fehlen |
 
 Unbekannte Felder werden ignoriert. Die Zustimmungen stehen mit Zeitpunkt und AGB-Stand in der Notiz der Buchung.
 
 ### Preis und Tage
 
-`Betrag = base_price + max(0, Tage − 5) × extra_day_price`, `Tage = pickup_date − arrival_date` in Kalendertagen
-(Uhrzeiten zählen nicht). Economy 49,00 / 7,50 · CarCover 59,00 / 9,00 · Business 89,00 / 12,50 · Premium 98,00 / 14,00
-(Tabelle `booking_tariffs`). Beispiel: Economy, 7 Tage → 64,00 €. Die Aktion `tariffs` liefert `base_price` und
+`Betrag = base_price + max(0, Tage − 5) × extra_day_price`, `Tage = pickup_date − arrival_date + 1` wie im Rechner:
+Anreise- und Abreisetag zählen jeweils als voller Tag, Uhrzeiten zählen nicht. Economy 49,00 / 7,50 · CarCover 59,00 / 9,00 · Business 89,00 / 12,50 · Premium 98,00 / 14,00
+(Tabelle `booking_tariffs`). Beispiel: Economy, Anreise 01.12., Abreise 07.12. = 7 Tage → 64,00 €. Die Aktion `tariffs` liefert `base_price` und
 `extra_day_price` je Tarif.
 
 ### Verfügbarkeit

@@ -17,6 +17,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Preismodell wie auf der Website:** Grundpreis bis 5 Tage plus Preis je weiterem Tag (Economy 49,00 / 7,50 · CarCover 59,00 / 9,00 · Business 89,00 / 12,50 · Premium 98,00 / 14,00). Gilt für alle Aktionen der Edge Function (`register`, `create`)
 - Tarif „Cover“ heißt **CarCover** (Code bleibt `space`, `carcover` wird als Alias akzeptiert)
 - Kindersitze online 0 bis 5 (vorher 0 bis 3)
+- **An das Formular des Rechners angepasst** (`register`): Anreise- und Abreisetag zählen jeweils als voller Tag (wie im Rechner), ein gemeinsames Feld `flights` für beide Flugnummern, Datum auch als `TT.MM.JJJJ`. Fehlende Flugnummern und die fehlende Zustimmung zum frühen Leistungsbeginn (gibt es im Rechner nicht) blockieren die Buchung nicht mehr, sondern stehen in der Notiz. Pflicht bleiben Zeitraum, Tarif, Kennzeichen, Name, E-Mail und die drei Zustimmungen
 - `booking-checkout` antwortet nur noch freigegebenen Herkünften (Secret `BOOKING_ALLOWED_ORIGINS`), nicht mehr `*`
 - **Die Landingpage (`landing/`) wird nicht mehr benutzt:** Gebucht wird nur noch über den Website-Rechner und form.taxi. Ihre Adresse steht nicht in der Liste der Herkünfte, ihr Code bleibt unverändert im Repo
 

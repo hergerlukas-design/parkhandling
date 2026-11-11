@@ -1,5 +1,5 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
-import { areaFullMessage, berlinToUtcIso, bookableDays, bookingRefFor, bookingRow, type BookingInput, chargingDescription, confirmationFailedMail, confirmationMail, formatBerlinDateTime, normalizeTariffCode, priceFor, registerRow, type TariffRow, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
+import { REGISTER_RULES, normalizeDate, normalizeRegisterInput, normalizeTime, rentalDays, splitFlights, areaFullMessage, berlinToUtcIso, bookableDays, bookingRefFor, bookingRow, type BookingInput, chargingDescription, confirmationFailedMail, confirmationMail, formatBerlinDateTime, normalizeTariffCode, priceFor, registerRow, type TariffRow, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
 import { bookingCorsHeaders, DEFAULT_BOOKING_ORIGINS, originAllowed, parseAllowedOrigins, withBookingCors } from '../_shared/cors.ts'
 
 /** Buchungszeitpunkt passend zu „heute“ 20.10.2026 */
@@ -18,7 +18,7 @@ const tariffs: TariffRow[] = [
 const byCode = (code: string) => tariffs.find((t) => t.code === code)!
 
 const base: BookingInput = {
-  arrival_date: '2026-11-05', arrival_time: '10:00', pickup_date: '2026-11-12', pickup_time: '12:00',
+  arrival_date: '2026-11-05', arrival_time: '10:00', pickup_date: '2026-11-11', pickup_time: '12:00',
   tariff_code: 'premium', plate: 'm-te 123', first_name: 'Test', last_name: 'Person', company: '',
   email: 'a@b.de', phone: '', vehicle_model: '', fuel_type: '', persons: 1, return_mode: 'shuttle',
   notes: '', consent_privacy: true, consent_agb: true, consent_withdrawal: true, consent_early_start: false,
@@ -48,16 +48,17 @@ Deno.test('Preismodell Website: Grundpreis bis 5 Tage + Preis je weiterem Tag', 
   if (priceFor({ base_price: '49.00' as unknown as number, extra_day_price: '7.50' as unknown as number }, 7) !== 64) throw new Error('numeric als Text')
 })
 
-Deno.test('Betrag über validateBooking: Tage = Abholdatum − Anreisedatum, Uhrzeiten zählen nicht', () => {
+Deno.test('Betrag über validateBooking: Anreise- und Abreisetag zählen voll, Uhrzeiten zählen nicht', () => {
   const at = (pickup_date: string, pickup_time = '12:00', tariff_code = 'economy') =>
     validateBooking({ ...base, tariff_code, pickup_date, pickup_time }, '2026-10-20', tariffs, NOW).value
-  const d5 = at('2026-11-10'), d6 = at('2026-11-11'), d7 = at('2026-11-12'), d14 = at('2026-11-19')
+  // Anreise 05.11.: Abholung 09.11. = 5 Tage, 10.11. = 6, 11.11. = 7, 18.11. = 14
+  const d5 = at('2026-11-09'), d6 = at('2026-11-10'), d7 = at('2026-11-11'), d14 = at('2026-11-18')
   if (d5?.days !== 5 || d5.amount !== 49) throw new Error('5 Tage')
   if (d6?.days !== 6 || d6.amount !== 56.5) throw new Error('6 Tage')
   if (d7?.days !== 7 || d7.amount !== 64) throw new Error('7 Tage')
   if (d14?.days !== 14 || d14.amount !== 116.5) throw new Error('14 Tage')
   // Abholung früher oder später am Tag ändert die Tage nicht
-  if (at('2026-11-12', '06:00')?.amount !== 64 || at('2026-11-12', '23:30')?.amount !== 64) throw new Error('Uhrzeit')
+  if (at('2026-11-11', '06:00')?.amount !== 64 || at('2026-11-11', '23:30')?.amount !== 64) throw new Error('Uhrzeit')
 })
 
 Deno.test('Über 30 Tage: Meldung ohne Monatstarif', () => {
@@ -125,7 +126,7 @@ Deno.test('gültige Buchung berechnet Preis und normalisiert Kennzeichen', () =>
 })
 
 Deno.test('unter 5 Tagen, Honeypot und fehlende Zustimmung werden abgelehnt', () => {
-  const short = validateBooking({ ...base, pickup_date: '2026-11-09' }, '2026-10-20', tariffs, NOW)
+  const short = validateBooking({ ...base, pickup_date: '2026-11-08' }, '2026-10-20', tariffs, NOW)
   if (short.value !== null || !short.errors.pickup_date) throw new Error('kurz')
   const bot = validateBooking({ ...base, website: 'spam' }, '2026-10-20', tariffs, NOW)
   if (bot.value !== null || !bot.errors.website) throw new Error('honeypot')
@@ -217,4 +218,48 @@ Deno.test('Buchungszeile: Tarif und Flugnummern in eigenen Feldern, nicht in der
   if (row.source !== 'landing' || row.payment_status !== 'paid' || row.external_ref !== 'ORDER-1') throw new Error('Kopf')
   const self = bookingRow({ ...v, return_mode: 'self' }, tariffs[0], 'ORDER-2', '2026-10', NOW)
   if (self.flight_out !== null || self.flight_return !== null) throw new Error('ohne Shuttle keine Flüge')
+})
+
+Deno.test('Tageszählung wie im Rechner: Anreise- und Abreisetag zählen voll', () => {
+  if (rentalDays('2026-11-05', '2026-11-05') !== 1 || rentalDays('2026-11-05', '2026-11-11') !== 7) throw new Error('Tage')
+  if (rentalDays('2026-12-30', '2027-01-03') !== 5) throw new Error('Jahreswechsel')
+  // 30 Tage sind buchbar, 31 nicht
+  if (!validateBooking({ ...base, pickup_date: '2026-12-04' }, '2026-10-20', tariffs, NOW).value) throw new Error('30 Tage')
+  if (validateBooking({ ...base, pickup_date: '2026-12-05' }, '2026-10-20', tariffs, NOW).value) throw new Error('31 Tage')
+})
+
+Deno.test('Rechner-Formular: Datum, Uhrzeit und gemeinsames Flugnummern-Feld werden vereinheitlicht', () => {
+  if (normalizeDate('5.11.2026') !== '2026-11-05' || normalizeDate('2026-11-05') !== '2026-11-05' || normalizeDate('2026-11-05T00:00:00Z') !== '2026-11-05') throw new Error('Datum')
+  if (normalizeTime('9:00') !== '09:00' || normalizeTime('09:30 Uhr') !== '09:30' || normalizeTime('18:45:00') !== '18:45') throw new Error('Zeit')
+  const [a, b] = splitFlights('LH 2020 / LH 2021')
+  if (a !== 'LH 2020' || b !== 'LH 2021') throw new Error(`Flüge ${a}|${b}`)
+  if (splitFlights('LH2020, LH2021')[1] !== 'LH2021' || splitFlights('LH 2020 und LH 2021')[1] !== 'LH 2021') throw new Error('Trenner')
+  if (splitFlights('LH 2020')[1] !== '' || splitFlights('')[0] !== '') throw new Error('einzeln')
+})
+
+Deno.test('register: Formular des Rechners wird angenommen', () => {
+  // So sendet der Rechner: ein Flugnummern-Feld, kein Häkchen für frühen Leistungsbeginn, deutsches Datum
+  const raw = {
+    ...base, tariff_code: 'carcover', arrival_date: '25.10.2026', pickup_date: '31.10.2026', arrival_time: '9:00',
+    flight_outbound: undefined, flight_return: undefined, flights: 'LH 2020 / LH 2021',
+    consent_early_start: undefined, persons: '', luggage: undefined,
+  } as unknown as BookingInput
+  const r = validateBooking(normalizeRegisterInput(raw), '2026-10-20', tariffs, NOW, REGISTER_RULES)
+  if (!r.value) throw new Error(JSON.stringify(r.errors))
+  if (r.value.days !== 7 || r.value.amount !== 77 || r.value.tariff_code !== 'space') throw new Error('Preis')
+  if (r.value.arrival_time !== '09:00' || r.value.persons !== 1 || r.value.luggage !== 0) throw new Error('Standardwerte')
+  const row = registerRow(r.value, byCode('space'), '1a2b3c4d-1111-4222-8333-444455556666', '2026-10', NOW)
+  if (row.flight_out !== 'LH2020' || row.flight_return !== 'LH2021') throw new Error('Flüge')
+  if (!row.notes.includes('Vorzeitiger Leistungsbeginn: Anreise innerhalb der Widerrufsfrist, keine ausdrückliche Zustimmung übermittelt')) throw new Error(row.notes)
+  // Shuttle ohne Flugnummern: angenommen, in der Notiz vermerkt
+  const noFlights = validateBooking(normalizeRegisterInput({ ...raw, flights: '' } as BookingInput), '2026-10-20', tariffs, NOW, REGISTER_RULES)
+  if (!noFlights.value || !registerRow(noFlights.value, byCode('space'), '1a2b3c4d-1111-4222-8333-444455556666', '2026-10', NOW).notes.includes('Flugnummern fehlen')) throw new Error('ohne Flüge')
+  // Pflicht bleiben: Name, E-Mail, Kennzeichen, die drei Zustimmungen
+  const missing = validateBooking(normalizeRegisterInput({ ...raw, first_name: '', email: '', plate: '', consent_agb: false } as BookingInput), '2026-10-20', tariffs, NOW, REGISTER_RULES)
+  for (const k of ['first_name', 'email', 'plate', 'consent_agb'] as const) if (!missing.errors[k]) throw new Error(`Pflicht ${k}`)
+})
+
+Deno.test('Landingpage-Regeln bleiben streng (create)', () => {
+  const r = validateBooking({ ...base, arrival_date: '2026-10-25', pickup_date: '2026-10-31', flight_outbound: '' }, '2026-10-20', tariffs, NOW)
+  if (!r.errors.consent_early_start || !r.errors.flight_outbound) throw new Error(JSON.stringify(r.errors))
 })

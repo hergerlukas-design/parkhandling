@@ -203,7 +203,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 
 ## Website-Rechner im Dashboard (0.34.0)
 - [BELEGT] Preismodell: Grundpreis bis 5 Tage plus Preis je weiterem Tag, Mindestdauer 5, höchstens 30 Tage (Vorgabe 11.11.2026)
-- [ANNAHME] Tageszählung: Abholdatum minus Anreisedatum in Kalendertagen, Uhrzeiten zählen nicht (Economy, 7 Tage → 64,00 €). Der Quelltext des Rechners war bei der Umsetzung nicht einsehbar; zählt er anders (z. B. angefangene 24 Stunden oder beide Tage inklusive), muss `daysBetween` in `booking-checkout/logic.ts` angepasst werden
+- [BELEGT] Tageszählung wie im Rechner: „Anreise- und Abreisetag zählen jeweils als voller Tag“ (Abholdatum − Anreisedatum + 1). Gilt für `register` und `create`
+- [ANNAHME] `register` richtet sich nach dem Formular des Rechners (Stand 11.11.2026): ein Feld für beide Flugnummern; kein Häkchen für den frühen Leistungsbeginn. Fehlende Flugnummern und diese fehlende Zustimmung blockieren nicht, sondern stehen in der Notiz. Empfehlung: das Häkchen im Rechner ergänzen (Widerrufsrecht bei Anreise innerhalb von 14 Tagen)
 - [BELEGT] Die Landingpage (`landing/`) wird nicht mehr benutzt (12.11.2026): Gebucht wird nur über den Website-Rechner und form.taxi. Ihr Code bleibt unverändert im Repo, ihre Adresse ist für `booking-checkout` nicht freigegeben. `create`/`capture` bleiben in der Function erhalten und rechnen nach dem neuen Preismodell
 - [ANNAHME] `included_text` je Tarif bleibt unverändert: Die Website-Texte lagen nicht vor. Pflege in `booking_tariffs.included_text`
 - [ANNAHME] PF-Nummer einer Website-Buchung: aus der vorab vergebenen Buchungs-ID, gespeichert als `external_ref` (Quelle `website`)

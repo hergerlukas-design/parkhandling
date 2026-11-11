@@ -20,7 +20,11 @@ import {
   areaFullMessage,
   berlinToUtcIso,
   chargingDescription,
+  CHECKOUT_RULES,
+  normalizeRegisterInput,
+  REGISTER_RULES,
   registerRow,
+  type ValidationOptions,
   WEBSITE_SOURCE,
   type BookingInput,
   isIsoDate,
@@ -148,6 +152,7 @@ async function prepareBooking(
   body: { form?: BookingInput },
   /** Läuft nach der Validierung und vor der Kapazitätsprüfung; eine Antwort beendet die Prüfung */
   beforeCapacity?: (value: NormalizedBooking, tariff: TariffRow) => Promise<Response | null>,
+  rules: ValidationOptions = CHECKOUT_RULES,
 ): Promise<{ value: NormalizedBooking; tariff: TariffRow; ipHash: string } | Response> {
   const ipHash = `booking:${await hashIp(clientIp(req))}`
   const { data: allowed, error: rateErr } = await admin.rpc('inquiry_rate_check', {
@@ -165,7 +170,7 @@ async function prepareBooking(
     month: '2-digit',
     day: '2-digit',
   }).format(new Date())
-  const { errors, value } = validateBooking(body.form ?? ({} as BookingInput), today, tariffs)
+  const { errors, value } = validateBooking(body.form ?? ({} as BookingInput), today, tariffs, new Date().toISOString(), rules)
   if (!value) return json({ error: 'Bitte die markierten Felder prüfen.', fields: errors }, 422)
 
   const tariff = tariffs.find((t) => t.code === value.tariff_code)!
@@ -228,7 +233,9 @@ const REGISTER_DEDUPE_MS = 15 * 60 * 1000
  */
 async function handleRegister(req: Request, body: { form?: BookingInput }) {
   // Wiederholung zuerst erkennen: sonst könnte die eigene erste Buchung den Bereich „voll“ machen
-  const prepared = await prepareBooking(req, body, registeredRecently)
+  // Formular des Rechners: Datums-/Zeitformate, ein Feld für beide Flugnummern, Standardwerte
+  const form = normalizeRegisterInput(body.form ?? {})
+  const prepared = await prepareBooking(req, { form }, registeredRecently, REGISTER_RULES)
   if (prepared instanceof Response) return prepared
   const { value, tariff } = prepared
 
