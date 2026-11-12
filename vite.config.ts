@@ -47,6 +47,11 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(buildTime),
   },
+  build: {
+    // Ältere iPads/iPhones (Safari 15/16) sollen die App noch laden können. Neue Syntax wird
+    // heruntergebrochen; Regex-Lookbehind kann der Build NICHT umschreiben (siehe browserCompat.test.ts).
+    target: ['es2020', 'safari15'],
+  },
   plugins: [
     react(),
     tailwindcss(),

@@ -193,7 +193,9 @@ export function parsePaymentStatus(value: CellValue): PaymentStatus | null {
   return null
 }
 
-const PLATE = /(?<![A-Za-zÄÖÜäöü0-9])([A-ZÄÖÜ]{1,3})(-|\s)([A-Z]{1,2})[\s-]?(\d{1,4})([EH])?(?![A-Za-z0-9])/g
+// Kein Regex-Lookbehind: Safari < 16.4 (ältere iPhones/iPads) kann ihn nicht parsen, und der
+// SyntaxError legt das ganze Bundle lahm (weiße Seite). Stattdessen das Zeichen davor als Gruppe 1.
+const PLATE = /(^|[^A-Za-zÄÖÜäöü0-9])([A-ZÄÖÜ]{1,3})(-|\s)([A-Z]{1,2})[\s-]?(\d{1,4})([EH])?(?![A-Za-z0-9])/g
 
 export interface VehicleSplit {
   plate: string
@@ -209,12 +211,13 @@ export interface VehicleSplit {
 export function splitVehicle(value: CellValue): VehicleSplit {
   const text = cleanText(value)
   const matches = [...text.toUpperCase().matchAll(PLATE)]
-  const withHyphen = matches.filter((m) => m[2] === '-')
+  const withHyphen = matches.filter((m) => m[3] === '-')
   // Ohne Bindestrich (z. B. "VW ID 4") oder mehrdeutig: nicht raten, alles im Kennzeichen lassen
   const m = withHyphen.length === 1 ? withHyphen[0] : null
   if (!m) return { plate: text.toUpperCase(), model: null, uncertain: text !== '' }
-  const plate = `${m[1]}-${m[3]} ${m[4]}${m[5] ?? ''}`
-  const model = (text.slice(0, m.index) + ' ' + text.slice(m.index! + m[0].length))
+  const plate = `${m[2]}-${m[4]} ${m[5]}${m[6] ?? ''}`
+  const start = m.index! + m[1].length
+  const model = (text.slice(0, start) + ' ' + text.slice(m.index! + m[0].length))
     .replace(/[,;/|()]+/g, ' ')
     .replace(/\s+-\s+/g, ' ')
     .replace(/\s+/g, ' ')

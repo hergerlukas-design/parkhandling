@@ -3,7 +3,10 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
-## 0.33.1 – 12.11.2026
+## 0.33.2 – 12.11.2026
+
+### Behoben
+- **Weiße Seite auf älteren iPhones/iPads** (Safari vor iOS 16.4): Die Kennzeichen-Erkennung beim Buchungsimport nutzte eine Regex-Schreibweise, die ältere Safari-Versionen nicht verstehen – dadurch lud die ganze App nicht. Umgeschrieben; außerdem wird der Code jetzt für Safari 15 übersetzt
 
 ### Geändert
 - **Fahrzeugliste „Alle“ in drei Abschnitte geteilt**, jeweils mit feiner Trennlinie und Anzahl:
