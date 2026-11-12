@@ -21,15 +21,26 @@ export async function upsertBooking(input: BookingInput, source: string): Promis
 }
 
 /** Filter-Chips der Fahrzeugliste (wie im Klick-Prototyp) */
-export type ListChip = 'all' | 'hall' | 'outdoor' | 'pickup_today' | 'open_services' | 'charge_fuel' | 'cancelled'
+export type ListChip =
+  | 'all'
+  | 'overdue'
+  | 'hall'
+  | 'outdoor'
+  | 'pickup_today'
+  | 'open_services'
+  | 'charge_fuel'
+  | 'expected'
+  | 'cancelled'
 
 export const LIST_CHIPS: [ListChip, string][] = [
   ['all', 'Alle'],
+  ['overdue', 'Rückgabe offen'],
   ['hall', 'Halle'],
   ['outdoor', 'Außen'],
   ['pickup_today', 'Heute raus'],
   ['open_services', 'Offene Leistungen'],
   ['charge_fuel', 'Laden/Tanken'],
+  ['expected', 'Gebucht'],
   ['cancelled', 'Storniert'],
 ]
 
@@ -38,10 +49,29 @@ export interface BookingFilter {
   chip?: ListChip
   status?: BookingStatus | ''
   paymentStatus?: PaymentStatus | ''
+  /**
+   * Abschnitte der Liste „Alle“:
+   * overdue = Fahrzeug ist da, Abholung laut Buchung vorbei, aber noch nicht übergeben
+   *           (kein Rückgabe-Protokoll, Status nicht „Abgeschlossen“), sortiert nach Abholung;
+   * on_site = Fahrzeug ist da, Abholung steht noch bevor, sortiert nach Abholung;
+   * expected = nur „Gebucht“ (noch nicht angekommen), sortiert nach Ankunft.
+   */
+  arrival?: ArrivalGroup
 }
 
+export type ArrivalGroup = 'overdue' | 'on_site' | 'expected'
+
+/** Abholung laut Buchung vorbei, Fahrzeug aber noch nicht übergeben → braucht Aufmerksamkeit. */
+export function isOverdue(b: Pick<Booking, 'status' | 'end_at'>, now: number = Date.now()): boolean {
+  return ON_SITE_STATUSES.includes(b.status) && Date.parse(b.end_at) < now
+}
+
+/** Status, in denen das Fahrzeug auf dem Gelände (bzw. in unserer Obhut) ist */
+export const ON_SITE_STATUSES: BookingStatus[] = ['arrived', 'stored', 'in_service', 'ready', 'in_transit']
+
+/** Keyset-Cursor: `at` ist end_at (Abholung) bzw. bei arrival=expected start_at (Ankunft). */
 export interface BookingCursor {
-  end_at: string
+  at: string
   id: string
 }
 
@@ -86,7 +116,13 @@ type Query = any
 
 function applyChip(q: Query, chip: ListChip): Query {
   if (chip === 'cancelled') return q.eq('status', 'cancelled')
+  // Gebucht = noch nicht angekommen; Rückgabe offen = da, Abholung vorbei, nicht übergeben
+  if (chip === 'expected') return q.eq('status', 'booked')
+  if (chip === 'overdue') return q.in('status', ON_SITE_STATUSES).lt('end_at', new Date().toISOString())
   q = q.not('status', 'in', '(completed,cancelled)')
+  // Außer „Alle“ zeigen alle Filter nur Fahrzeuge vor Ort; noch nicht angekommene Buchungen
+  // (und ihre Reservierung) erscheinen erst nach der Ankunft, vorher nur im Fahrzeug-Detail
+  if (chip !== 'all') q = q.neq('status', 'booked')
   switch (chip) {
     case 'hall':
       return q.eq('parking_type', 'indoor')
@@ -114,32 +150,37 @@ function applySearch(q: Query, search?: string): Query {
 }
 
 /**
- * Keyset-Paginierung nach (end_at, id) – kein OFFSET, damit die Liste auch bei vielen
- * Buchungen schnell bleibt.
+ * Keyset-Paginierung nach (end_at, id) bzw. (start_at, id) – kein OFFSET, damit die Liste
+ * auch bei vielen Buchungen schnell bleibt.
  */
 export async function listBookings(
   filter: BookingFilter,
   cursor?: BookingCursor | null,
 ): Promise<{ items: BookingListItem[]; next: BookingCursor | null }> {
+  const key = filter.arrival === 'expected' ? 'start_at' : 'end_at'
   let q: Query = db()
     .from('booking_list')
     .select('*')
-    .order('end_at', { ascending: true })
+    .order(key, { ascending: true })
     .order('id', { ascending: true })
     .limit(PAGE_SIZE)
   q = applyChip(q, filter.chip ?? 'all')
   q = applySearch(q, filter.search)
   if (filter.status) q = q.eq('status', filter.status)
   if (filter.paymentStatus) q = q.eq('payment_status', filter.paymentStatus)
+  const now = new Date().toISOString()
+  if (filter.arrival === 'expected') q = q.eq('status', 'booked')
+  if (filter.arrival === 'on_site') q = q.neq('status', 'booked').gte('end_at', now)
+  if (filter.arrival === 'overdue') q = q.in('status', ON_SITE_STATUSES).lt('end_at', now)
   if (cursor) {
-    q = q.or(`end_at.gt."${cursor.end_at}",and(end_at.eq."${cursor.end_at}",id.gt.${cursor.id})`)
+    q = q.or(`${key}.gt."${cursor.at}",and(${key}.eq."${cursor.at}",id.gt.${cursor.id})`)
   }
 
   const { data, error } = await q
   if (error) throw new Error(error.message)
   const items = (data ?? []) as BookingListItem[]
   const last = items.at(-1)
-  return { items, next: items.length === PAGE_SIZE && last ? { end_at: last.end_at, id: last.id } : null }
+  return { items, next: items.length === PAGE_SIZE && last ? { at: last[key], id: last.id } : null }
 }
 
 /** Anzahl je Filter-Chip (für die Zahlen in den Chips), unter Berücksichtigung der Suche. */

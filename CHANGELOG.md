@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.33.1 – 12.11.2026
+
+### Geändert
+- **Fahrzeugliste „Alle“ in drei Abschnitte geteilt**, jeweils mit feiner Trennlinie und Anzahl:
+  1. **Abholung vorbei – Rückgabe offen** (rot, mit Warnzeichen): Fahrzeug ist da, die Abholzeit laut Buchung ist vorbei, aber es ist noch nicht mit Rückgabe-Protokoll übergeben. Jedes dieser Fahrzeuge trägt zusätzlich den Marker **Rückgabe offen** (auch in den anderen Filtern, z. B. „Heute raus“); die Karte ist rot umrandet, die Tabellenzeile leicht rot hinterlegt
+  2. **Vor Ort**: alle übrigen Fahrzeuge auf dem Gelände, nach Abholung sortiert
+  3. **Gebucht – noch nicht angekommen**: nach Ankunft sortiert, gestrichelt umrandet, mit Zeile **Ankunft** (orange mit „überfällig“, wenn die Ankunftszeit vorbei ist)
+- **Halle, Außen, Heute raus, Offene Leistungen, Laden/Tanken** zeigen und zählen nur noch Fahrzeuge, die angekommen sind. Noch nicht angekommene Buchungen tauchen dort erst nach der Ankunft auf
+- Die Reservierung (reservierter Stellplatz) noch nicht angekommener Buchungen steht nur im Fahrzeug-Detail, nicht mehr in der Liste
+- Tabelle (Tablet/Desktop): gleiche Spaltenbreiten in allen Abschnitten
+- Neue Filter **Rückgabe offen** (direkt nach „Alle“, rot mit Warnzeichen, solange es Fahrzeuge darin gibt) und **Gebucht** (noch nicht angekommen, nach Ankunft sortiert, vor „Storniert“). Beide lassen sich auch per Adresse öffnen (`/fahrzeuge?filter=overdue` bzw. `?filter=expected`)
+
 ## 0.33.0 – 29.10.2026
 
 ### Neu
