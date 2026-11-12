@@ -179,7 +179,7 @@ export async function listBookings(
   const { data, error } = await q
   if (error) throw new Error(error.message)
   const items = (data ?? []) as BookingListItem[]
-  const last = items.at(-1)
+  const last = items[items.length - 1]
   return { items, next: items.length === PAGE_SIZE && last ? { at: last[key], id: last.id } : null }
 }
 
