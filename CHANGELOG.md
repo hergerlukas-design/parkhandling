@@ -6,7 +6,8 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ## 0.33.1 – 12.11.2026
 
 ### Geändert
-- **Fahrzeugliste: noch nicht angekommene Fahrzeuge erkennbar.** Buchungen im Status „Gebucht“ (Fahrzeug noch nicht auf dem Gelände) tragen neben dem Kennzeichen den Hinweis **noch nicht da**. Auf dem Smartphone ist die Karte zusätzlich gestrichelt umrandet, der Farbbalken blass, und eine Zeile nennt die **Ankunft** (z. B. „Ankunft 18.11. 06:30“, orange mit „überfällig“, wenn die Ankunftszeit vorbei ist)
+- **Fahrzeugliste: noch nicht angekommene Fahrzeuge getrennt.** Unter **Alle** stehen oben die Fahrzeuge vor Ort (nach Abholung sortiert), darunter nach einer feinen Linie „Gebucht – noch nicht angekommen“ die Buchungen, deren Fahrzeug noch nicht da ist (nach Ankunft sortiert). Ihre Karten sind gestrichelt umrandet, der Farbbalken blass, und eine Zeile nennt die **Ankunft** (orange mit „überfällig“, wenn die Ankunftszeit vorbei ist). In den übrigen Filtern tragen sie neben dem Kennzeichen den Hinweis **noch nicht da**
+- **Halle** und **Außen** zeigen und zählen nur noch Fahrzeuge vor Ort. Die Reservierung (Parkplatz, reservierter Stellplatz) noch nicht angekommener Buchungen steht nur im Fahrzeug-Detail, nicht mehr in der Liste
 
 ## 0.33.0 – 29.10.2026
 

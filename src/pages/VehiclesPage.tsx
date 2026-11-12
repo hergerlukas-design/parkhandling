@@ -65,11 +65,11 @@ function notArrived(b: BookingListItem): boolean {
 }
 
 /** Kleine Hinweise neben dem Kennzeichen: noch nicht angekommen, Portal-Quelle und offene Import-Prüfung */
-function SourceBadges({ b }: { b: BookingListItem }) {
+function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePending?: boolean }) {
   const flags = b.import_flags ?? []
   return (
     <>
-      {notArrived(b) && (
+      {notArrived(b) && !hidePending && (
         <span
           title={`Ankunft ${formatPickup(b.start_at)}`}
           className="ml-1.5 rounded border border-dashed border-line-strong bg-ground px-1.5 py-0.5 align-middle text-[10px] font-semibold text-subtle"
@@ -99,6 +99,115 @@ function SourceBadges({ b }: { b: BookingListItem }) {
   )
 }
 
+/** Stellplatz/Fach in der Liste; reservierte Plätze noch nicht angekommener Fahrzeuge nur im Detail. */
+function locationOf(b: BookingListItem): string | null {
+  return notArrived(b) ? null : b.location_code
+}
+
+function VehicleRow({ b, hidePending, onOpen }: { b: BookingListItem; hidePending?: boolean; onOpen: () => void }) {
+  const code = locationOf(b)
+  return (
+    <tr onClick={onOpen} className="cursor-pointer border-t border-line first:border-0 hover:bg-ground/60">
+      <td className="px-4 py-3 whitespace-nowrap">
+        <span className="font-mono font-semibold">{b.plate}</span>
+        <SourceBadges b={b} hidePending={hidePending} />
+      </td>
+      <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
+      <td className="px-3 py-3 whitespace-nowrap">
+        {hasKeySlot(code) ? (
+          <span className="font-mono font-semibold">{code}</span>
+        ) : code ? (
+          <span>{whereabouts(code)} <span className="font-mono text-xs text-muted">{code}</span></span>
+        ) : (
+          '–'
+        )}
+      </td>
+      <td className="px-3 py-3 whitespace-nowrap">{formatPeriod(b.start_at, b.end_at)}</td>
+      <td className="px-3 py-3"><PickupCell b={b} /></td>
+      <td className="px-3 py-3"><ServiceChips chips={b.task_chips} /></td>
+      <td className="px-3 py-3"><PaymentBadge status={b.payment_status} /></td>
+      <td className="px-3 py-3"><StatusBadge status={b.status} /></td>
+    </tr>
+  )
+}
+
+function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePending?: boolean; onOpen: () => void }) {
+  const due = dueCategory(b.end_at)
+  const pending = notArrived(b)
+  const late = pending && Date.parse(b.start_at) < Date.now()
+  const code = locationOf(b)
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className={`flex w-full gap-3 rounded-2xl border p-3 text-left ${
+          pending ? 'border-dashed border-line-strong bg-surface/60' : 'border-line bg-surface'
+        }`}
+      >
+        <span
+          className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar} ${pending ? 'opacity-30' : ''}`}
+          aria-hidden="true"
+        />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="flex items-baseline justify-between gap-2">
+            <span>
+              <span className="font-mono text-base font-semibold">{b.plate}</span>
+              <SourceBadges b={b} hidePending={hidePending} />
+            </span>
+            <span className="text-sm text-subtle">{hasKeySlot(code) ? code : code ? whereabouts(code) : ''}</span>
+          </span>
+          <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
+          {pending && (
+            <span className={`text-sm font-semibold ${late ? 'text-warn' : 'text-accent-dark'}`}>
+              Ankunft {formatPickup(b.start_at)}
+              {late && ' – überfällig'}
+            </span>
+          )}
+          <span className="flex items-baseline justify-between gap-2 text-sm">
+            <span className="font-semibold">Abholung {formatPickup(b.end_at)}</span>
+            {b.status === 'cancelled' ? (
+              <span className="text-danger">storniert</span>
+            ) : b.open_task_count > 0 ? (
+              <span className="text-warn">{b.open_task_count} offen</span>
+            ) : (
+              <span className="text-ok">fertig</span>
+            )}
+          </span>
+        </span>
+      </button>
+    </li>
+  )
+}
+
+/** Trennlinie in „Alle“ zwischen Fahrzeugen vor Ort und noch nicht angekommenen Buchungen */
+function ExpectedDivider({ count }: { count: number }) {
+  return (
+    <div className="flex items-center gap-3 pt-3 pb-1" role="separator">
+      <span className="h-px flex-1 bg-line-strong" aria-hidden="true" />
+      <span className="text-xs font-semibold whitespace-nowrap text-subtle">
+        Gebucht – noch nicht angekommen{count > 0 && ` · ${count}`}
+      </span>
+      <span className="h-px flex-1 bg-line-strong" aria-hidden="true" />
+    </div>
+  )
+}
+
+const TABLE_HEAD = (
+  <thead className="border-b border-line bg-ground/60 text-xs font-semibold text-subtle">
+    <tr>
+      <th className="px-4 py-2.5">Kennzeichen</th>
+      <th className="px-3 py-2.5">Fahrzeug</th>
+      <th className="px-3 py-2.5">Stellplatz / Fach</th>
+      <th className="px-3 py-2.5">Zeitraum</th>
+      <th className="px-3 py-2.5">Abholung</th>
+      <th className="px-3 py-2.5">Leistungen</th>
+      <th className="px-3 py-2.5">Zahlung</th>
+      <th className="px-3 py-2.5">Status</th>
+    </tr>
+  </thead>
+)
+
 export function VehiclesPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -112,6 +221,12 @@ export function VehiclesPage() {
   const [items, setItems] = useState<BookingListItem[]>([])
   const [next, setNext] = useState<BookingCursor | null>(null)
   const [loading, setLoading] = useState(false)
+  // Nur bei „Alle“: noch nicht angekommene Buchungen als eigener Abschnitt unter der Linie
+  const split = chip === 'all'
+  const [expected, setExpected] = useState<BookingListItem[]>([])
+  const [expectedNext, setExpectedNext] = useState<BookingCursor | null>(null)
+  const [expectedLoading, setExpectedLoading] = useState(false)
+  const expectedRequestId = useRef(0)
   const [error, setError] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'new' | 'import' | 'parkos' | 'review' | 'inquiries' | null>(null)
   const [openImports, setOpenImports] = useState(0)
@@ -129,7 +244,7 @@ export function VehiclesPage() {
       setLoading(true)
       setError(null)
       try {
-        const page = await listBookings({ search: debounced, chip }, cursor)
+        const page = await listBookings({ search: debounced, chip, arrival: split ? 'on_site' : undefined }, cursor)
         if (id !== requestId.current) return
         setItems((prev) => (cursor ? [...prev, ...page.items] : page.items))
         setNext(page.next)
@@ -139,15 +254,39 @@ export function VehiclesPage() {
         if (id === requestId.current) setLoading(false)
       }
     },
-    [debounced, chip],
+    [debounced, chip, split],
+  )
+
+  const loadExpected = useCallback(
+    async (cursor: BookingCursor | null) => {
+      const id = ++expectedRequestId.current
+      if (!split) {
+        setExpected([])
+        setExpectedNext(null)
+        return
+      }
+      setExpectedLoading(true)
+      try {
+        const page = await listBookings({ search: debounced, chip, arrival: 'expected' }, cursor)
+        if (id !== expectedRequestId.current) return
+        setExpected((prev) => (cursor ? [...prev, ...page.items] : page.items))
+        setExpectedNext(page.next)
+      } catch (e) {
+        if (id === expectedRequestId.current) setError((e as Error).message)
+      } finally {
+        if (id === expectedRequestId.current) setExpectedLoading(false)
+      }
+    },
+    [debounced, chip, split],
   )
 
   const reload = useCallback(() => {
     void load(null)
+    void loadExpected(null)
     countByChip(debounced).then(setCounts).catch(() => undefined)
     countOpenImports().then(setOpenImports).catch(() => undefined)
     countNewInquiries().then(setNewInquiries).catch(() => undefined)
-  }, [load, debounced])
+  }, [load, loadExpected, debounced])
 
   useEffect(() => {
     reload()
@@ -212,106 +351,27 @@ export function VehiclesPage() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {/* Tablet/Desktop: Tabelle */}
-      <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface md:block">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-line bg-ground/60 text-xs font-semibold text-subtle">
-            <tr>
-              <th className="px-4 py-2.5">Kennzeichen</th>
-              <th className="px-3 py-2.5">Fahrzeug</th>
-              <th className="px-3 py-2.5">Stellplatz / Fach</th>
-              <th className="px-3 py-2.5">Zeitraum</th>
-              <th className="px-3 py-2.5">Abholung</th>
-              <th className="px-3 py-2.5">Leistungen</th>
-              <th className="px-3 py-2.5">Zahlung</th>
-              <th className="px-3 py-2.5">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((b) => (
-              <tr
-                key={b.id}
-                onClick={() => navigate(`/fahrzeuge/${b.id}`)}
-                className="cursor-pointer border-t border-line first:border-0 hover:bg-ground/60"
-              >
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span className="font-mono font-semibold">{b.plate}</span>
-                  <SourceBadges b={b} />
-                </td>
-                <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  {hasKeySlot(b.location_code) ? (
-                    <span className="font-mono font-semibold">{b.location_code}</span>
-                  ) : b.location_code ? (
-                    <span>{whereabouts(b.location_code)} <span className="font-mono text-xs text-muted">{b.location_code}</span></span>
-                  ) : (
-                    '–'
-                  )}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">{formatPeriod(b.start_at, b.end_at)}</td>
-                <td className="px-3 py-3"><PickupCell b={b} /></td>
-                <td className="px-3 py-3"><ServiceChips chips={b.task_chips} /></td>
-                <td className="px-3 py-3"><PaymentBadge status={b.payment_status} /></td>
-                <td className="px-3 py-3"><StatusBadge status={b.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {(items.length > 0 || !split) && (
+        <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface md:block">
+          <table className="w-full text-left text-sm">
+            {TABLE_HEAD}
+            <tbody>
+              {items.map((b) => (
+                <VehicleRow key={b.id} b={b} onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Smartphone: Karten mit Farbbalken nach Abholdatum */}
       <ul className="flex flex-col gap-2 md:hidden">
-        {items.map((b) => {
-          const due = dueCategory(b.end_at)
-          const pending = notArrived(b)
-          const late = pending && Date.parse(b.start_at) < Date.now()
-          return (
-            <li key={b.id}>
-              <button
-                type="button"
-                onClick={() => navigate(`/fahrzeuge/${b.id}`)}
-                className={`flex w-full gap-3 rounded-2xl border p-3 text-left ${
-                  pending ? 'border-dashed border-line-strong bg-surface/60' : 'border-line bg-surface'
-                }`}
-              >
-                <span
-                  className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar} ${pending ? 'opacity-30' : ''}`}
-                  aria-hidden="true"
-                />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span>
-                      <span className="font-mono text-base font-semibold">{b.plate}</span>
-                      <SourceBadges b={b} />
-                    </span>
-                    <span className="text-sm text-subtle">
-                      {hasKeySlot(b.location_code) ? b.location_code : b.location_code ? whereabouts(b.location_code) : ''}
-                    </span>
-                  </span>
-                  <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
-                  {pending && (
-                    <span className={`text-sm font-semibold ${late ? 'text-warn' : 'text-accent-dark'}`}>
-                      Ankunft {formatPickup(b.start_at)}
-                      {late && ' – überfällig'}
-                    </span>
-                  )}
-                  <span className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-semibold">Abholung {formatPickup(b.end_at)}</span>
-                    {b.status === 'cancelled' ? (
-                      <span className="text-danger">storniert</span>
-                    ) : b.open_task_count > 0 ? (
-                      <span className="text-warn">{b.open_task_count} offen</span>
-                    ) : (
-                      <span className="text-ok">fertig</span>
-                    )}
-                  </span>
-                </span>
-              </button>
-            </li>
-          )
-        })}
+        {items.map((b) => (
+          <VehicleCard key={b.id} b={b} onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
+        ))}
       </ul>
 
-      {!loading && items.length === 0 && (
+      {!loading && items.length === 0 && (!split || expected.length === 0) && (
         <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
           Keine Fahrzeuge gefunden.
         </p>
@@ -324,6 +384,36 @@ export function VehiclesPage() {
             <Button onClick={() => void load(next)}>Weitere laden</Button>
           )}
         </div>
+      )}
+
+      {split && expected.length > 0 && (
+        <>
+          <ExpectedDivider count={expectedNext ? 0 : expected.length} />
+          <div className="hidden overflow-hidden rounded-2xl border border-dashed border-line-strong bg-surface md:block">
+            <table className="w-full text-left text-sm">
+              {TABLE_HEAD}
+              <tbody>
+                {expected.map((b) => (
+                  <VehicleRow key={b.id} b={b} hidePending onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="flex flex-col gap-2 md:hidden">
+            {expected.map((b) => (
+              <VehicleCard key={b.id} b={b} hidePending onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
+            ))}
+          </ul>
+          {(expectedLoading || expectedNext) && (
+            <div className="p-2 text-center">
+              {expectedLoading ? (
+                <span className="text-sm text-muted">Lädt …</span>
+              ) : (
+                <Button onClick={() => void loadExpected(expectedNext)}>Weitere laden</Button>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {dialog === 'new' && (

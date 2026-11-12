@@ -38,10 +38,16 @@ export interface BookingFilter {
   chip?: ListChip
   status?: BookingStatus | ''
   paymentStatus?: PaymentStatus | ''
+  /**
+   * on_site = Fahrzeug ist da (alles außer „Gebucht“), sortiert nach Abholung;
+   * expected = nur „Gebucht“ (noch nicht angekommen), sortiert nach Ankunft.
+   */
+  arrival?: 'on_site' | 'expected'
 }
 
+/** Keyset-Cursor: `at` ist end_at (Abholung) bzw. bei arrival=expected start_at (Ankunft). */
 export interface BookingCursor {
-  end_at: string
+  at: string
   id: string
 }
 
@@ -88,10 +94,12 @@ function applyChip(q: Query, chip: ListChip): Query {
   if (chip === 'cancelled') return q.eq('status', 'cancelled')
   q = q.not('status', 'in', '(completed,cancelled)')
   switch (chip) {
+    // Halle/Außen zeigen nur Fahrzeuge vor Ort; die Reservierung noch nicht angekommener
+    // Buchungen steht nur im Fahrzeug-Detail
     case 'hall':
-      return q.eq('parking_type', 'indoor')
+      return q.eq('parking_type', 'indoor').neq('status', 'booked')
     case 'outdoor':
-      return q.in('parking_type', ['outdoor', 'outdoor_cover'])
+      return q.in('parking_type', ['outdoor', 'outdoor_cover']).neq('status', 'booked')
     case 'pickup_today':
       return q.lt('end_at', berlinDayStart(1))
     case 'open_services':
@@ -114,32 +122,35 @@ function applySearch(q: Query, search?: string): Query {
 }
 
 /**
- * Keyset-Paginierung nach (end_at, id) – kein OFFSET, damit die Liste auch bei vielen
- * Buchungen schnell bleibt.
+ * Keyset-Paginierung nach (end_at, id) bzw. (start_at, id) – kein OFFSET, damit die Liste
+ * auch bei vielen Buchungen schnell bleibt.
  */
 export async function listBookings(
   filter: BookingFilter,
   cursor?: BookingCursor | null,
 ): Promise<{ items: BookingListItem[]; next: BookingCursor | null }> {
+  const key = filter.arrival === 'expected' ? 'start_at' : 'end_at'
   let q: Query = db()
     .from('booking_list')
     .select('*')
-    .order('end_at', { ascending: true })
+    .order(key, { ascending: true })
     .order('id', { ascending: true })
     .limit(PAGE_SIZE)
   q = applyChip(q, filter.chip ?? 'all')
   q = applySearch(q, filter.search)
   if (filter.status) q = q.eq('status', filter.status)
   if (filter.paymentStatus) q = q.eq('payment_status', filter.paymentStatus)
+  if (filter.arrival === 'expected') q = q.eq('status', 'booked')
+  if (filter.arrival === 'on_site') q = q.neq('status', 'booked')
   if (cursor) {
-    q = q.or(`end_at.gt."${cursor.end_at}",and(end_at.eq."${cursor.end_at}",id.gt.${cursor.id})`)
+    q = q.or(`${key}.gt."${cursor.at}",and(${key}.eq."${cursor.at}",id.gt.${cursor.id})`)
   }
 
   const { data, error } = await q
   if (error) throw new Error(error.message)
   const items = (data ?? []) as BookingListItem[]
   const last = items.at(-1)
-  return { items, next: items.length === PAGE_SIZE && last ? { end_at: last.end_at, id: last.id } : null }
+  return { items, next: items.length === PAGE_SIZE && last ? { at: last[key], id: last.id } : null }
 }
 
 /** Anzahl je Filter-Chip (für die Zahlen in den Chips), unter Berücksichtigung der Suche. */
