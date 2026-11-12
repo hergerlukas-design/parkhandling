@@ -13,6 +13,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Halle, Außen, Heute raus, Offene Leistungen, Laden/Tanken** zeigen und zählen nur noch Fahrzeuge, die angekommen sind. Noch nicht angekommene Buchungen tauchen dort erst nach der Ankunft auf
 - Die Reservierung (reservierter Stellplatz) noch nicht angekommener Buchungen steht nur im Fahrzeug-Detail, nicht mehr in der Liste
 - Tabelle (Tablet/Desktop): gleiche Spaltenbreiten in allen Abschnitten
+- Neue Filter **Rückgabe offen** (direkt nach „Alle“, rot mit Warnzeichen, solange es Fahrzeuge darin gibt) und **Gebucht** (noch nicht angekommen, nach Ankunft sortiert, vor „Storniert“). Beide lassen sich auch per Adresse öffnen (`/fahrzeuge?filter=overdue` bzw. `?filter=expected`)
 
 ## 0.33.0 – 29.10.2026
 

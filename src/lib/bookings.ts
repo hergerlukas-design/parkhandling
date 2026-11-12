@@ -21,15 +21,26 @@ export async function upsertBooking(input: BookingInput, source: string): Promis
 }
 
 /** Filter-Chips der Fahrzeugliste (wie im Klick-Prototyp) */
-export type ListChip = 'all' | 'hall' | 'outdoor' | 'pickup_today' | 'open_services' | 'charge_fuel' | 'cancelled'
+export type ListChip =
+  | 'all'
+  | 'overdue'
+  | 'hall'
+  | 'outdoor'
+  | 'pickup_today'
+  | 'open_services'
+  | 'charge_fuel'
+  | 'expected'
+  | 'cancelled'
 
 export const LIST_CHIPS: [ListChip, string][] = [
   ['all', 'Alle'],
+  ['overdue', 'Rückgabe offen'],
   ['hall', 'Halle'],
   ['outdoor', 'Außen'],
   ['pickup_today', 'Heute raus'],
   ['open_services', 'Offene Leistungen'],
   ['charge_fuel', 'Laden/Tanken'],
+  ['expected', 'Gebucht'],
   ['cancelled', 'Storniert'],
 ]
 
@@ -105,6 +116,9 @@ type Query = any
 
 function applyChip(q: Query, chip: ListChip): Query {
   if (chip === 'cancelled') return q.eq('status', 'cancelled')
+  // Gebucht = noch nicht angekommen; Rückgabe offen = da, Abholung vorbei, nicht übergeben
+  if (chip === 'expected') return q.eq('status', 'booked')
+  if (chip === 'overdue') return q.in('status', ON_SITE_STATUSES).lt('end_at', new Date().toISOString())
   q = q.not('status', 'in', '(completed,cancelled)')
   // Außer „Alle“ zeigen alle Filter nur Fahrzeuge vor Ort; noch nicht angekommene Buchungen
   // (und ihre Reservierung) erscheinen erst nach der Ankunft, vorher nur im Fahrzeug-Detail

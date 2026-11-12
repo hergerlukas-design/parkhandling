@@ -358,7 +358,9 @@ export function VehiclesPage() {
   // „Alle“ ist in drei Abschnitte geteilt: Rückgabe offen · vor Ort · noch nicht angekommen
   const split = chip === 'all'
   const overdue = useSection(debounced, chip, 'overdue', split, setError)
-  const main = useSection(debounced, chip, split ? 'on_site' : undefined, true, setError)
+  // Filter „Gebucht“ nach Ankunft sortieren, alle anderen nach Abholung
+  const mainArrival: ArrivalGroup | undefined = split ? 'on_site' : chip === 'expected' ? 'expected' : undefined
+  const main = useSection(debounced, chip, mainArrival, true, setError)
   const expected = useSection(debounced, chip, 'expected', split, setError)
   const loadOverdue = overdue.load
   const loadMain = main.load
@@ -439,9 +441,14 @@ export function VehiclesPage() {
             type="button"
             onClick={() => setChip(value)}
             className={`touch-target shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium whitespace-nowrap ${
-              chip === value ? 'border-ink bg-ink text-white' : 'border-line-strong bg-surface text-ink'
+              chip === value
+                ? 'border-ink bg-ink text-white'
+                : value === 'overdue' && (counts.overdue ?? 0) > 0
+                  ? 'border-danger bg-danger-soft text-danger-ink'
+                  : 'border-line-strong bg-surface text-ink'
             }`}
           >
+            {value === 'overdue' && (counts.overdue ?? 0) > 0 && <Icon name="warning" className="mr-1 inline size-4 align-[-2px]" />}
             {label}
             {counts[value] !== undefined && <span className="ml-1.5 opacity-70">{counts[value]}</span>}
           </button>
@@ -458,7 +465,7 @@ export function VehiclesPage() {
       )}
 
       {split && overdue.items.length > 0 && main.items.length > 0 && <SectionDivider label="Vor Ort" count={null} />}
-      <SectionList section={main} onOpen={open} />
+      <SectionList section={main} hidePending={chip === 'expected'} dashed={chip === 'expected'} onOpen={open} />
 
       {!anyLoading && main.items.length + overdue.items.length + expected.items.length === 0 && (
         <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
