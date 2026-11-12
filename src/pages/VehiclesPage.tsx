@@ -59,11 +59,24 @@ function PickupCell({ b }: { b: BookingListItem }) {
   )
 }
 
-/** Kleine Hinweise neben dem Kennzeichen: Portal-Quelle und offene Import-Prüfung */
+/** Buchung angelegt, Fahrzeug aber noch nicht auf dem Gelände (Status „Gebucht“). */
+function notArrived(b: BookingListItem): boolean {
+  return b.status === 'booked'
+}
+
+/** Kleine Hinweise neben dem Kennzeichen: noch nicht angekommen, Portal-Quelle und offene Import-Prüfung */
 function SourceBadges({ b }: { b: BookingListItem }) {
   const flags = b.import_flags ?? []
   return (
     <>
+      {notArrived(b) && (
+        <span
+          title={`Ankunft ${formatPickup(b.start_at)}`}
+          className="ml-1.5 rounded border border-dashed border-line-strong bg-ground px-1.5 py-0.5 align-middle text-[10px] font-semibold text-subtle"
+        >
+          noch nicht da
+        </span>
+      )}
       {b.source === 'parkos' && (
         <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
           Parkos
@@ -249,14 +262,21 @@ export function VehiclesPage() {
       <ul className="flex flex-col gap-2 md:hidden">
         {items.map((b) => {
           const due = dueCategory(b.end_at)
+          const pending = notArrived(b)
+          const late = pending && Date.parse(b.start_at) < Date.now()
           return (
             <li key={b.id}>
               <button
                 type="button"
                 onClick={() => navigate(`/fahrzeuge/${b.id}`)}
-                className="flex w-full gap-3 rounded-2xl border border-line bg-surface p-3 text-left"
+                className={`flex w-full gap-3 rounded-2xl border p-3 text-left ${
+                  pending ? 'border-dashed border-line-strong bg-surface/60' : 'border-line bg-surface'
+                }`}
               >
-                <span className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar}`} aria-hidden="true" />
+                <span
+                  className={`w-1.5 shrink-0 rounded-full ${DUE_STYLE[due].bar} ${pending ? 'opacity-30' : ''}`}
+                  aria-hidden="true"
+                />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-baseline justify-between gap-2">
                     <span>
@@ -268,6 +288,12 @@ export function VehiclesPage() {
                     </span>
                   </span>
                   <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
+                  {pending && (
+                    <span className={`text-sm font-semibold ${late ? 'text-warn' : 'text-accent-dark'}`}>
+                      Ankunft {formatPickup(b.start_at)}
+                      {late && ' – überfällig'}
+                    </span>
+                  )}
                   <span className="flex items-baseline justify-between gap-2 text-sm">
                     <span className="font-semibold">Abholung {formatPickup(b.end_at)}</span>
                     {b.status === 'cancelled' ? (

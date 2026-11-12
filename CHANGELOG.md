@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.33.1 – 12.11.2026
+
+### Geändert
+- **Fahrzeugliste: noch nicht angekommene Fahrzeuge erkennbar.** Buchungen im Status „Gebucht“ (Fahrzeug noch nicht auf dem Gelände) tragen neben dem Kennzeichen den Hinweis **noch nicht da**. Auf dem Smartphone ist die Karte zusätzlich gestrichelt umrandet, der Farbbalken blass, und eine Zeile nennt die **Ankunft** (z. B. „Ankunft 18.11. 06:30“, orange mit „überfällig“, wenn die Ankunftszeit vorbei ist)
+
 ## 0.33.0 – 29.10.2026
 
 ### Neu
