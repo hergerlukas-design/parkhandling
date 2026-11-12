@@ -39,11 +39,24 @@ export interface BookingFilter {
   status?: BookingStatus | ''
   paymentStatus?: PaymentStatus | ''
   /**
-   * on_site = Fahrzeug ist da (alles außer „Gebucht“), sortiert nach Abholung;
+   * Abschnitte der Liste „Alle“:
+   * overdue = Fahrzeug ist da, Abholung laut Buchung vorbei, aber noch nicht übergeben
+   *           (kein Rückgabe-Protokoll, Status nicht „Abgeschlossen“), sortiert nach Abholung;
+   * on_site = Fahrzeug ist da, Abholung steht noch bevor, sortiert nach Abholung;
    * expected = nur „Gebucht“ (noch nicht angekommen), sortiert nach Ankunft.
    */
-  arrival?: 'on_site' | 'expected'
+  arrival?: ArrivalGroup
 }
+
+export type ArrivalGroup = 'overdue' | 'on_site' | 'expected'
+
+/** Abholung laut Buchung vorbei, Fahrzeug aber noch nicht übergeben → braucht Aufmerksamkeit. */
+export function isOverdue(b: Pick<Booking, 'status' | 'end_at'>, now: number = Date.now()): boolean {
+  return ON_SITE_STATUSES.includes(b.status) && Date.parse(b.end_at) < now
+}
+
+/** Status, in denen das Fahrzeug auf dem Gelände (bzw. in unserer Obhut) ist */
+export const ON_SITE_STATUSES: BookingStatus[] = ['arrived', 'stored', 'in_service', 'ready', 'in_transit']
 
 /** Keyset-Cursor: `at` ist end_at (Abholung) bzw. bei arrival=expected start_at (Ankunft). */
 export interface BookingCursor {
@@ -93,13 +106,14 @@ type Query = any
 function applyChip(q: Query, chip: ListChip): Query {
   if (chip === 'cancelled') return q.eq('status', 'cancelled')
   q = q.not('status', 'in', '(completed,cancelled)')
+  // Außer „Alle“ zeigen alle Filter nur Fahrzeuge vor Ort; noch nicht angekommene Buchungen
+  // (und ihre Reservierung) erscheinen erst nach der Ankunft, vorher nur im Fahrzeug-Detail
+  if (chip !== 'all') q = q.neq('status', 'booked')
   switch (chip) {
-    // Halle/Außen zeigen nur Fahrzeuge vor Ort; die Reservierung noch nicht angekommener
-    // Buchungen steht nur im Fahrzeug-Detail
     case 'hall':
-      return q.eq('parking_type', 'indoor').neq('status', 'booked')
+      return q.eq('parking_type', 'indoor')
     case 'outdoor':
-      return q.in('parking_type', ['outdoor', 'outdoor_cover']).neq('status', 'booked')
+      return q.in('parking_type', ['outdoor', 'outdoor_cover'])
     case 'pickup_today':
       return q.lt('end_at', berlinDayStart(1))
     case 'open_services':
@@ -140,8 +154,10 @@ export async function listBookings(
   q = applySearch(q, filter.search)
   if (filter.status) q = q.eq('status', filter.status)
   if (filter.paymentStatus) q = q.eq('payment_status', filter.paymentStatus)
+  const now = new Date().toISOString()
   if (filter.arrival === 'expected') q = q.eq('status', 'booked')
-  if (filter.arrival === 'on_site') q = q.neq('status', 'booked')
+  if (filter.arrival === 'on_site') q = q.neq('status', 'booked').gte('end_at', now)
+  if (filter.arrival === 'overdue') q = q.in('status', ON_SITE_STATUSES).lt('end_at', now)
   if (cursor) {
     q = q.or(`${key}.gt."${cursor.at}",and(${key}.eq."${cursor.at}",id.gt.${cursor.id})`)
   }

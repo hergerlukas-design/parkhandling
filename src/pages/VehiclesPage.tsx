@@ -12,8 +12,10 @@ import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
 import {
   countByChip,
+  isOverdue,
   LIST_CHIPS,
   listBookings,
+  type ArrivalGroup,
   type BookingCursor,
   type BookingListItem,
   type ListChip,
@@ -69,6 +71,15 @@ function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePend
   const flags = b.import_flags ?? []
   return (
     <>
+      {isOverdue(b) && (
+        <span
+          title="Abholung laut Buchung vorbei, Rückgabe-Protokoll fehlt"
+          className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-danger-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-danger-ink"
+        >
+          <Icon name="warning" className="size-3" />
+          Rückgabe offen
+        </span>
+      )}
       {notArrived(b) && !hidePending && (
         <span
           title={`Ankunft ${formatPickup(b.start_at)}`}
@@ -107,9 +118,12 @@ function locationOf(b: BookingListItem): string | null {
 function VehicleRow({ b, hidePending, onOpen }: { b: BookingListItem; hidePending?: boolean; onOpen: () => void }) {
   const code = locationOf(b)
   return (
-    <tr onClick={onOpen} className="cursor-pointer border-t border-line first:border-0 hover:bg-ground/60">
-      <td className="px-4 py-3 whitespace-nowrap">
-        <span className="font-mono font-semibold">{b.plate}</span>
+    <tr
+      onClick={onOpen}
+      className={`cursor-pointer border-t border-line first:border-0 hover:bg-ground/60 ${isOverdue(b) ? 'bg-danger-soft/40' : ''}`}
+    >
+      <td className="px-4 py-3">
+        <span className="font-mono font-semibold whitespace-nowrap">{b.plate}</span>
         <SourceBadges b={b} hidePending={hidePending} />
       </td>
       <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
@@ -135,6 +149,7 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
   const due = dueCategory(b.end_at)
   const pending = notArrived(b)
   const late = pending && Date.parse(b.start_at) < Date.now()
+  const overdue = isOverdue(b)
   const code = locationOf(b)
   return (
     <li>
@@ -142,7 +157,11 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
         type="button"
         onClick={onOpen}
         className={`flex w-full gap-3 rounded-2xl border p-3 text-left ${
-          pending ? 'border-dashed border-line-strong bg-surface/60' : 'border-line bg-surface'
+          pending
+            ? 'border-dashed border-line-strong bg-surface/60'
+            : overdue
+              ? 'border-danger bg-surface'
+              : 'border-line bg-surface'
         }`}
       >
         <span
@@ -165,7 +184,10 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
             </span>
           )}
           <span className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="font-semibold">Abholung {formatPickup(b.end_at)}</span>
+            <span className={`font-semibold ${overdue ? 'text-danger' : ''}`}>
+              Abholung {formatPickup(b.end_at)}
+              {overdue && ' – vorbei'}
+            </span>
             {b.status === 'cancelled' ? (
               <span className="text-danger">storniert</span>
             ) : b.open_task_count > 0 ? (
@@ -180,33 +202,144 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
   )
 }
 
-/** Trennlinie in „Alle“ zwischen Fahrzeugen vor Ort und noch nicht angekommenen Buchungen */
-function ExpectedDivider({ count }: { count: number }) {
+/** Gleiche Spaltenbreiten in allen Abschnitten, damit die Tabellen untereinander fluchten */
+const TABLE_HEAD = (
+  <>
+    <colgroup>
+      {['26%', '14%', '11%', '10%', '11%', '12%', '8%', '8%'].map((w, i) => (
+        <col key={i} style={{ width: w }} />
+      ))}
+    </colgroup>
+    <thead className="border-b border-line bg-ground/60 text-xs font-semibold text-subtle">
+      <tr>
+        <th className="px-4 py-2.5">Kennzeichen</th>
+        <th className="px-3 py-2.5">Fahrzeug</th>
+        <th className="px-3 py-2.5">Stellplatz / Fach</th>
+        <th className="px-3 py-2.5">Zeitraum</th>
+        <th className="px-3 py-2.5">Abholung</th>
+        <th className="px-3 py-2.5">Leistungen</th>
+        <th className="px-3 py-2.5">Zahlung</th>
+        <th className="px-3 py-2.5">Status</th>
+      </tr>
+    </thead>
+  </>
+)
+
+/** Feine Trennlinie mit Überschrift zwischen den Abschnitten von „Alle“ */
+function SectionDivider({ label, count, attention = false }: { label: string; count: number | null; attention?: boolean }) {
+  const line = attention ? 'bg-danger/40' : 'bg-line-strong'
   return (
     <div className="flex items-center gap-3 pt-3 pb-1" role="separator">
-      <span className="h-px flex-1 bg-line-strong" aria-hidden="true" />
-      <span className="text-xs font-semibold whitespace-nowrap text-subtle">
-        Gebucht – noch nicht angekommen{count > 0 && ` · ${count}`}
+      <span className={`h-px flex-1 ${line}`} aria-hidden="true" />
+      <span
+        className={`inline-flex items-center gap-1 text-xs font-semibold whitespace-nowrap ${attention ? 'text-danger' : 'text-subtle'}`}
+      >
+        {attention && <Icon name="warning" className="size-3.5" />}
+        {label}
+        {count !== null && ` · ${count}`}
       </span>
-      <span className="h-px flex-1 bg-line-strong" aria-hidden="true" />
+      <span className={`h-px flex-1 ${line}`} aria-hidden="true" />
     </div>
   )
 }
 
-const TABLE_HEAD = (
-  <thead className="border-b border-line bg-ground/60 text-xs font-semibold text-subtle">
-    <tr>
-      <th className="px-4 py-2.5">Kennzeichen</th>
-      <th className="px-3 py-2.5">Fahrzeug</th>
-      <th className="px-3 py-2.5">Stellplatz / Fach</th>
-      <th className="px-3 py-2.5">Zeitraum</th>
-      <th className="px-3 py-2.5">Abholung</th>
-      <th className="px-3 py-2.5">Leistungen</th>
-      <th className="px-3 py-2.5">Zahlung</th>
-      <th className="px-3 py-2.5">Status</th>
-    </tr>
-  </thead>
-)
+interface Section {
+  items: BookingListItem[]
+  next: BookingCursor | null
+  loading: boolean
+  load: (cursor: BookingCursor | null) => Promise<void>
+}
+
+/** Lädt eine Liste (bzw. einen Abschnitt von „Alle“) mit eigener Paginierung. */
+function useSection(
+  search: string,
+  chip: ListChip,
+  arrival: ArrivalGroup | undefined,
+  enabled: boolean,
+  onError: (msg: string | null) => void,
+): Section {
+  const [items, setItems] = useState<BookingListItem[]>([])
+  const [next, setNext] = useState<BookingCursor | null>(null)
+  const [loading, setLoading] = useState(false)
+  const requestId = useRef(0)
+
+  const load = useCallback(
+    async (cursor: BookingCursor | null) => {
+      const id = ++requestId.current
+      if (!enabled) {
+        setItems([])
+        setNext(null)
+        setLoading(false)
+        return
+      }
+      setLoading(true)
+      try {
+        const page = await listBookings({ search, chip, arrival }, cursor)
+        if (id !== requestId.current) return
+        setItems((prev) => (cursor ? [...prev, ...page.items] : page.items))
+        setNext(page.next)
+      } catch (e) {
+        if (id === requestId.current) onError((e as Error).message)
+      } finally {
+        if (id === requestId.current) setLoading(false)
+      }
+    },
+    [search, chip, arrival, enabled, onError],
+  )
+  return { items, next, loading, load }
+}
+
+function SectionList({
+  section,
+  hidePending,
+  dashed,
+  onOpen,
+}: {
+  section: Section
+  hidePending?: boolean
+  dashed?: boolean
+  onOpen: (id: string) => void
+}) {
+  const { items, next, loading, load } = section
+  return (
+    <>
+      {items.length > 0 && (
+        <>
+          {/* Tablet/Desktop: Tabelle */}
+          <div
+            className={`hidden overflow-hidden rounded-2xl border bg-surface md:block ${
+              dashed ? 'border-dashed border-line-strong' : 'border-line'
+            }`}
+          >
+            <table className="w-full table-fixed text-left text-sm">
+              {TABLE_HEAD}
+              <tbody>
+                {items.map((b) => (
+                  <VehicleRow key={b.id} b={b} hidePending={hidePending} onOpen={() => onOpen(b.id)} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Smartphone: Karten mit Farbbalken nach Abholdatum */}
+          <ul className="flex flex-col gap-2 md:hidden">
+            {items.map((b) => (
+              <VehicleCard key={b.id} b={b} hidePending={hidePending} onOpen={() => onOpen(b.id)} />
+            ))}
+          </ul>
+        </>
+      )}
+      {(loading || next) && (
+        <div className="p-2 text-center">
+          {loading ? (
+            <span className="text-sm text-muted">Lädt …</span>
+          ) : (
+            <Button onClick={() => void load(next)}>Weitere laden</Button>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
 
 export function VehiclesPage() {
   const navigate = useNavigate()
@@ -218,79 +351,46 @@ export function VehiclesPage() {
     return LIST_CHIPS.some(([c]) => c === f) ? (f as ListChip) : 'all'
   })
   const [counts, setCounts] = useState<Partial<Record<ListChip, number>>>({})
-  const [items, setItems] = useState<BookingListItem[]>([])
-  const [next, setNext] = useState<BookingCursor | null>(null)
-  const [loading, setLoading] = useState(false)
-  // Nur bei „Alle“: noch nicht angekommene Buchungen als eigener Abschnitt unter der Linie
-  const split = chip === 'all'
-  const [expected, setExpected] = useState<BookingListItem[]>([])
-  const [expectedNext, setExpectedNext] = useState<BookingCursor | null>(null)
-  const [expectedLoading, setExpectedLoading] = useState(false)
-  const expectedRequestId = useRef(0)
   const [error, setError] = useState<string | null>(null)
   const [dialog, setDialog] = useState<'new' | 'import' | 'parkos' | 'review' | 'inquiries' | null>(null)
   const [openImports, setOpenImports] = useState(0)
   const [newInquiries, setNewInquiries] = useState(0)
-  const requestId = useRef(0)
+  // „Alle“ ist in drei Abschnitte geteilt: Rückgabe offen · vor Ort · noch nicht angekommen
+  const split = chip === 'all'
+  const overdue = useSection(debounced, chip, 'overdue', split, setError)
+  const main = useSection(debounced, chip, split ? 'on_site' : undefined, true, setError)
+  const expected = useSection(debounced, chip, 'expected', split, setError)
+  const loadOverdue = overdue.load
+  const loadMain = main.load
+  const loadExpected = expected.load
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 250)
     return () => clearTimeout(t)
   }, [search])
 
-  const load = useCallback(
-    async (cursor: BookingCursor | null) => {
-      const id = ++requestId.current
-      setLoading(true)
-      setError(null)
-      try {
-        const page = await listBookings({ search: debounced, chip, arrival: split ? 'on_site' : undefined }, cursor)
-        if (id !== requestId.current) return
-        setItems((prev) => (cursor ? [...prev, ...page.items] : page.items))
-        setNext(page.next)
-      } catch (e) {
-        if (id === requestId.current) setError((e as Error).message)
-      } finally {
-        if (id === requestId.current) setLoading(false)
-      }
-    },
-    [debounced, chip, split],
-  )
-
-  const loadExpected = useCallback(
-    async (cursor: BookingCursor | null) => {
-      const id = ++expectedRequestId.current
-      if (!split) {
-        setExpected([])
-        setExpectedNext(null)
-        return
-      }
-      setExpectedLoading(true)
-      try {
-        const page = await listBookings({ search: debounced, chip, arrival: 'expected' }, cursor)
-        if (id !== expectedRequestId.current) return
-        setExpected((prev) => (cursor ? [...prev, ...page.items] : page.items))
-        setExpectedNext(page.next)
-      } catch (e) {
-        if (id === expectedRequestId.current) setError((e as Error).message)
-      } finally {
-        if (id === expectedRequestId.current) setExpectedLoading(false)
-      }
-    },
-    [debounced, chip, split],
-  )
-
   const reload = useCallback(() => {
-    void load(null)
+    setError(null)
+    void loadOverdue(null)
+    void loadMain(null)
     void loadExpected(null)
-    countByChip(debounced).then(setCounts).catch(() => undefined)
-    countOpenImports().then(setOpenImports).catch(() => undefined)
-    countNewInquiries().then(setNewInquiries).catch(() => undefined)
-  }, [load, loadExpected, debounced])
+    countByChip(debounced)
+      .then(setCounts)
+      .catch(() => undefined)
+    countOpenImports()
+      .then(setOpenImports)
+      .catch(() => undefined)
+    countNewInquiries()
+      .then(setNewInquiries)
+      .catch(() => undefined)
+  }, [loadOverdue, loadMain, loadExpected, debounced])
 
   useEffect(() => {
     reload()
   }, [reload])
+
+  const open = (id: string) => navigate(`/fahrzeuge/${id}`)
+  const anyLoading = overdue.loading || main.loading || expected.loading
 
   return (
     <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 p-4 md:p-6">
@@ -350,75 +450,30 @@ export function VehiclesPage() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      {/* Tablet/Desktop: Tabelle */}
-      {(items.length > 0 || !split) && (
-        <div className="hidden overflow-hidden rounded-2xl border border-line bg-surface md:block">
-          <table className="w-full text-left text-sm">
-            {TABLE_HEAD}
-            <tbody>
-              {items.map((b) => (
-                <VehicleRow key={b.id} b={b} onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {split && overdue.items.length > 0 && (
+        <>
+          <SectionDivider label="Abholung vorbei – Rückgabe offen" count={overdue.next ? null : overdue.items.length} attention />
+          <SectionList section={overdue} onOpen={open} />
+        </>
       )}
 
-      {/* Smartphone: Karten mit Farbbalken nach Abholdatum */}
-      <ul className="flex flex-col gap-2 md:hidden">
-        {items.map((b) => (
-          <VehicleCard key={b.id} b={b} onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
-        ))}
-      </ul>
+      {split && overdue.items.length > 0 && main.items.length > 0 && <SectionDivider label="Vor Ort" count={null} />}
+      <SectionList section={main} onOpen={open} />
 
-      {!loading && items.length === 0 && (!split || expected.length === 0) && (
+      {!anyLoading && main.items.length + overdue.items.length + expected.items.length === 0 && (
         <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
           Keine Fahrzeuge gefunden.
         </p>
       )}
-      {(loading || next) && (
-        <div className="p-2 text-center">
-          {loading ? (
-            <span className="text-sm text-muted">Lädt …</span>
-          ) : (
-            <Button onClick={() => void load(next)}>Weitere laden</Button>
-          )}
-        </div>
-      )}
 
-      {split && expected.length > 0 && (
+      {split && expected.items.length > 0 && (
         <>
-          <ExpectedDivider count={expectedNext ? 0 : expected.length} />
-          <div className="hidden overflow-hidden rounded-2xl border border-dashed border-line-strong bg-surface md:block">
-            <table className="w-full text-left text-sm">
-              {TABLE_HEAD}
-              <tbody>
-                {expected.map((b) => (
-                  <VehicleRow key={b.id} b={b} hidePending onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <ul className="flex flex-col gap-2 md:hidden">
-            {expected.map((b) => (
-              <VehicleCard key={b.id} b={b} hidePending onOpen={() => navigate(`/fahrzeuge/${b.id}`)} />
-            ))}
-          </ul>
-          {(expectedLoading || expectedNext) && (
-            <div className="p-2 text-center">
-              {expectedLoading ? (
-                <span className="text-sm text-muted">Lädt …</span>
-              ) : (
-                <Button onClick={() => void loadExpected(expectedNext)}>Weitere laden</Button>
-              )}
-            </div>
-          )}
+          <SectionDivider label="Gebucht – noch nicht angekommen" count={expected.next ? null : expected.items.length} />
+          <SectionList section={expected} hidePending dashed onOpen={open} />
         </>
       )}
 
-      {dialog === 'new' && (
-        <BookingFormDialog onClose={() => setDialog(null)} onSaved={(id) => navigate(`/fahrzeuge/${id}`)} />
-      )}
+      {dialog === 'new' && <BookingFormDialog onClose={() => setDialog(null)} onSaved={(id) => navigate(`/fahrzeuge/${id}`)} />}
       {dialog === 'import' && <ImportDialog onClose={() => setDialog(null)} onDone={reload} />}
       {dialog === 'parkos' && <ParkosImportDialog onClose={() => setDialog(null)} onDone={reload} />}
       {dialog === 'review' && <ImportReviewDialog onClose={() => setDialog(null)} onChanged={reload} />}

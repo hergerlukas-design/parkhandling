@@ -6,8 +6,13 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ## 0.33.1 – 12.11.2026
 
 ### Geändert
-- **Fahrzeugliste: noch nicht angekommene Fahrzeuge getrennt.** Unter **Alle** stehen oben die Fahrzeuge vor Ort (nach Abholung sortiert), darunter nach einer feinen Linie „Gebucht – noch nicht angekommen“ die Buchungen, deren Fahrzeug noch nicht da ist (nach Ankunft sortiert). Ihre Karten sind gestrichelt umrandet, der Farbbalken blass, und eine Zeile nennt die **Ankunft** (orange mit „überfällig“, wenn die Ankunftszeit vorbei ist). In den übrigen Filtern tragen sie neben dem Kennzeichen den Hinweis **noch nicht da**
-- **Halle** und **Außen** zeigen und zählen nur noch Fahrzeuge vor Ort. Die Reservierung (Parkplatz, reservierter Stellplatz) noch nicht angekommener Buchungen steht nur im Fahrzeug-Detail, nicht mehr in der Liste
+- **Fahrzeugliste „Alle“ in drei Abschnitte geteilt**, jeweils mit feiner Trennlinie und Anzahl:
+  1. **Abholung vorbei – Rückgabe offen** (rot, mit Warnzeichen): Fahrzeug ist da, die Abholzeit laut Buchung ist vorbei, aber es ist noch nicht mit Rückgabe-Protokoll übergeben. Jedes dieser Fahrzeuge trägt zusätzlich den Marker **Rückgabe offen** (auch in den anderen Filtern, z. B. „Heute raus“); die Karte ist rot umrandet, die Tabellenzeile leicht rot hinterlegt
+  2. **Vor Ort**: alle übrigen Fahrzeuge auf dem Gelände, nach Abholung sortiert
+  3. **Gebucht – noch nicht angekommen**: nach Ankunft sortiert, gestrichelt umrandet, mit Zeile **Ankunft** (orange mit „überfällig“, wenn die Ankunftszeit vorbei ist)
+- **Halle, Außen, Heute raus, Offene Leistungen, Laden/Tanken** zeigen und zählen nur noch Fahrzeuge, die angekommen sind. Noch nicht angekommene Buchungen tauchen dort erst nach der Ankunft auf
+- Die Reservierung (reservierter Stellplatz) noch nicht angekommener Buchungen steht nur im Fahrzeug-Detail, nicht mehr in der Liste
+- Tabelle (Tablet/Desktop): gleiche Spaltenbreiten in allen Abschnitten
 
 ## 0.33.0 – 29.10.2026
 
