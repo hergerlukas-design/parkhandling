@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.35.0 – 23.11.2026
+
+### Neu
+- **Buchungen aus dem CarHandling-Backend im Dashboard:** Der Rechner bucht inzwischen im eigenen Supabase-Projekt von CarHandling (Stripe, Check-in, Tickets). Dessen Database Webhook schickt jede neue oder geänderte Buchung an die neue Edge Function `booking-sync`; sie legt eine Kopie an bzw. aktualisiert sie (Zahlung, Umbuchung, Storno). Das CarHandling-Backend bleibt führend
+  - Fahrzeugliste: Kennzeichen **Rechner**, Fahrzeug-Detail: Quelle „Rechner (CarHandling-Backend)“, Tarif und enthaltene Leistungen wie bei Online-Buchungen
+  - Kein Doppel bei wiederholten Aufrufen (eindeutig über Buchungsnummer); „bezahlt“ wird nie auf „offen“ zurückgesetzt
+  - Jeder Vorgang steht in der **Prüfliste** (Kanal „CarHandling-Backend“); unvollständige Datensätze erscheinen dort als „Fehlgeschlagen“ mit Grund
+  - Abgesichert über das Secret `BOOKING_SYNC_SECRET` (Header `x-sync-secret`). Einrichtung beider Seiten: `docs/carhandling-sync.md`
+- Fahrzeug-Detail: Quelle „Website-Rechner“ für Buchungen mit `source = 'website'`
+
 ## 0.33.2 – 12.11.2026
 
 ### Behoben

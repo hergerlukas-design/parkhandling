@@ -64,8 +64,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno test --no-lock inquiry-submit/ booking-checkout/
-      - run: deno check --no-lock inquiry-submit/index.ts booking-checkout/index.ts
+      - run: deno test --no-lock inquiry-submit/ booking-checkout/ booking-sync/
+      - run: deno check --no-lock inquiry-submit/index.ts booking-checkout/index.ts booking-sync/index.ts
 
   deploy:
     name: Fly.io

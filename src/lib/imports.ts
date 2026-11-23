@@ -31,7 +31,7 @@ export interface BookingImportRow {
   id: string
   created_at: string
   source: string
-  channel: 'manual' | 'imap'
+  channel: 'manual' | 'imap' | 'webhook'
   external_ref: string | null
   mail_type: MailType
   subject: string | null

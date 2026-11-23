@@ -14,6 +14,8 @@ function db() {
 }
 
 export const LANDING_SOURCE = 'landing'
+/** Buchungen aus dem CarHandling-Buchungsbackend (Rechner mit Stripe), per Webhook übernommen */
+export const CARHANDLING_SOURCE = 'carhandling'
 
 export type InquiryStatus = 'new' | 'contacted' | 'converted' | 'rejected'
 export type InquiryService = 'shuttle' | 'detailing' | 'pickup_delivery'

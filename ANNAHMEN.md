@@ -200,3 +200,10 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Im Tarif enthaltene Leistungen (`booking_tariffs.included_services`): nur Premium bucht zusätzlich **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover). Cover, Business und Premium bekommen die Standard-Grundreinigung („Grob-Reinigung“ ist keine eigene Leistung). [BELEGT 29.10.2026] Economy enthält keine Reinigung, also auch keine Grundreinigung (`excluded_services`)
 - [ANNAHME] Anfrage → Buchung: Parkplatz „egal“ wird Außen, Hol- & Bring geht vor Shuttle, ohne Transferwunsch „Selbst“. Aufbereitungswunsch und Nachricht landen in der Notiz (Umfang mit dem Kunden klären); Uhrzeiten fehlen in der Anfrage
 - [ANNAHME] Ein Online-Widerruf wird nur angezeigt; Stornieren und Erstatten entscheidet das Personal
+
+## Buchungen aus dem CarHandling-Backend (0.35.0)
+- [BELEGT 23.11.2026] Der Rechner bucht (bei aktivem Stripe) im Supabase-Projekt der Organisation CarHandling; dieses Backend bleibt führend, das Dashboard bekommt eine Kopie per Webhook (`booking-sync`, `docs/carhandling-sync.md`)
+- [ANNAHME] Format der CarHandling-Buchungstabelle: entweder wie unsere `bookings` oder wie das Rechner-Formular; Kennung `booking_ref` (sonst `external_ref`/`id`). Anpassen, sobald ein echter Datensatz vorliegt
+- [ANNAHME] Felder des CarHandling-Backends überschreiben bei jeder Änderung die Werte in der App (auch die Notiz); „bezahlt“ wird nie auf „offen“ zurückgesetzt
+- [OFFEN] Kapazität: Das CarHandling-Backend kennt Parkos- und manuelle Buchungen nicht (Halle kann doppelt vergeben werden). Abgleich in Gegenrichtung noch nicht umgesetzt
+- [OFFEN] Ankünfte aus dem CarHandling-Check-in kommen nicht als Ankunft in die App
