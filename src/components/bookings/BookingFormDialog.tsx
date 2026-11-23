@@ -268,6 +268,12 @@ export function BookingFormDialog({
             <TextInput type="time" step={300} value={form.end_time} onChange={(e) => set('end_time', e.target.value)} />
           </Field>
         </div>
+        {tariff && (tariff.included_text || tariff.shuttle_text) && (
+          <p className="rounded-lg bg-chip px-3 py-2 text-sm text-muted md:col-span-2" data-testid="tariff-included">
+            <span className="font-medium text-ink">Im Tarif {tariff.label}:</span> {tariff.included_text}
+            {tariff.shuttle_text && ` · Shuttle ${tariff.shuttle_text}`}
+          </p>
+        )}
       </Section>
 
       <Section title="Fahrzeug">
