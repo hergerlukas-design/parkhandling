@@ -1,5 +1,5 @@
 // Tests der reinen Buchungslogik (Deno: deno test --no-lock supabase/functions/booking-checkout/)
-import { berlinToUtcIso, bookingRow, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, tierForDays, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
+import { berlinToUtcIso, bookingRow, type BookingInput, confirmationFailedMail, confirmationMail, formatBerlinDateTime, type TariffRow, priceFor, REGISTER_RULES, validateBooking, validateLookup, validateWithdrawal, withdrawalMails } from './logic.ts'
 
 /** Buchungszeitpunkt passend zu „heute“ 20.10.2026 */
 const NOW = '2026-10-20T08:00:00.000Z'
@@ -7,7 +7,7 @@ const NOW = '2026-10-20T08:00:00.000Z'
 const tariffs: TariffRow[] = [
   {
     code: 'premium', label: 'Premium', parking_type: 'indoor', shuttle_text: 'Direkt', included_text: 'x',
-    price_week: 148, price_holiday: 249, price_month: 369, active: true, sort_order: 4,
+    base_price: 98, extra_day_price: 14, active: true, sort_order: 4,
   },
 ]
 
@@ -19,9 +19,24 @@ const base: BookingInput = {
   flight_outbound: 'LH 1234', flight_return: 'LH 1235', child_seats: 0, luggage: 2, website: '',
 }
 
-Deno.test('Dauerklassen', () => {
-  if (tierForDays(4) !== null || tierForDays(31) !== null) throw new Error('Grenzen falsch')
-  if (tierForDays(5) !== 'week' || tierForDays(9) !== 'holiday' || tierForDays(16) !== 'month') throw new Error('Klassen falsch')
+Deno.test('Preis wie im Rechner: Grundpreis bis 5 Tage, danach Tagespreis', () => {
+  if (priceFor(tariffs[0], 5) !== 98) throw new Error('Grundpreis')
+  if (priceFor(tariffs[0], 8) !== 140) throw new Error('weitere Tage')
+})
+
+Deno.test('Website-Rechner: valet = Hol-/Bring-Service, Aufpreis, Selbst-Nachlass, Ladepauschale', () => {
+  const reg = (f: Partial<BookingInput>) => validateBooking({ ...base, ...f }, '2026-10-20', tariffs, NOW, REGISTER_RULES)
+  const valet = reg({ return_mode: 'valet' })
+  if (!valet.value || valet.value.return_mode !== 'pickup_delivery' || valet.value.amount !== 164.5) throw new Error(JSON.stringify(valet))
+  const self = reg({ return_mode: 'self' })
+  if (self.value?.amount !== 126) throw new Error(`Selbst ${self.value?.amount}`)
+  const charging = reg({ charging: true })
+  if (charging.value?.amount !== 150 || !charging.value.charging_fee_included) throw new Error(`Laden ${charging.value?.amount}`)
+  const row = bookingRow(charging.value, tariffs[0], 'X', '2026-10')
+  if (!row.notes.includes('Ladepauschale 10,00 € im Preis')) throw new Error(row.notes)
+  // Landingpage (create) rechnet ohne Aufpreise
+  const landing = validateBooking({ ...base, return_mode: 'pickup_delivery' }, '2026-10-20', tariffs, NOW)
+  if (landing.value?.amount !== 140) throw new Error(`Landing ${landing.value?.amount}`)
 })
 
 Deno.test('Zeitzone Berlin → UTC (Sommer- und Winterzeit)', () => {
@@ -31,11 +46,11 @@ Deno.test('Zeitzone Berlin → UTC (Sommer- und Winterzeit)', () => {
 
 Deno.test('gültige Buchung berechnet Preis und normalisiert Kennzeichen', () => {
   const r = validateBooking(base, '2026-10-20', tariffs, NOW)
-  if (!r.value || r.value.amount !== 148 || r.value.plate !== 'M-TE 123' || r.value.days !== 7) throw new Error(JSON.stringify(r))
+  if (!r.value || r.value.amount !== 140 || r.value.plate !== 'M-TE 123' || r.value.days !== 8) throw new Error(JSON.stringify(r))
 })
 
 Deno.test('unter 5 Tagen, Honeypot und fehlende Zustimmung werden abgelehnt', () => {
-  const short = validateBooking({ ...base, pickup_date: '2026-11-09' }, '2026-10-20', tariffs, NOW)
+  const short = validateBooking({ ...base, pickup_date: '2026-11-08' }, '2026-10-20', tariffs, NOW)
   if (short.value !== null || !short.errors.pickup_date) throw new Error('kurz')
   const bot = validateBooking({ ...base, website: 'spam' }, '2026-10-20', tariffs, NOW)
   if (bot.value !== null || !bot.errors.website) throw new Error('honeypot')
@@ -69,10 +84,10 @@ Deno.test('Anreise frühestens 12 Stunden nach der Buchung', () => {
   if (!late.errors.arrival_date) throw new Error(JSON.stringify(late.errors))
 })
 
-Deno.test('Shuttle verlangt Flugnummern, Kindersitze auf 0 bis 3 begrenzt', () => {
+Deno.test('Shuttle verlangt Flugnummern, Kindersitze auf 0 bis 5 begrenzt', () => {
   const noFlight = validateBooking({ ...base, flight_outbound: '', flight_return: '' }, '2026-10-20', tariffs, NOW)
   if (!noFlight.errors.flight_outbound || !noFlight.errors.flight_return) throw new Error('Flug')
-  const seats = validateBooking({ ...base, child_seats: 4 }, '2026-10-20', tariffs, NOW)
+  const seats = validateBooking({ ...base, child_seats: 6 }, '2026-10-20', tariffs, NOW)
   if (!seats.errors.child_seats) throw new Error('Kindersitze')
 })
 

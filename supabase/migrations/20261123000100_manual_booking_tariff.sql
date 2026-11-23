@@ -6,6 +6,7 @@
 --    (Economy ohne Grundreinigung). Ohne tariff_code im JSON bleibt der Tarif unverändert
 --    (Parkos- und Excel-Import senden keinen).
 --  * Tarif „space“ heißt wie auf der Website „Economy +“ (Code bleibt space)
+--  * Business-Grundpreis wie auf der Website: 79,00 € statt 89,00 € (Tagespreis 12,50 € unverändert)
 -- Funktion: create or replace, gleiche Signatur; sonst unverändert gegenüber
 -- 20261022100000_parkos_mail_import.sql.
 -- =============================================================================
@@ -13,6 +14,11 @@
 update public.booking_tariffs
 set label = 'Economy +', updated_at = now()
 where code = 'space' and label in ('CarCover', 'Cover', 'Space');
+
+-- Nur den bisherigen Wert ersetzen; ein per Admin anders gesetzter Preis bleibt
+update public.booking_tariffs
+set base_price = 79.00, updated_at = now()
+where code = 'business' and base_price = 89.00;
 
 create or replace function public.upsert_booking(p_booking jsonb, p_source text default 'manual')
 returns jsonb

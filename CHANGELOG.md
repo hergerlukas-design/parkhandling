@@ -20,9 +20,15 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Antrieb: **Benzin/Diesel** (vorher Verbrenner), Elektro, Hybrid
   - Tarif „CarCover“ heißt **Economy +**
 
+### Behoben (Website-Buchungen, Edge Function `booking-checkout`)
+- **Hol-/Bring-Service-Buchungen der Website schlugen fehl**: Der Rechner sendet `valet`, das Backend kannte nur `pickup_delivery` und lehnte mit „Bitte eine Rückgabe wählen“ ab. `valet` wird jetzt als Hol-/Bring-Service übernommen
+- **Betrag wie auf der Website angezeigt**: Bisher rechnete das Backend nur Grundpreis + Tage, der Kunde zahlte per PayPal also einen anderen Betrag als angezeigt. Jetzt für Website-Buchungen: Hol-/Bring-Service +24,50 €, Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 € Ladepauschale (die Leistung „Laden“ wird mit 10,00 € gebucht, Strom 0,69 €/kWh weiter bei Rückgabe). Die Landingpage (PayPal-Checkout, nicht live) rechnet unverändert
+- **Business-Grundpreis 79,00 €** wie auf der Website (vorher 89,00 € in der Datenbank)
+- Live laufender Stand der Function (Version 16, Aktion `register`, Herkunftsprüfung) war nicht im Repo und ist jetzt übernommen; ausgerollt als Version 17. Tests an das Preismodell Grundpreis + Tagespreis angepasst
+
 ### Datenbank
 - Migration `20261111123211_website_register.sql` ins Repo übernommen: war am 11.11.2026 nur direkt im Live-Projekt eingespielt (Preismodell Grundpreis + Tagespreis, `area_full`)
-- Migration `20261123000100_manual_booking_tariff.sql`: `upsert_booking` übernimmt `tariff_code` (create or replace, gleiche Signatur; ohne den Schlüssel bleibt der Tarif unverändert), Tarif `space` heißt „Economy +“. Bis die Migration eingespielt ist, speichert die App Buchungen ohne Tarif (das Feld wird ignoriert)
+- Migration `20261123000100_manual_booking_tariff.sql` (live eingespielt am 23.11.2026): `upsert_booking` übernimmt `tariff_code` (create or replace, gleiche Signatur; ohne den Schlüssel bleibt der Tarif unverändert), Tarif `space` heißt „Economy +“, Business-Grundpreis 79,00 €
 
 ## 0.33.2 – 12.11.2026
 
