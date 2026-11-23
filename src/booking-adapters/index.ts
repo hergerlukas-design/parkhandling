@@ -2,9 +2,13 @@ export type { BookingAdapter, BookingInput, NormalizeResult, ServiceInput } from
 export {
   DEFAULT_RETURN_BUFFER_MINUTES,
   emptyManualForm,
+  formCustomerName,
   formFromBooking,
+  joinNotesExtras,
   manualAdapter,
   normalizeFlightNo,
+  splitName,
+  splitNotesExtras,
   suggestPickupFromLanding,
   type ManualBookingForm,
 } from './manual'

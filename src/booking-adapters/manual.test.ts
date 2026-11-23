@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { emptyManualForm, formFromBooking, manualAdapter, normalizeFlightNo, suggestPickupFromLanding } from './manual'
+import {
+  emptyManualForm,
+  formFromBooking,
+  joinNotesExtras,
+  manualAdapter,
+  normalizeFlightNo,
+  splitName,
+  splitNotesExtras,
+  suggestPickupFromLanding,
+} from './manual'
 import type { Booking } from '../types/domain'
 
 const baseForm = () => ({
@@ -98,5 +107,75 @@ describe('Flug- und Transferfelder', () => {
     expect(form.end_time).toBe('13:00')
     expect(form.flight_return).toBe('LH234')
     expect(form.customer_language).toBe('de')
+  })
+})
+
+describe('Felder wie auf der Website', () => {
+  it('setzt den Namen aus Vor- und Nachname zusammen', () => {
+    const res = manualAdapter.normalize({ ...baseForm(), customer_name: '', first_name: ' Maria ', last_name: 'de la Cruz' })
+    expect(res.ok && res.booking.customer_name).toBe('Maria de la Cruz')
+  })
+
+  it('nimmt bei älteren Entwürfen das Feld „Kunde“', () => {
+    const res = manualAdapter.normalize(baseForm())
+    expect(res.ok && res.booking.customer_name).toBe('Testkunde Parkos')
+  })
+
+  it('ohne Namen ist ein Fehler', () => {
+    const res = manualAdapter.normalize({ ...baseForm(), customer_name: '' })
+    expect(res.ok).toBe(false)
+  })
+
+  it('teilt Namen am ersten Leerzeichen', () => {
+    expect(splitName('Maria de la Cruz')).toEqual({ first_name: 'Maria', last_name: 'de la Cruz' })
+    expect(splitName('Madonna')).toEqual({ first_name: 'Madonna', last_name: '' })
+  })
+
+  it('sendet den Tarif; leer = kein Tarif, ältere Entwürfe ohne Feld lassen ihn unverändert', () => {
+    const withTariff = manualAdapter.normalize({ ...baseForm(), tariff_code: 'premium', parking_type: 'indoor' })
+    expect(withTariff.ok && withTariff.booking.tariff_code).toBe('premium')
+    const none = manualAdapter.normalize({ ...baseForm(), tariff_code: '' })
+    expect(none.ok && none.booking.tariff_code).toBeNull()
+    const old = baseForm() as Partial<ReturnType<typeof baseForm>>
+    delete old.tariff_code
+    const res = manualAdapter.normalize(old as ReturnType<typeof baseForm>)
+    expect(res.ok && 'tariff_code' in res.booking).toBe(false)
+  })
+
+  it('schreibt Kindersitze und Gepäckstücke wie Online-Buchungen in die Notiz', () => {
+    const res = manualAdapter.normalize({ ...baseForm(), notes: 'Dachbox', child_seats: '1', luggage: '3' })
+    expect(res.ok && res.booking.notes).toBe('Dachbox\nKindersitze: 1 · Gepäckstücke: 3')
+    const empty = manualAdapter.normalize(baseForm())
+    expect(empty.ok && empty.booking.notes).toBeNull()
+    const bad = manualAdapter.normalize({ ...baseForm(), child_seats: '7' })
+    expect(bad.ok).toBe(false)
+  })
+
+  it('liest Kindersitze und Gepäckstücke aus der Notiz und schreibt sie unverändert zurück', () => {
+    const notes = 'Hier mal ein Test\nKindersitze: 0 · Gepäckstücke: 2\nAGB 2026-10 akzeptiert'
+    const parts = splitNotesExtras(notes)
+    expect(parts).toEqual({ notes: 'Hier mal ein Test\nAGB 2026-10 akzeptiert', child_seats: '0', luggage: '2' })
+    expect(joinNotesExtras(parts.notes, parts.child_seats, parts.luggage)).toBe(
+      'Hier mal ein Test\nAGB 2026-10 akzeptiert\nKindersitze: 0 · Gepäckstücke: 2',
+    )
+    expect(splitNotesExtras('ohne Angaben')).toEqual({ notes: 'ohne Angaben', child_seats: '', luggage: '' })
+  })
+
+  it('übernimmt Name, Tarif und Notiz-Angaben einer Online-Buchung ins Formular', () => {
+    const b = {
+      id: 'y', external_ref: 'PF-1', customer_name: 'Erika Mustermann', company: null, customer_email: null,
+      customer_phone: null, plate: 'M-AB 1', vehicle_model: null, fuel_type: 'electric', persons: 2,
+      start_at: '2026-11-25T08:00:00Z', end_at: '2026-11-30T08:00:00Z', parking_type: 'outdoor',
+      tariff_code: 'economy', return_mode: 'self', price_total: 49, payment_status: 'open',
+      notes: 'Kindersitze: 1 · Gepäckstücke: 2', flight_out: null, flight_return: null,
+      return_flight_at: null, customer_language: null, transfer_note: null,
+    } as unknown as Booking
+    const form = formFromBooking(b, [])
+    expect(form.first_name).toBe('Erika')
+    expect(form.last_name).toBe('Mustermann')
+    expect(form.tariff_code).toBe('economy')
+    expect(form.child_seats).toBe('1')
+    expect(form.luggage).toBe('2')
+    expect(form.notes).toBe('')
   })
 })

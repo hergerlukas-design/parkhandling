@@ -3,6 +3,27 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.34.0 – 23.11.2026
+
+### Geändert
+- **Buchungsformular wie auf der Website** (Preisrechner parkhandling-rechner.pplx.app). Abschnitte in derselben Reihenfolge: Tarif und Zeitraum · Fahrzeug · Transfer · Kontakt, danach Preis/Zahlung und Leistungen
+  - **Tarif** statt „Parkplatz“: Economy · Outdoor, Economy + · Outdoor mit Car-Cover, Business · Indoor, Premium · Indoor. Die Stellplatzart ergibt sich aus dem Tarif. „Ohne Tarif“ bleibt für Parkos- und Excel-Buchungen, dann wird die Stellplatzart direkt gewählt
+  - Beim Anlegen mit Tarif gelten dieselben Regeln wie bei Online-Buchungen: Premium bucht **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover), Economy bekommt **keine Grundreinigung**. Das Formular zeigt das in der Leistungsliste an
+  - **Preis laut Website** mit Aufschlüsselung und Knopf „Übernehmen“: Grundpreis bis 5 Tage + Tagespreis, Hol-/Bring-Service +24,50 €, Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 €. Anreise- und Abreisetag zählen voll
+  - **Vorname und Nachname** getrennt (gespeichert wird wie bisher der ganze Name)
+  - **E-Auto laden** mit Ladeziel (80 % empfohlen / 100 %) direkt unter Fahrzeug; bucht die Leistung „Laden“ mit 10,00 € Ladepauschale
+  - **Kindersitze** (0–5) und **Gepäckstücke** (0–20) wie auf der Website; sie stehen wie bei Online-Buchungen in der Notiz („Kindersitze: 1 · Gepäckstücke: 2“) und werden beim Bearbeiten wieder in die Felder gelesen
+  - Uhrzeiten in 5-Minuten-Schritten
+- **Bezeichnungen wie auf der Website**, in der ganzen App:
+  - Stellplatzart: **Outdoor** (vorher Außen), **Outdoor mit Car-Cover** (vorher Außen mit Plane), **Indoor** (vorher Halle). Die Bereiche des Lageplans (Halle, Außen A/B) heißen weiter so
+  - Rückgabe: Shuttle, **Selbst bringen/abholen**, **Hol-/Bring-Service**
+  - Antrieb: **Benzin/Diesel** (vorher Verbrenner), Elektro, Hybrid
+  - Tarif „CarCover“ heißt **Economy +**
+
+### Datenbank
+- Migration `20261111123211_website_register.sql` ins Repo übernommen: war am 11.11.2026 nur direkt im Live-Projekt eingespielt (Preismodell Grundpreis + Tagespreis, `area_full`)
+- Migration `20261123000100_manual_booking_tariff.sql`: `upsert_booking` übernimmt `tariff_code` (create or replace, gleiche Signatur; ohne den Schlüssel bleibt der Tarif unverändert), Tarif `space` heißt „Economy +“. Bis die Migration eingespielt ist, speichert die App Buchungen ohne Tarif (das Feld wird ignoriert)
+
 ## 0.33.2 – 12.11.2026
 
 ### Behoben
