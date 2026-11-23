@@ -98,7 +98,8 @@ export function formFromInquiry(i: Inquiry): ManualBookingForm {
   ].filter(Boolean)
   return {
     ...emptyManualForm(),
-    customer_name: `${i.first_name} ${i.last_name}`.trim(),
+    first_name: i.first_name.trim(),
+    last_name: i.last_name.trim(),
     customer_email: i.email,
     customer_phone: i.phone ?? '',
     plate: i.plate,

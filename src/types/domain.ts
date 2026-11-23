@@ -174,10 +174,11 @@ export const BOOKING_STATUS_LABEL: Record<BookingStatus, string> = {
   cancelled: 'Storniert',
 }
 
+/** Stellplatzart wie auf der Website (Tarife: Economy = Outdoor, Economy + = Outdoor mit Car-Cover, Business/Premium = Indoor) */
 export const PARKING_TYPE_LABEL: Record<ParkingType, string> = {
-  indoor: 'Halle',
-  outdoor_cover: 'Außen mit Plane',
-  outdoor: 'Außen',
+  outdoor: 'Outdoor',
+  outdoor_cover: 'Outdoor mit Car-Cover',
+  indoor: 'Indoor',
 }
 
 export const AREA_LABEL: Record<LocationArea, string> = {
@@ -189,10 +190,11 @@ export const AREA_LABEL: Record<LocationArea, string> = {
   transit: 'Unterwegs',
 }
 
+/** Rückgabe wie auf der Website (Reihenfolge = Auswahl im Formular) */
 export const RETURN_MODE_LABEL: Record<ReturnMode, string> = {
   shuttle: 'Shuttle',
-  pickup_delivery: 'Hol- & Bringservice',
-  self: 'Selbst',
+  self: 'Selbst bringen/abholen',
+  pickup_delivery: 'Hol-/Bring-Service',
 }
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
@@ -203,7 +205,7 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
 }
 
 export const FUEL_TYPE_LABEL: Record<FuelType, string> = {
-  combustion: 'Verbrenner',
+  combustion: 'Benzin/Diesel',
   electric: 'Elektro',
   hybrid: 'Hybrid',
 }

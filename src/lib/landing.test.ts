@@ -26,7 +26,8 @@ describe('formFromInquiry', () => {
     const f = formFromInquiry(inquiry)
     expect(f).toMatchObject({
       id: null,
-      customer_name: 'Max Muster',
+      first_name: 'Max',
+      last_name: 'Muster',
       customer_email: 'max@example.com',
       customer_phone: '0171 1234567',
       plate: 'M-TE 123',

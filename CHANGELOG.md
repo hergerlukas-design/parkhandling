@@ -3,6 +3,34 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.34.0 – 23.11.2026
+
+### Geändert
+- **Buchungsformular wie auf der Website** (Preisrechner parkhandling-rechner.pplx.app). Abschnitte in derselben Reihenfolge: Tarif und Zeitraum · Fahrzeug · Transfer · Kontakt, danach Preis/Zahlung und Leistungen
+  - **Tarif** statt „Parkplatz“: Economy · Outdoor, Economy + · Outdoor mit Car-Cover, Business · Indoor, Premium · Indoor. Die Stellplatzart ergibt sich aus dem Tarif. „Ohne Tarif“ bleibt für Parkos- und Excel-Buchungen, dann wird die Stellplatzart direkt gewählt
+  - Beim Anlegen mit Tarif gelten dieselben Regeln wie bei Online-Buchungen: Premium bucht **Servicearbeiten** (Luftdruck, Betriebsflüssigkeiten, CarCover), Economy bekommt **keine Grundreinigung**. Das Formular zeigt das in der Leistungsliste an
+  - **Preis laut Website** mit Aufschlüsselung und Knopf „Übernehmen“: Grundpreis bis 5 Tage + Tagespreis, Hol-/Bring-Service +24,50 €, Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 €. Anreise- und Abreisetag zählen voll
+  - **Vorname und Nachname** getrennt (gespeichert wird wie bisher der ganze Name)
+  - **E-Auto laden** mit Ladeziel (80 % empfohlen / 100 %) direkt unter Fahrzeug; bucht die Leistung „Laden“ mit 10,00 € Ladepauschale
+  - **Kindersitze** (0–5) und **Gepäckstücke** (0–20) wie auf der Website; sie stehen wie bei Online-Buchungen in der Notiz („Kindersitze: 1 · Gepäckstücke: 2“) und werden beim Bearbeiten wieder in die Felder gelesen
+  - Uhrzeiten in 5-Minuten-Schritten
+- **Bezeichnungen wie auf der Website**, in der ganzen App:
+  - Stellplatzart: **Outdoor** (vorher Außen), **Outdoor mit Car-Cover** (vorher Außen mit Plane), **Indoor** (vorher Halle). Die Bereiche des Lageplans (Halle, Außen A/B) heißen weiter so
+  - Rückgabe: Shuttle, **Selbst bringen/abholen**, **Hol-/Bring-Service**
+  - Antrieb: **Benzin/Diesel** (vorher Verbrenner), Elektro, Hybrid
+  - Tarif „CarCover“ heißt **Economy +**
+
+### Behoben (Website-Buchungen, Edge Function `booking-checkout`)
+- **Hol-/Bring-Service-Buchungen der Website schlugen fehl**: Der Rechner sendet `valet`, das Backend kannte nur `pickup_delivery` und lehnte mit „Bitte eine Rückgabe wählen“ ab. `valet` wird jetzt als Hol-/Bring-Service übernommen
+- **Betrag wie auf der Website angezeigt**: Bisher rechnete das Backend nur Grundpreis + Tage, der Kunde zahlte per PayPal also einen anderen Betrag als angezeigt. Jetzt für Website-Buchungen: Hol-/Bring-Service +24,50 €, Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 € Ladepauschale (die Leistung „Laden“ wird mit 10,00 € gebucht, Strom 0,69 €/kWh weiter bei Rückgabe). Die Landingpage (PayPal-Checkout, nicht live) rechnet unverändert
+- **Kürzere Website-Buchungen**: Der Rechner bietet auch weniger als 5 Tage zum Grundpreis an, das Backend lehnte sie mit „Online buchbar ab 5 Tagen“ ab. Website-Buchungen sind jetzt ab 1 Tag möglich (Grundpreis); bei Abholung am Anreisetag muss die Abholzeit nach der Anreise liegen. Die Landingpage behält die Mindestdauer 5 Tage
+- **Business-Grundpreis 79,00 €** wie auf der Website (vorher 89,00 € in der Datenbank)
+- Live laufender Stand der Function (Version 16, Aktion `register`, Herkunftsprüfung) war nicht im Repo und ist jetzt übernommen; ausgerollt als Version 18. Tests an das Preismodell Grundpreis + Tagespreis angepasst
+
+### Datenbank
+- Migration `20261111123211_website_register.sql` ins Repo übernommen: war am 11.11.2026 nur direkt im Live-Projekt eingespielt (Preismodell Grundpreis + Tagespreis, `area_full`)
+- Migration `20261123000100_manual_booking_tariff.sql` (live eingespielt am 23.11.2026): `upsert_booking` übernimmt `tariff_code` (create or replace, gleiche Signatur; ohne den Schlüssel bleibt der Tarif unverändert), Tarif `space` heißt „Economy +“, Business-Grundpreis 79,00 €
+
 ## 0.33.2 – 12.11.2026
 
 ### Behoben

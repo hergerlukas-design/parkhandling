@@ -22,6 +22,8 @@ export interface BookingInput {
   start_at: string
   end_at: string
   parking_type: ParkingType
+  /** Tarif (booking_tariffs.code); fehlt der Schlüssel, bleibt der Tarif unverändert */
+  tariff_code?: string | null
   return_mode?: ReturnMode | null
   notes?: string | null
   flight_out?: string | null
