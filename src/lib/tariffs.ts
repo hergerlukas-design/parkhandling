@@ -13,6 +13,10 @@ export interface Tariff {
   base_price: number
   /** Preis je weiterem Tag */
   extra_day_price: number
+  /** Shuttle wie auf der Website, z. B. „Direkt ohne Wartezeit“ */
+  shuttle_text: string
+  /** Enthaltene Leistungen wie auf der Website (Komma-getrennt) */
+  included_text: string
   /** Im Tarif enthaltene Leistungen [{code, description}] */
   included_services: { code: string; description?: string | null }[]
   /** Standardleistungen, die der Tarif nicht enthält (z. B. GRUND bei Economy) */
@@ -42,7 +46,7 @@ export async function listTariffs(): Promise<Tariff[]> {
   if (!supabase) throw new Error('Supabase ist nicht konfiguriert')
   const { data, error } = await supabase
     .from('booking_tariffs')
-    .select('code, label, parking_type, base_price, extra_day_price, included_services, excluded_services, sort_order')
+    .select('code, label, parking_type, base_price, extra_day_price, shuttle_text, included_text, included_services, excluded_services, sort_order')
     .eq('active', true)
     .order('sort_order')
   if (error) throw new Error(error.message)

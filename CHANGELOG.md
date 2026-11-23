@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.35.0 – 23.11.2026
+
+### Geändert
+- **Leistungen wie auf der Website** (www.parkhandling.de/buchen):
+  - **Grundreinigung** heißt jetzt **Reinigung innen** (Website: „Reinigung innen inkl. Scheiben“). Economy weiter ohne, Economy +, Business und Premium mit
+  - **Premium** bucht jetzt **Reinigung außen**, **CarCover Satin** und **Check Luftdruck & Flüssigkeiten** als eigene Leistungen mit eigener Aufgabe und Checkliste (vorher eine allgemeine „Servicearbeiten“-Aufgabe, ohne Außenreinigung)
+  - Enthaltene Leistungen und Shuttle je Tarif wörtlich wie auf der Website; das Buchungsformular zeigt sie beim gewählten Tarif an (z. B. „Im Tarif Premium: … · Shuttle Direkt ohne Wartezeit“)
+
+### Datenbank
+- Migration `20261123000200_website_services.sql` (live eingespielt am 23.11.2026): neue Leistungen `AUSSEN`, `CARCOVER`, `CHECK` (Checklisten [ANNAHME]), Premium-Leistungen, Tariftexte, Name von `GRUND`. Bestehende Buchungen unverändert (keine offene Premium-Buchung betroffen)
+
 ## 0.34.0 – 23.11.2026
 
 ### Geändert
