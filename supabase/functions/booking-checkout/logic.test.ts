@@ -34,6 +34,15 @@ Deno.test('Website-Rechner: valet = Hol-/Bring-Service, Aufpreis, Selbst-Nachlas
   if (charging.value?.amount !== 150 || !charging.value.charging_fee_included) throw new Error(`Laden ${charging.value?.amount}`)
   const row = bookingRow(charging.value, tariffs[0], 'X', '2026-10')
   if (!row.notes.includes('Ladepauschale 10,00 € im Preis')) throw new Error(row.notes)
+  // Kürzer als 5 Tage: im Rechner erlaubt, Grundpreis; Abholung am Anreisetag = 1 Tag
+  const short = reg({ pickup_date: '2026-11-07' })
+  if (!short.value || short.value.days !== 3 || short.value.amount !== 98) throw new Error(JSON.stringify(short))
+  const sameDay = reg({ pickup_date: '2026-11-05' })
+  if (sameDay.value?.days !== 1 || sameDay.value.amount !== 98) throw new Error(JSON.stringify(sameDay))
+  const sameDayEarly = reg({ pickup_date: '2026-11-05', pickup_time: '09:00' })
+  if (sameDayEarly.value !== null || !sameDayEarly.errors.pickup_time) throw new Error('Uhrzeit am selben Tag')
+  const before = reg({ pickup_date: '2026-11-04' })
+  if (before.value !== null || !before.errors.pickup_date) throw new Error('Abholung vor Anreise')
   // Landingpage (create) rechnet ohne Aufpreise
   const landing = validateBooking({ ...base, return_mode: 'pickup_delivery' }, '2026-10-20', tariffs, NOW)
   if (landing.value?.amount !== 140) throw new Error(`Landing ${landing.value?.amount}`)

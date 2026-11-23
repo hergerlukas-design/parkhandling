@@ -23,8 +23,9 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 ### Behoben (Website-Buchungen, Edge Function `booking-checkout`)
 - **Hol-/Bring-Service-Buchungen der Website schlugen fehl**: Der Rechner sendet `valet`, das Backend kannte nur `pickup_delivery` und lehnte mit „Bitte eine Rückgabe wählen“ ab. `valet` wird jetzt als Hol-/Bring-Service übernommen
 - **Betrag wie auf der Website angezeigt**: Bisher rechnete das Backend nur Grundpreis + Tage, der Kunde zahlte per PayPal also einen anderen Betrag als angezeigt. Jetzt für Website-Buchungen: Hol-/Bring-Service +24,50 €, Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 € Ladepauschale (die Leistung „Laden“ wird mit 10,00 € gebucht, Strom 0,69 €/kWh weiter bei Rückgabe). Die Landingpage (PayPal-Checkout, nicht live) rechnet unverändert
+- **Kürzere Website-Buchungen**: Der Rechner bietet auch weniger als 5 Tage zum Grundpreis an, das Backend lehnte sie mit „Online buchbar ab 5 Tagen“ ab. Website-Buchungen sind jetzt ab 1 Tag möglich (Grundpreis); bei Abholung am Anreisetag muss die Abholzeit nach der Anreise liegen. Die Landingpage behält die Mindestdauer 5 Tage
 - **Business-Grundpreis 79,00 €** wie auf der Website (vorher 89,00 € in der Datenbank)
-- Live laufender Stand der Function (Version 16, Aktion `register`, Herkunftsprüfung) war nicht im Repo und ist jetzt übernommen; ausgerollt als Version 17. Tests an das Preismodell Grundpreis + Tagespreis angepasst
+- Live laufender Stand der Function (Version 16, Aktion `register`, Herkunftsprüfung) war nicht im Repo und ist jetzt übernommen; ausgerollt als Version 18. Tests an das Preismodell Grundpreis + Tagespreis angepasst
 
 ### Datenbank
 - Migration `20261111123211_website_register.sql` ins Repo übernommen: war am 11.11.2026 nur direkt im Live-Projekt eingespielt (Preismodell Grundpreis + Tagespreis, `area_full`)

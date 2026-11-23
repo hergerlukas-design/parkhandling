@@ -2,7 +2,8 @@
 // Regeln (Preismodell der Website, ANNAHMEN.md):
 //  * Dauer wie im Website-Rechner: Anreise- und Abreisetag zählen jeweils als voller Tag
 //    (Abholdatum − Anreisedatum + 1, Uhrzeiten zählen nicht)
-//  * Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag; Mindestdauer 5, höchstens 30 Tage
+//  * Betrag = Grundpreis (bis 5 Tage) + Preis je weiterem Tag; höchstens 30 Tage. Mindestdauer
+//    5 Tage nur auf der Landingpage; im Website-Rechner (register) ab 1 Tag zum Grundpreis
 //  * Website-Rechner (register) zusätzlich wie dort angezeigt: Hol-/Bring-Service +24,50 €,
 //    Selbst bringen/abholen −10 % auf den Parkpreis, E-Auto laden +10,00 € Ladepauschale
 //  * Preise brutto in EUR
@@ -149,10 +150,22 @@ export interface ValidationOptions {
   requireEarlyStartConsent: boolean
   /** Betrag mit Hol-/Bring-Aufpreis, Selbst-Nachlass und Ladepauschale (wie im Rechner angezeigt) */
   websiteExtras: boolean
+  /** Kürzer als 5 Tage buchbar, es gilt der Grundpreis (wie im Rechner: „Mindestdauer 5 Tage: Es gilt der Grundpreis“) */
+  allowShortStays: boolean
 }
 
-export const CHECKOUT_RULES: ValidationOptions = { requireFlights: true, requireEarlyStartConsent: true, websiteExtras: false }
-export const REGISTER_RULES: ValidationOptions = { requireFlights: false, requireEarlyStartConsent: false, websiteExtras: true }
+export const CHECKOUT_RULES: ValidationOptions = {
+  requireFlights: true,
+  requireEarlyStartConsent: true,
+  websiteExtras: false,
+  allowShortStays: false,
+}
+export const REGISTER_RULES: ValidationOptions = {
+  requireFlights: false,
+  requireEarlyStartConsent: false,
+  websiteExtras: true,
+  allowShortStays: true,
+}
 
 /** Zusätzliche Felder, die der Website-Rechner so sendet */
 export interface RegisterExtras {
@@ -238,9 +251,9 @@ export function todayInBerlin(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 
-/** Online buchbar? (Mindest- und Höchstdauer) */
-export function bookableDays(days: number): boolean {
-  return Number.isInteger(days) && days >= MIN_DAYS && days <= MAX_DAYS
+/** Online buchbar? (Mindest- und Höchstdauer; mit allowShortStays ab 1 Tag) */
+export function bookableDays(days: number, allowShortStays = false): boolean {
+  return Number.isInteger(days) && days >= (allowShortStays ? 1 : MIN_DAYS) && days <= MAX_DAYS
 }
 
 /**
@@ -324,9 +337,17 @@ export function validateBooking(
   if (isIsoDate(input.arrival_date) && isIsoDate(input.pickup_date)) {
     days = rentalDays(input.arrival_date, input.pickup_date)
     if (days <= 0) e.pickup_date = 'Die Abholung muss nach der Anreise liegen.'
-    else if (days < MIN_DAYS) e.pickup_date = `Online buchbar ab ${MIN_DAYS} Tagen. Bei kürzerer Dauer bitte direkt anfragen.`
+    else if (days < MIN_DAYS && !rules.allowShortStays) e.pickup_date = `Online buchbar ab ${MIN_DAYS} Tagen. Bei kürzerer Dauer bitte direkt anfragen.`
     else if (days > MAX_DAYS) e.pickup_date = `Online buchbar bis höchstens ${MAX_DAYS} Tage. Bei längerer Dauer bitte direkt anfragen.`
   }
+
+  // Abholung am Anreisetag (Rechner ab 1 Tag): Uhrzeit muss nach der Anreise liegen
+  if (
+    !e.pickup_date && !e.arrival_date && days === 1 &&
+    TIME_RE.test(str(input.arrival_time)) && TIME_RE.test(str(input.pickup_time)) &&
+    str(input.pickup_time) <= str(input.arrival_time)
+  )
+    e.pickup_time = 'Die Abholung muss nach der Anreise liegen.'
 
   const tariff = tariffs.find((t) => t.code === normalizeTariffCode(input.tariff_code) && t.active)
   if (!tariff) e.tariff_code = 'Bitte einen Tarif wählen.'
@@ -405,7 +426,7 @@ export function validateBooking(
 
   if (Object.keys(e).length > 0 || !tariff) return { errors: e, value: null }
 
-  if (!bookableDays(days)) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
+  if (!bookableDays(days, rules.allowShortStays)) return { errors: { pickup_date: 'Dauer nicht buchbar.' }, value: null }
 
   return {
     errors: {},
