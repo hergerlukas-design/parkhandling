@@ -5,6 +5,9 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 
 ## 0.35.0 – 23.11.2026
 
+### Neu
+- **Einstellungen → Leistungen** (Adresse `/einstellungen?tab=leistungen`): Leistungskatalog mit Name, Kategorie, Preis, Beschreibung, Reihenfolge und **Checkliste** je Leistung. Admins können Schritte ändern, hinzufügen, entfernen und umsortieren, neue Leistungen anlegen und Leistungen deaktivieren; übriges Personal sieht den Katalog nur. Je Leistung steht, in welchem Tarif sie enthalten bzw. ausgeschlossen ist. Änderungen gelten für ab dann gebuchte Leistungen, bestehende Aufgaben behalten ihre Checkliste. Reine Fahrer sehen den Reiter nicht
+
 ### Geändert
 - **Leistungen wie auf der Website** (www.parkhandling.de/buchen):
   - **Grundreinigung** heißt jetzt **Reinigung innen** (Website: „Reinigung innen inkl. Scheiben“). Economy weiter ohne, Economy +, Business und Premium mit
@@ -12,7 +15,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Enthaltene Leistungen und Shuttle je Tarif wörtlich wie auf der Website; das Buchungsformular zeigt sie beim gewählten Tarif an (z. B. „Im Tarif Premium: … · Shuttle Direkt ohne Wartezeit“)
 
 ### Datenbank
-- Migration `20261123000200_website_services.sql` (live eingespielt am 23.11.2026): neue Leistungen `AUSSEN`, `CARCOVER`, `CHECK` (Checklisten [ANNAHME]), Premium-Leistungen, Tariftexte, Name von `GRUND`. Bestehende Buchungen unverändert (keine offene Premium-Buchung betroffen)
+- Migration `20261123000200_website_services.sql` (live eingespielt am 23.11.2026): neue Leistungen `AUSSEN`, `CARCOVER`, `CHECK` (Checklisten [ANNAHME], anpassbar unter Einstellungen → Leistungen), Premium-Leistungen, Tariftexte, Name von `GRUND`. Bestehende Buchungen unverändert (keine offene Premium-Buchung betroffen)
 
 ## 0.34.0 – 23.11.2026
 

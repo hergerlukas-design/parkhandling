@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
+import { ServiceCatalogSettings } from '../components/services/ServiceCatalogSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { UserManagement } from '../components/users/UserManagement'
 import { rolesLabel } from '../lib/users'
@@ -21,13 +22,14 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   )
 }
 
-type SettingsTab = 'allgemein' | 'team' | 'halle'
+type SettingsTab = 'allgemein' | 'team' | 'halle' | 'leistungen'
 
 /** Reiter der Einstellungen; weitere Bereiche kommen als eigener Reiter dazu */
 const TABS: { id: SettingsTab; label: string; short: string }[] = [
   { id: 'allgemein', label: 'Allgemein', short: 'Allgemein' },
   { id: 'team', label: 'Team & Benachrichtigungen', short: 'Team' },
   { id: 'halle', label: 'Halle & Stellplätze', short: 'Halle' },
+  { id: 'leistungen', label: 'Leistungen', short: 'Leistungen' },
 ]
 
 export function SettingsPage() {
@@ -35,8 +37,8 @@ export function SettingsPage() {
   const { session, profile } = useAuth()
   const admin = isAdminProfile(profile)
   const driverOnly = isDriverOnly(profile)
-  // Reiner Fahrer: Halle & Stellplätze hat für ihn keinen Inhalt
-  const tabs = TABS.filter((t) => t.id !== 'halle' || !driverOnly)
+  // Reiner Fahrer: Halle & Stellplätze und Leistungen haben für ihn keinen Inhalt
+  const tabs = TABS.filter((t) => (t.id !== 'halle' && t.id !== 'leistungen') || !driverOnly)
   const [params, setParams] = useSearchParams()
   const requested = params.get('tab')
   const tab: SettingsTab = tabs.some((t) => t.id === requested) ? (requested as SettingsTab) : 'allgemein'
@@ -141,6 +143,13 @@ export function SettingsPage() {
             >
               Stellplätze/QR-Codes
             </Link>
+          </Card>
+        </div>
+      )}
+      {tab === 'leistungen' && (
+        <div role="tabpanel">
+          <Card title="Leistungen & Checklisten">
+            <ServiceCatalogSettings admin={admin} />
           </Card>
         </div>
       )}
