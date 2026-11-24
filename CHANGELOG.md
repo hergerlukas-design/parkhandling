@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.37.0 – 24.11.2026
+
+### Geändert
+- **Fahrzeugliste zeigt die Buchungsnummer** klein unter dem Kennzeichen (Tabelle und Karten), sofern vorhanden (Parkos, Rechner, Website, Excel)
+- **Chip „Telefon“** für Buchungen, die in der App angelegt wurden (`source = 'manual'`), wie die Chips Parkos, Website und Rechner
+
 ## 0.36.1 – 24.11.2026
 
 ### Behoben (Booking-Sync, abgeglichen mit der echten CarHandling-Tabelle `bookings`)

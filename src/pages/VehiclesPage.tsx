@@ -66,6 +66,20 @@ function notArrived(b: BookingListItem): boolean {
   return b.status === 'booked'
 }
 
+/** Herkunft als Chip neben dem Kennzeichen; „manual“ = in der App angelegt (Telefonbuchung) */
+const SOURCE_CHIP: Record<string, string> = {
+  manual: 'Telefon',
+  parkos: 'Parkos',
+  [LANDING_SOURCE]: 'Website',
+  [CARHANDLING_SOURCE]: 'Rechner',
+}
+
+/** Buchungsnummer klein unter dem Kennzeichen (nur wenn vorhanden) */
+function BookingRef({ b }: { b: BookingListItem }) {
+  if (!b.external_ref) return null
+  return <span className="block font-mono text-[11px] text-muted">{b.external_ref}</span>
+}
+
 /** Kleine Hinweise neben dem Kennzeichen: noch nicht angekommen, Portal-Quelle und offene Import-Prüfung */
 function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePending?: boolean }) {
   const flags = b.import_flags ?? []
@@ -88,19 +102,9 @@ function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePend
           noch nicht da
         </span>
       )}
-      {b.source === 'parkos' && (
+      {SOURCE_CHIP[b.source] && (
         <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Parkos
-        </span>
-      )}
-      {b.source === LANDING_SOURCE && (
-        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Website
-        </span>
-      )}
-      {b.source === CARHANDLING_SOURCE && (
-        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Rechner
+          {SOURCE_CHIP[b.source]}
         </span>
       )}
       {flags.length > 0 && (
@@ -130,6 +134,7 @@ function VehicleRow({ b, hidePending, onOpen }: { b: BookingListItem; hidePendin
       <td className="px-4 py-3">
         <span className="font-mono font-semibold whitespace-nowrap">{b.plate}</span>
         <SourceBadges b={b} hidePending={hidePending} />
+        <BookingRef b={b} />
       </td>
       <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
       <td className="px-3 py-3 whitespace-nowrap">
@@ -181,6 +186,7 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
             </span>
             <span className="text-sm text-subtle">{hasKeySlot(code) ? code : code ? whereabouts(code) : ''}</span>
           </span>
+          {b.external_ref && <span className="truncate font-mono text-[11px] text-muted">{b.external_ref}</span>}
           <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
           {pending && (
             <span className={`text-sm font-semibold ${late ? 'text-warn' : 'text-accent-dark'}`}>
