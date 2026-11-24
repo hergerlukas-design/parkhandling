@@ -99,8 +99,8 @@ im CarHandling-Projekt (SQL-Editor) eine harmlose Änderung auslösen, z. B.
 ## Bekannte Grenzen
 
 - **Kapazität:** Das CarHandling-Backend kennt Parkos- und manuelle Buchungen aus unserem Dashboard nicht. Die Halle
-  kann dort also als frei gelten, obwohl sie bei uns voll ist. Muss entschieden werden (Abgleich in Gegenrichtung).
+  kann dort also als frei gelten, obwohl sie bei uns voll ist. **Entschieden (24.11.2026): Der Abgleich in Gegenrichtung wird gebraucht**, als nächster Schritt.
 - **Check-in:** Ankünfte, die im CarHandling-Check-in gescannt werden, kommen nicht als Ankunft in unsere App
-  (nur der Ticket-Link steht in der Notiz).
+  (nur der Ticket-Link steht in der Notiz). **Entschieden (24.11.2026):** erst in einem späteren Schritt zusammenführen.
 - Das Format der CarHandling-Tabelle ist noch nicht bestätigt; die Zuordnung oben ist eine [ANNAHME] und wird
   angepasst, sobald ein echter Datensatz vorliegt.
