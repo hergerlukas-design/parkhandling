@@ -46,6 +46,16 @@ Beide Schreibweisen gehen: wie unsere Tabelle `bookings` oder wie das Rechner-Fo
 | Betrag, Zahlung | `price_total`/`amount`; `payment_status` (`paid`, `succeeded`, `open`, …) oder `paid_at` | |
 | Sonstiges | `notes`, `child_seats`, `luggage`, `language`, `checkin_token` (Ticket-Link in der Notiz) | |
 
+Bestätigt am 24.11.2026 (Perplexity): Tabelle `public.bookings` mit u. a. `booking_ref`, `status`, `tariff_code`,
+`arrival_date`/`arrival_time`, `pickup_date`/`pickup_time`, `amount`, `language`, `plate`, `vehicle_model`, `fuel_type`,
+`charging`, `return_mode`, `flights`, `persons`, `child_seats`, `luggage`, `first_name`, `last_name`, `email`, `phone`,
+`company`, `notes`, `paid_amount`, `paid_at`, `checkin_token`, `checked_in_at`. Zusätzlich gilt:
+
+- `charging = true` → Leistung **Laden** (10,00 € Pauschale im Betrag)
+- Ohne `paid_at` und mit einem offenen Status (`pending`, `open`, `awaiting_payment` …) wird eine **neue** Buchung
+  noch nicht angelegt; `expired`/`failed` gilt als Storno
+- Fingerprint, Stripe-IDs und Check-in-Token kommen nicht ins Protokoll
+
 Datum auch als `TT.MM.JJJJ`, Uhrzeit auch `9:00` oder `09:00 Uhr`. Zeiten ohne Zeitzone gelten als Berliner Zeit.
 
 ## Einrichtung

@@ -120,3 +120,45 @@ Deno.test('Geheimnis: gleich, ungleich, zu kurz', () => {
   eq(secretMatches(null, s), false, 'fehlt')
   eq(secretMatches('kurz', 'kurz'), false, 'zu kurzes Secret nie gültig')
 })
+
+// Spalten der echten CarHandling-Tabelle bookings (Stand 24.11.2026)
+const carhandlingRow = {
+  ...formRecord,
+  status: 'paid',
+  fingerprint: 'fp-123',
+  stripe_session_id: 'cs_test_x',
+  stripe_payment_intent: 'pi_x',
+  payment_status: undefined,
+  paid_at: '2026-11-21T08:42:17.22+00:00',
+  paid_amount: 154,
+  fuel_type: 'Elektro',
+  charging: true,
+}
+
+Deno.test('CarHandling-Zeile: Laden, Antrieb, bezahlt, Protokoll ohne Fremdkennungen', () => {
+  const r = mapRecord(carhandlingRow, false)
+  eq(r.error, null, 'kein Fehler')
+  eq(r.pending, false, 'bezahlt → nicht ausstehend')
+  eq(r.booking.payment_status, 'paid', 'paid_at → bezahlt')
+  eq(r.booking.fuel_type, 'electric', 'Elektro → electric')
+  eq(r.charging, true, 'Laden gebucht')
+  eq(r.raw.fingerprint, undefined, 'Fingerprint nicht im Protokoll')
+  eq(r.raw.stripe_session_id, undefined, 'Stripe-ID nicht im Protokoll')
+  eq(r.raw.checkin_token, undefined, 'Token nicht im Protokoll')
+  eq(r.raw.plate, 'm-ab 1234', 'übrige Felder bleiben')
+})
+
+Deno.test('Checkout offen bzw. abgelaufen', () => {
+  const open = mapRecord({ ...carhandlingRow, status: 'pending', paid_at: null }, false)
+  eq(open.pending, true, 'pending ohne Zahlung → ausstehend')
+  eq(open.event, 'change', 'trotzdem Datensatz (für schon übernommene Buchungen)')
+  eq(mapRecord({ ...carhandlingRow, status: 'pending' }, false).pending, false, 'mit paid_at nicht ausstehend')
+  eq(mapRecord({ ...carhandlingRow, status: 'expired', paid_at: null }, false).event, 'cancel', 'abgelaufen → Storno')
+  eq(mapRecord({ ...carhandlingRow, status: 'irgendwas', paid_at: null }, false).pending, false, 'unbekannter Status → übernehmen')
+})
+
+Deno.test('Antrieb: Schreibweisen', () => {
+  for (const [v, e] of [['Benzin', 'combustion'], ['Diesel', 'combustion'], ['combustion', 'combustion'], ['Hybrid', 'hybrid'], ['plug-in hybrid', 'hybrid'], ['Wasserstoff', undefined]] as const) {
+    eq(mapRecord({ ...carhandlingRow, fuel_type: v }, false).booking.fuel_type, e, v)
+  }
+})

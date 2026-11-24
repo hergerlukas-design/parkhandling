@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.36.1 – 24.11.2026
+
+### Behoben (Booking-Sync, abgeglichen mit der echten CarHandling-Tabelle `bookings`)
+- **Noch nicht bezahlte Buchungen** (Stripe-Checkout offen oder abgebrochen, Status z. B. `pending` ohne `paid_at`) werden erst mit der Zahlung übernommen; abgelaufene Checkouts (`expired`, `failed`) stornieren eine schon übernommene Buchung
+- **E-Auto laden** (Spalte `charging`) bucht die Leistung **Laden** mit 10,00 € Pauschale und Aufgabe, wie bei Website-Buchungen
+- **Antrieb** auch in anderen Schreibweisen (Benzin, Diesel, Elektro, Plug-in-Hybrid …)
+- **Protokoll ohne Fremdkennungen:** Fingerprint, Stripe-IDs und Check-in-Token werden nicht in der Prüfliste gespeichert (der Ticket-Link steht weiter in der Notiz)
+
+### Datenbank
+- Migration `20261124000200_booking_sync_pending_charging.sql` (live eingespielt am 24.11.2026; Function `booking-sync` Version 3)
+
 ## 0.36.0 – 24.11.2026
 
 ### Neu

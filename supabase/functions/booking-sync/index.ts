@@ -33,6 +33,9 @@ Deno.serve(async (req) => {
       tariff_code: null,
       raw: body ?? {},
       error: unwrapped.error,
+      pending: false,
+      charging: false,
+      charging_target: null,
     }
     : mapRecord(unwrapped.record, unwrapped.deleted)
 

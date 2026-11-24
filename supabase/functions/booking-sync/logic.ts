@@ -27,6 +27,11 @@ export interface SyncInput {
   /** Originaldatensatz für das Protokoll */
   raw: Rec
   error: string | null
+  /** Noch nicht bezahlt/bestätigt (z. B. Stripe-Checkout offen): nur übernehmen, wenn schon vorhanden */
+  pending: boolean
+  /** E-Auto laden gebucht → Leistung LADEN (Pauschale im Betrag) */
+  charging: boolean
+  charging_target: string | null
 }
 
 /**
@@ -58,7 +63,23 @@ const TARIFF_ALIASES: Record<string, string> = {
 const PARKING_TYPES = ['indoor', 'outdoor_cover', 'outdoor']
 const FUEL_TYPES = ['combustion', 'electric', 'hybrid']
 const PAYMENT_STATUSES = ['open', 'partial', 'paid', 'refunded']
-const CANCELLED = ['cancelled', 'canceled', 'storniert', 'refunded_cancelled']
+const CANCELLED = ['cancelled', 'canceled', 'storniert', 'refunded_cancelled', 'expired', 'abandoned', 'failed', 'payment_failed']
+/** Status, solange die Zahlung noch aussteht (ohne paid_at) */
+const PENDING = ['pending', 'awaiting_payment', 'payment_pending', 'checkout', 'draft', 'created', 'unpaid', 'open', 'new', 'requires_payment_method']
+const FUEL_ALIASES: Record<string, string> = {
+  combustion: 'combustion', verbrenner: 'combustion', benzin: 'combustion', diesel: 'combustion', petrol: 'combustion',
+  gasoline: 'combustion', 'benzin/diesel': 'combustion', electric: 'electric', elektro: 'electric', ev: 'electric',
+  bev: 'electric', e_auto: 'electric', hybrid: 'hybrid', plugin_hybrid: 'hybrid', plug_in_hybrid: 'hybrid', phev: 'hybrid',
+}
+/** Felder, die nicht ins Protokoll gehören (Kennungen anderer Systeme, kein Nutzen im Dashboard) */
+const RAW_DROP = ['fingerprint', 'stripe_session_id', 'stripe_payment_intent', 'checkin_token', 'ticket_token', 'confirmation_error']
+
+/** Originaldatensatz fürs Protokoll, ohne Fremdkennungen */
+export function redactRaw(record: Rec): Rec {
+  const out: Rec = {}
+  for (const [k, v] of Object.entries(record)) if (!RAW_DROP.includes(k)) out[k] = v
+  return out
+}
 
 /** Datensatz des neuen Backends → Eingabe für sync_external_booking */
 export function mapRecord(record: Rec, deleted: boolean): SyncInput {
@@ -70,8 +91,11 @@ export function mapRecord(record: Rec, deleted: boolean): SyncInput {
     event: cancelled ? 'cancel' : 'new',
     booking: {},
     tariff_code: null,
-    raw: record,
+    raw: redactRaw(record),
     error: null,
+    pending: false,
+    charging: false,
+    charging_target: null,
   }
   if (!ref) return { ...base, error: 'Buchungsnummer fehlt (booking_ref, external_ref oder id)' }
   // Storno: nur die Kennung zählt, alles andere bleibt, wie es ist
@@ -107,8 +131,8 @@ export function mapRecord(record: Rec, deleted: boolean): SyncInput {
   setIf(b, 'customer_phone', str(pick(record, 'customer_phone', 'phone', 'telefon')))
   setIf(b, 'company', str(pick(record, 'company', 'firma')))
   setIf(b, 'vehicle_model', str(pick(record, 'vehicle_model', 'vehicle', 'fahrzeug')))
-  const fuel = lower(pick(record, 'fuel_type'))
-  if (FUEL_TYPES.includes(fuel)) b.fuel_type = fuel
+  const fuel = FUEL_ALIASES[lower(pick(record, 'fuel_type', 'antrieb')).replace(/[\s-]+/g, '_')] ?? null
+  if (fuel && FUEL_TYPES.includes(fuel)) b.fuel_type = fuel
 
   const persons = int(pick(record, 'persons', 'passengers', 'personen'))
   if (persons !== null && persons >= 0 && persons <= 50) b.persons = persons
@@ -134,7 +158,21 @@ export function mapRecord(record: Rec, deleted: boolean): SyncInput {
 
   b.notes = notes(record)
 
-  return { ...base, event: 'change', booking: b, tariff_code: tariff }
+  const charging = bool(pick(record, 'charging', 'laden', 'ev_charging'))
+  const target = pick(record, 'charging_target', 'ladeziel')
+  const chargingTarget = typeof target === 'number' ? `${target} %` : str(target)
+  // Ohne Zahlung und mit einem „offen“-Status: abgebrochener oder laufender Checkout
+  const pending = pay !== 'paid' && PENDING.includes(lower(pick(record, 'status', 'booking_status')))
+
+  return {
+    ...base,
+    event: 'change',
+    booking: b,
+    tariff_code: tariff,
+    pending,
+    charging,
+    charging_target: charging ? chargingTarget : null,
+  }
 }
 
 function notes(r: Rec): string {
@@ -242,6 +280,12 @@ function lower(v: unknown): string {
 
 function join(a: unknown, b: unknown): string | null {
   return [str(a), str(b)].filter(Boolean).join(' ') || null
+}
+
+function bool(v: unknown): boolean {
+  if (v === true) return true
+  if (typeof v === 'number') return v === 1
+  return /^(true|1|ja|yes)$/i.test(str(v) ?? '')
 }
 
 function int(v: unknown): number | null {

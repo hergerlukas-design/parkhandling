@@ -100,6 +100,37 @@ select pg_temp.assert_eq((select parking_type from public.bookings where id = ((
 select pg_temp.assert_eq((select count(*)::int from public.booking_services bs join public.services s on s.id = bs.service_id
   where bs.booking_id = ((:'r9'::jsonb) ->> 'booking_id')::uuid and s.code in ('AUSSEN', 'CARCOVER', 'CHECK')), 3, 'Premium-Leistungen');
 
+-- 10) Zahlung steht aus: neue Buchung wird nicht angelegt, nichts protokolliert
+select public.sync_external_booking('{"source": "carhandling", "external_ref": "PF-OFFEN", "event": "change", "pending": true,
+  "tariff_code": "economy", "booking": {"customer_name": "O", "plate": "M-O 1",
+  "start_at": "2030-12-01T09:00:00Z", "end_at": "2030-12-07T09:00:00Z"}}'::jsonb) as r10 \gset
+select pg_temp.assert_eq((:'r10'::jsonb) ->> 'status', 'unchanged', 'ausstehend → nicht übernommen');
+select pg_temp.assert_eq((select count(*)::int from public.bookings where external_ref = 'PF-OFFEN'), 0, 'keine Buchung');
+select pg_temp.assert_eq((select count(*)::int from public.booking_imports where external_ref = 'PF-OFFEN'), 0, 'kein Protokoll');
+
+-- 11) Bereits übernommene Buchung bleibt auch mit „ausstehend“ aktuell
+select public.sync_external_booking('{"source": "carhandling", "external_ref": "PF-PREMIUM", "event": "change", "pending": true,
+  "tariff_code": "premium", "booking": {"customer_name": "P neu", "plate": "M-P 1",
+  "start_at": "2030-12-01T09:00:00Z", "end_at": "2030-12-07T09:00:00Z"}}'::jsonb) as r11 \gset
+select pg_temp.assert_eq((select customer_name from public.bookings where external_ref = 'PF-PREMIUM'), 'P neu', 'vorhandene Buchung aktualisiert');
+
+-- 12) Laden: Leistung LADEN mit Pauschale, bei Wiederholung kein Doppel
+select public.sync_external_booking('{"source": "carhandling", "external_ref": "PF-LADEN", "event": "change",
+  "charging": true, "charging_target": "80 %", "tariff_code": "economy", "booking": {"customer_name": "L", "plate": "M-L 1",
+  "start_at": "2030-12-01T09:00:00Z", "end_at": "2030-12-07T09:00:00Z"}}'::jsonb) as r12 \gset
+select public.sync_external_booking('{"source": "carhandling", "external_ref": "PF-LADEN", "event": "change",
+  "charging": true, "charging_target": "80 %", "tariff_code": "economy", "booking": {"customer_name": "L", "plate": "M-L 1",
+  "start_at": "2030-12-01T09:00:00Z", "end_at": "2030-12-07T09:00:00Z"}}'::jsonb) as r12b \gset
+select pg_temp.assert_eq((select count(*)::int from public.booking_services bs join public.services s on s.id = bs.service_id
+  join public.bookings b on b.id = bs.booking_id where b.external_ref = 'PF-LADEN' and s.code = 'LADEN'), 1, 'LADEN einmal gebucht');
+select pg_temp.assert_eq((select bs.price_at_booking::numeric from public.booking_services bs join public.services s on s.id = bs.service_id
+  join public.bookings b on b.id = bs.booking_id where b.external_ref = 'PF-LADEN' and s.code = 'LADEN'), 10.00::numeric, 'Pauschale 10 €');
+select pg_temp.assert_eq((select bs.description like 'Ladeziel: 80 % · %' from public.booking_services bs join public.services s on s.id = bs.service_id
+  join public.bookings b on b.id = bs.booking_id where b.external_ref = 'PF-LADEN' and s.code = 'LADEN'), true, 'Ladeziel in der Beschreibung');
+select pg_temp.assert_eq((:'r12b'::jsonb) ->> 'status', 'unchanged', 'Wiederholung unverändert');
+select pg_temp.assert_eq((select count(*)::int from public.tasks t join public.bookings b on b.id = t.booking_id
+  where b.external_ref = 'PF-LADEN' and t.type = 'charge'), 1, 'Aufgabe Laden');
+
 reset role;
 \o
 \echo '  ✓ 98_booking_sync'
