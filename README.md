@@ -59,6 +59,7 @@ update public.profiles set active = true, role = 'admin' where id = (select id f
 ```bash
 supabase functions deploy media-sign      # Signed Upload URLs für Fotos/Unterschriften/PDFs
 supabase functions deploy protocol-mail   # Versand des Protokoll-PDFs
+supabase functions deploy booking-sync --no-verify-jwt   # Buchungen aus dem CarHandling-Backend (Secret BOOKING_SYNC_SECRET, docs/carhandling-sync.md)
 ```
 
 Secrets (Dashboard → Edge Functions → Secrets), nur für den Mailversand nötig:
@@ -180,7 +181,7 @@ halten Updates zurück (`useUpdateBlocker`), Entwürfe liegen in IndexedDB (`use
 | `src/lib/media/` | Media-Service: Komprimierung im Worker, Upload-Queue, Signed URLs, austauschbarer Speicher |
 | `src/lib/pdf/` | PDF-Vorlage aus *fahrzeug-protokolle-v2* (pdf-lib) |
 | `supabase/migrations/` | Schema, Trigger, RLS, Views, Regal-Logik, Protokolle |
-| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail`, `user-invite`, `push-send` (Web Push, `_shared/webpush.ts`) |
+| `supabase/functions/` | Edge Functions `media-sign`, `protocol-mail`, `user-invite`, `push-send` (Web Push, `_shared/webpush.ts`), `booking-sync` (Buchungen aus dem CarHandling-Backend) |
 | `src/lib/push/`, `public/push-handler.js` | Push-Abo des Geräts, Ereignisse, Empfang im Service Worker |
 | `supabase/tests/` | Datenbank-Tests |
 
