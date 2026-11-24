@@ -8,7 +8,7 @@ import {
   type ManualBookingForm,
 } from '../../booking-adapters'
 import { parseMoney } from '../../booking-adapters/parse'
-import { listActiveServices, upsertBooking } from '../../lib/bookings'
+import { listActiveServices, requestBookingRefs, upsertBooking } from '../../lib/bookings'
 import { formatMoney } from '../../lib/format'
 import { loadParkosOptions } from '../../lib/imports'
 import {
@@ -180,8 +180,10 @@ export function BookingFormDialog({
         if (!toSave.services[code]) toSave.services[code] = { price: '', description: x.description ?? '' }
       }
     const result = manualAdapter.normalize(toSave)
-    if (!result.ok) {
-      setErrors(result.errors)
+    // Neue (Telefon-)Buchungen nur mit Tarif: Preis, Leistungen und Buchungsnummer wie beim Rechner
+    const tariffMissing = !editing && tariffs.length > 0 && !form.tariff_code
+    if (!result.ok || tariffMissing) {
+      setErrors([...(tariffMissing ? ['Tarif fehlt'] : []), ...(result.ok ? [] : result.errors)])
       return
     }
     setSaving(true)
@@ -189,6 +191,8 @@ export function BookingFormDialog({
     try {
       const res = await upsertBooking(result.booking, manualAdapter.source)
       await draft.discard()
+      // Buchungsnummer bei CarHandling holen; ohne Antwort wird sie später nachgeholt
+      if (!result.booking.external_ref) void requestBookingRefs({ bookingId: res.id }).catch(() => 0)
       onSaved(res.id)
     } catch (e) {
       setErrors([(e as Error).message])
@@ -230,9 +234,9 @@ export function BookingFormDialog({
       )}
 
       <Section title="Tarif und Zeitraum">
-        <Field label="Tarif">
+        <Field label={editing ? 'Tarif' : 'Tarif *'}>
           <Select value={form.tariff_code ?? ''} onChange={(e) => selectTariff(e.target.value)}>
-            <option value="">Ohne Tarif (z. B. Parkos)</option>
+            <option value="">{editing ? 'Ohne Tarif (z. B. Parkos)' : 'Bitte wählen …'}</option>
             {tariffs.map((t) => (
               <option key={t.code} value={t.code}>{tariffOptionLabel(t)}</option>
             ))}

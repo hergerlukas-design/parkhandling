@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.38.0 – 24.11.2026
+
+### Neu
+- **Buchungsnummern für Telefonbuchungen** nach dem ParkHandling-Schema (`PH261220-OEC-SH-001`: Anreisetag, Platz + Tarif OEC/OE+/IB/IP, Service SH/SE/VA, laufende Nummer je Anreisetag). Die Nummer vergibt CarHandling aus demselben Zähler wie der Rechner, damit die Nummern fortlaufend sind und nie doppelt vorkommen
+  - Neue Edge Function `booking-ref` (nur Mitarbeitende) fragt bei CarHandling (`next-booking-ref`) an und speichert die Nummer als Buchungsnummer. Beim Speichern einer neuen Telefonbuchung automatisch; war CarHandling nicht erreichbar, holt die Fahrzeugliste fehlende Nummern beim nächsten Öffnen nach. Abgeschlossene und stornierte Buchungen bekommen keine Nummer
+  - Secret `CARHANDLING_REF_SECRET` (Header `x-ref-secret`); Function live als Version 2. Solange CarHandling `next-booking-ref` nicht anbietet, bleibt die Nummer leer
+- **Tarif ist Pflicht bei neuen Buchungen** in der App (Telefon, übernommene Anfragen): Preis, Leistungen und Buchungsnummer wie beim Rechner. Beim Bearbeiten (z. B. Parkos) bleibt „Ohne Tarif“ möglich
+
 ## 0.37.0 – 24.11.2026
 
 ### Geändert

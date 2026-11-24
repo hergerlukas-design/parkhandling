@@ -17,6 +17,7 @@ import {
   listBookings,
   type ArrivalGroup,
   type BookingCursor,
+  requestPendingBookingRefsOnce,
   type BookingListItem,
   type ListChip,
   type TaskChip,
@@ -401,6 +402,13 @@ export function VehiclesPage() {
   useEffect(() => {
     reload()
   }, [reload])
+
+  // Telefonbuchungen ohne Buchungsnummer: einmal je Sitzung bei CarHandling nachholen
+  useEffect(() => {
+    void requestPendingBookingRefsOnce().then((n) => {
+      if (n > 0) reload()
+    })
+  }, [])
 
   const open = (id: string) => navigate(`/fahrzeuge/${id}`)
   const anyLoading = overdue.loading || main.loading || expected.loading

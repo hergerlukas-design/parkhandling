@@ -99,6 +99,16 @@ Buchungen, die vor dem Einrichten entstanden sind, kommen beim nächsten Update 
 im CarHandling-Projekt (SQL-Editor) eine harmlose Änderung auslösen, z. B.
 `update public.bookings set updated_at = now() where created_at >= '2026-11-18';`
 
+## Buchungsnummern für Telefonbuchungen
+
+Schema siehe Übersicht „Buchungsnummern“ (Stand November 2026): `PH` + Anreisetag `JJMMTT` + Platz/Tarif
+(`OEC` Economy, `OE+` Economy +, `IB` Business, `IP` Premium) + Service (`SH` Shuttle, `SE` selbst, `VA` Hol-/Bring)
++ laufende Nummer je Anreisetag über alle Tarife. Vergeben wird **nur bei CarHandling** (gemeinsamer Zähler mit dem
+Rechner). Unsere Edge Function `booking-ref` ruft dazu `POST https://orqkeiveksshijktxepv.supabase.co/functions/v1/next-booking-ref`
+mit Header `x-ref-secret` (Secret `CARHANDLING_REF_SECRET` bei uns, `PARKHANDLING_REF_SECRET` bei CarHandling) und
+Body `{ arrival_date, tariff, service, reference }` auf; Antwort `{ booking_ref }`. Gleiche `reference` (unsere
+Buchungs-ID) liefert immer dieselbe Nummer.
+
 ## Prüfen
 
 1. Im Rechner eine Testbuchung abschicken (oder im CarHandling-Projekt eine Zeile ändern).
