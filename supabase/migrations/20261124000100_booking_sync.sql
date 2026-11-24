@@ -1,5 +1,5 @@
 -- =============================================================================
--- Buchungen aus dem CarHandling-Buchungsbackend übernehmen (0.35.0)
+-- Buchungen aus dem CarHandling-Buchungsbackend übernehmen (0.36.0)
 --  * Der Rechner bucht inzwischen in einem eigenen Supabase-Projekt (Stripe, Check-in, Tickets).
 --    Dessen Database Webhook ruft die Edge Function booking-sync auf; sie ruft
 --    sync_external_booking auf. Ergebnis: eine Kopie im Dashboard, source = 'carhandling'.

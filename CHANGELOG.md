@@ -14,7 +14,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Fahrzeug-Detail: Quelle „Website-Rechner“ für Buchungen mit `source = 'website'`
 
 ### Datenbank
-- Migration `20261124000100_booking_sync.sql` (noch **nicht** live eingespielt): Kanal `webhook` in `booking_imports`, Funktionen `apply_tariff_services` und `sync_external_booking`. Umbenannt von `20261123000100_…`, weil diese Versionsnummer schon von `manual_booking_tariff` belegt ist
+- Migration `20261124000100_booking_sync.sql` (live eingespielt am 24.11.2026; Function `booking-sync` Version 1 ausgerollt, ohne JWT-Prüfung): Kanal `webhook` in `booking_imports`, Funktionen `apply_tariff_services` und `sync_external_booking`. Umbenannt von `20261123000100_…`, weil diese Versionsnummer schon von `manual_booking_tariff` belegt ist
 - Tests 76 und 98 an die Premium-Leistungen aus 0.35.0 angepasst (Reinigung außen, CarCover, Check statt „Servicearbeiten“)
 
 ## 0.35.0 – 23.11.2026
