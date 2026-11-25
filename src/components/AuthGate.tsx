@@ -8,7 +8,7 @@ import { APP_VERSION } from '../lib/version'
 function Screen({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex min-h-full items-center justify-center bg-nav p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
         <div className="mb-5 flex items-center gap-3">
           <img src="/favicon.svg" alt="" className="size-10" />
           <div>

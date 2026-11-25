@@ -77,7 +77,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
         globIgnores: ['version.json', 'CHANGELOG.md'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/version\.json$/, /^\/CHANGELOG\.md$/],

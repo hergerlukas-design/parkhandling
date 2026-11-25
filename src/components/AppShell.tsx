@@ -7,6 +7,8 @@ import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, HELPER_ITEMS, helperMayOpen,
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
 import { UpdateBanner } from './UpdateBanner'
+import { appearanceStore } from '../lib/appearance'
+import { useStore } from '../lib/store'
 
 /** Seitentitel für Ansichten ohne eigenen Navigationseintrag */
 const EXTRA_TITLES = [
@@ -35,6 +37,7 @@ export function AppShell() {
     i.to === '/' ? pathname === '/' : pathname.startsWith(i.to),
   )
   const now = new Date()
+  const website = useStore(appearanceStore) === 'website'
 
   // Reiner Fahrer: alles außer Shuttle und Einstellungen führt zur Shuttle-Ansicht
   if (driverOnly && !driverMayOpen(pathname)) return <Navigate to="/shuttle" replace />
@@ -44,11 +47,17 @@ export function AppShell() {
   return (
     <div className="flex h-full flex-col">
       {/* Kopfzeile */}
-      <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5 md:px-6 md:py-3">
-        <Link to={home} className="text-lg font-bold tracking-tight md:text-xl">
-          Park &amp; Fly
-        </Link>
-        <span className="text-sm text-muted md:text-base">{current?.label}</span>
+      <header className="app-header flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5 md:px-6 md:py-3">
+        {website ? (
+          <Link to={home} className="flex items-center gap-3" aria-label="ParkHandling – Startseite">
+            <img src="/website/logo.png" alt="" width={300} height={254} className="h-9 w-auto md:h-11" />
+          </Link>
+        ) : (
+          <Link to={home} className="text-lg font-bold tracking-tight md:text-xl">
+            Park &amp; Fly
+          </Link>
+        )}
+        <span className="app-title text-sm text-muted md:text-base">{current?.label}</span>
         <span className="hidden text-sm text-muted md:inline md:pl-4">
           {WEEKDAY.format(now).replace('.', '')}, {formatDate(now)}
         </span>
@@ -63,7 +72,7 @@ export function AppShell() {
           )}
           {!driverOnly && !helperOnly && SCAN_ENABLED && <NavLink
             to="/scan"
-            className="touch-target hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark md:inline-flex"
+            className="btn-primary touch-target hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark md:inline-flex"
           >
             <Icon name="scan" className="size-5" />
             Scannen
@@ -80,7 +89,7 @@ export function AppShell() {
 
       <div className="flex min-h-0 flex-1">
         {/* Seitenleiste (Tablet/Desktop) */}
-        <nav aria-label="Hauptnavigation" className="hidden w-[76px] shrink-0 flex-col bg-nav px-1.5 py-3 md:flex">
+        <nav aria-label="Hauptnavigation" className="app-rail hidden w-[76px] shrink-0 flex-col bg-nav px-1.5 py-3 md:flex">
           <ul className="flex flex-1 flex-col gap-1">
             {navItems.map((item) => (
               <li key={item.to}>
@@ -110,7 +119,7 @@ export function AppShell() {
       </div>
 
       {/* Bottom-Bar (Smartphone) mit zentralem Scan-Button */}
-      <nav aria-label="Hauptnavigation" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Hauptnavigation" className="app-bottom border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
         <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : helperOnly ? 'grid-cols-2' : bottomItems.length === 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {bottomItems.map((item) =>
             item === 'scan' ? (

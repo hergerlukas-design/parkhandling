@@ -45,7 +45,7 @@ const STATE_STYLE: Record<EventState, { badge: string; dot: string; row: string 
 function Kpi({ label, value, sub, to, alert }: { label: string; value: number; sub: string; to: string; alert?: boolean }) {
   return (
     <Link to={to}
-      className={`flex flex-col gap-0.5 rounded-2xl border bg-white p-4 shadow-sm hover:bg-ground ${alert ? 'border-danger/40' : 'border-line'}`}>
+      className={`flex flex-col gap-0.5 rounded-2xl border bg-surface p-4 shadow-sm hover:bg-ground ${alert ? 'border-danger/40' : 'border-line'}`}>
       <span className="text-sm text-subtle">{label}</span>
       <span className={`text-3xl font-bold tabular-nums ${alert ? 'text-danger' : ''}`}>{value}</span>
       <span className="hidden text-xs text-muted sm:block">{sub}</span>
@@ -150,7 +150,7 @@ export function TodayPage() {
           )}
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+            <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
               <div className="flex items-baseline justify-between gap-2 border-b border-line px-4 py-3">
                 <h2 className="font-semibold">Ablauf {data.periodWord}</h2>
                 <span className="hidden text-xs text-muted sm:inline">Ankünfte und Abholungen nach Uhrzeit</span>
@@ -165,7 +165,7 @@ export function TodayPage() {
             </section>
 
             <div className="flex flex-col gap-4">
-              <section className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+              <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
                 <h2 className="mb-3 font-semibold">Braucht Aufmerksamkeit</h2>
                 {data.alerts.length === 0 ? (
                   <p className="text-sm text-muted">Alles im grünen Bereich.</p>
@@ -185,7 +185,7 @@ export function TodayPage() {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+              <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
                 <h2 className="mb-3 font-semibold">Belegung</h2>
                 <ul className="flex flex-col gap-3">
                   {data.capacity.map((c) => (

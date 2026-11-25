@@ -37,7 +37,7 @@ export function StatusBadge({ status }: { status: BookingStatus }) {
 
 type Variant = 'primary' | 'secondary' | 'danger'
 const VARIANT: Record<Variant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-dark',
+  primary: 'btn-primary bg-accent text-white hover:bg-accent-dark',
   secondary: 'border border-line-strong bg-surface hover:bg-ground',
   danger: 'bg-danger text-white hover:brightness-95',
 }

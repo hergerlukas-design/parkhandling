@@ -71,3 +71,200 @@
   min-height: 44px;
   min-width: 44px;
 }
+
+/* ------------------------------------------------------------------------------------------------
+   Alternativ-Modus „Website-Design“ (Einstellungen → Allgemein → Darstellung)
+   Look von parkhandling.de und dem Rechner: dunkelgrau, Montserrat für Überschriften, Mulish für
+   Text, eckige Kanten, Rot nur als Akzent, Hauptknöpfe mit Reifenprofil, weißem Innenrahmen und
+   rotem Pfeil. Alle Farben laufen über die Tokens oben; hier werden nur ihre Werte getauscht.
+   ------------------------------------------------------------------------------------------------ */
+:root[data-look='website'] {
+  color-scheme: dark;
+
+  --font-sans: 'Mulish', 'Segoe UI', system-ui, sans-serif;
+  --font-head: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+
+  --color-ground: #3e3e40;
+  --color-surface: #353537;
+  --color-ink: #ffffff;
+  --color-muted: #b9b9bb;
+  --color-subtle: #d9d9db;
+  --color-line: #525254;
+  --color-line-strong: #6d6d6f;
+  --color-chip: #2b2b2d;
+
+  --color-accent: #d8262e;
+  --color-accent-dark: #ff8a8f;
+  --color-accent-soft: #4b2b2d;
+
+  --color-nav: #2b2b2d;
+  --color-nav-active: #48484a;
+
+  --color-danger: #e5484d;
+  --color-danger-soft: #4f2a2c;
+  --color-danger-ink: #ffb4b6;
+  --color-warn: #f0a040;
+  --color-warn-soft: #4a3b23;
+  --color-warn-ink: #ffd699;
+  --color-ok: #2f855a;
+  --color-ok-soft: #26392e;
+  --color-ok-ink: #aee3c4;
+
+  --color-due-today: #ff6b70;
+  --color-due-today-bg: #4f2a2c;
+  --color-due-today-ink: #ffb4b6;
+  --color-due-tomorrow: #f0a040;
+  --color-due-tomorrow-bg: #4a3b23;
+  --color-due-tomorrow-ink: #ffd699;
+  --color-due-week: #5aa9e6;
+  --color-due-week-bg: #233a4d;
+  --color-due-week-ink: #b3d9f5;
+  --color-due-later: #4fb37f;
+  --color-due-later-bg: #26392e;
+  --color-due-later-ink: #aee3c4;
+  --color-slot-free: #8c8c8e;
+  --color-slot-blocked: #77777a;
+  --color-slot-blocked-bg: #2f2f31;
+
+  /* eckig wie die Website; Pillen und Kreise (rounded-full) bleiben rund */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+}
+
+/* Bewusst außerhalb von @layer: muss die Tailwind-Utilities (Layer „utilities“) überstimmen */
+[data-look='website'] body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+[data-look='website'] :is(h1, h2, h3, legend) {
+  font-family: var(--font-head);
+  font-weight: 500;
+}
+[data-look='website'] h1 {
+  letter-spacing: 0.01em;
+}
+[data-look='website'] :is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range']) {
+  background-color: rgb(0 0 0 / 0.22);
+  color: #fff;
+}
+[data-look='website'] :is(input, select, textarea)::placeholder {
+  color: rgb(255 255 255 / 0.4);
+}
+[data-look='website'] select option {
+  background: #2d2d2f;
+  color: #fff;
+}
+[data-look='website'] :is(input, select, textarea):focus {
+  border-color: #fff;
+  outline: none;
+}
+[data-look='website'] :is(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--color-accent);
+}
+
+/* Kopfzeile, Seitenleiste und Smartphone-Leiste */
+[data-look='website'] .app-header {
+  background: var(--color-chip);
+}
+[data-look='website'] .app-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+[data-look='website'] .app-rail a {
+  font-family: var(--font-head);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-left: 2px solid transparent;
+}
+[data-look='website'] .app-rail a[aria-current='page'] {
+  border-left-color: var(--color-accent);
+}
+[data-look='website'] .app-bottom {
+  background: var(--color-chip);
+}
+
+/* Hauptknöpfe: Reifenprofil, weißer Innenrahmen, roter Pfeil */
+[data-look='website'] .btn-primary {
+  background: #0b0b0b url('/website/tread.jpg') repeat-x center / auto 100%;
+  border: 1px solid #6d6d6d;
+  outline: 1px solid rgb(255 255 255 / 0.85);
+  outline-offset: -5px;
+  color: #fff;
+  font-family: var(--font-head);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding-inline: 1.25rem;
+  transition: filter 0.15s;
+}
+[data-look='website'] .btn-primary::after {
+  content: '→';
+  margin-left: 0.5em;
+  color: var(--color-accent);
+  letter-spacing: 0;
+  transition: transform 0.15s;
+}
+[data-look='website'] .btn-primary:hover:not(:disabled) {
+  background-color: #0b0b0b;
+  filter: brightness(1.25);
+}
+[data-look='website'] .btn-primary:hover:not(:disabled)::after {
+  transform: translateX(3px);
+}
+[data-look='website'] .btn-primary:focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* Ausgewählte Filter/Reiter (bg-ink): dunkel mit weißem Innenrahmen statt weißer Fläche */
+[data-look='website'] .bg-ink {
+  background-color: #0b0b0b;
+  outline: 1px solid rgb(255 255 255 / 0.85);
+  outline-offset: -4px;
+}
+[data-look='website'] .border-ink {
+  border-color: #6d6d6d;
+}
+[data-look='website'] :is(.bg-ink\/50, .bg-ink\/70) {
+  background-color: rgb(20 20 22 / 0.75);
+}
+/* Rot als Fläche mit weißer Schrift: beim Hover dunkler statt heller */
+[data-look='website'] .hover\:bg-accent-dark:hover {
+  background-color: #b01f26;
+}
+[data-look='website'] .bg-warn-ink {
+  background-color: #8a5a12;
+}
+/* Rot/Grün als Schrift auf Dunkel: hellere Töne für ausreichenden Kontrast (Flächen bleiben kräftig) */
+[data-look='website'] .text-accent {
+  color: #ff7a7e;
+}
+[data-look='website'] .text-danger {
+  color: #ff7a7e;
+}
+[data-look='website'] .text-ok {
+  color: #6fd39f;
+}
+/* Auf dem Handy schmaler, damit Knöpfe in engen Zeilen nicht überlaufen */
+@media (max-width: 639px) {
+  [data-look='website'] .btn-primary {
+    letter-spacing: 0.02em;
+    text-transform: none;
+    padding-inline: 0.75rem;
+    min-width: max-content;
+  }
+  [data-look='website'] .btn-primary::after {
+    content: none;
+  }
+}
+[data-look='website'] .shadow-sm {
+  box-shadow: none;
+}
