@@ -62,7 +62,7 @@ export function SettingsPage() {
       </div>
 
       {tab === 'allgemein' && (
-        <div className="grid gap-4 lg:grid-cols-2" role="tabpanel">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0" role="tabpanel">
           <Card title="App & Version">
             <dl>
               <Row label="Installierte Version">{APP_VERSION}</Row>
@@ -107,7 +107,7 @@ export function SettingsPage() {
       )}
 
       {tab === 'team' && (
-        <div className="grid gap-4 lg:grid-cols-2" role="tabpanel">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0" role="tabpanel">
           <Card title="Benachrichtigungen auf diesem Gerät">
             <NotificationSettings />
           </Card>
@@ -125,7 +125,7 @@ export function SettingsPage() {
       )}
 
       {tab === 'halle' && (
-        <div className="grid gap-4 lg:grid-cols-2" role="tabpanel">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0" role="tabpanel">
           {admin && (
             <Card title="Stellplätze: Halle & Außenfläche">
               <SiteLayoutSettings />

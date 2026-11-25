@@ -91,7 +91,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex justify-between gap-4 py-1 text-sm">
       <dt className="shrink-0 text-subtle">{label}</dt>
-      <dd className="text-right">{children}</dd>
+      <dd className="min-w-0 text-right [overflow-wrap:anywhere]">{children}</dd>
     </div>
   )
 }
@@ -295,7 +295,7 @@ export function VehicleDetailPage() {
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 [&>*]:min-w-0">
         <div className="flex flex-col gap-4">
           <Card title="Buchung">
             <dl className="divide-y divide-line [&>div]:py-2 [&>div:first-child]:pt-0 [&>div:last-child]:pb-0">
