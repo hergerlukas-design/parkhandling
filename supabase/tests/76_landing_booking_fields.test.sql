@@ -23,16 +23,16 @@ select pg_temp.assert_eq(
   (select array_agg(s.code order by s.code) from public.booking_services bs
    join public.services s on s.id = bs.service_id
    join public.bookings b on b.id = bs.booking_id where b.external_ref = 'T-PREMIUM'),
-  array['GRUND', 'SERVICE'], 'Premium: Standard + Servicearbeit');
+  array['AUSSEN', 'CARCOVER', 'CHECK', 'GRUND'], 'Premium: Reinigung innen/außen, CarCover, Check');
 select pg_temp.assert_eq(
   (select bs.description like 'Tarif Premium:%' from public.booking_services bs
    join public.services s on s.id = bs.service_id
-   join public.bookings b on b.id = bs.booking_id where b.external_ref = 'T-PREMIUM' and s.code = 'SERVICE'),
+   join public.bookings b on b.id = bs.booking_id where b.external_ref = 'T-PREMIUM' and s.code = 'AUSSEN'),
   true, 'Beschreibung aus dem Tarif');
 select pg_temp.assert_eq(
   (select count(*) from public.tasks t join public.bookings b on b.id = t.booking_id
    where b.external_ref = 'T-PREMIUM' and t.type = 'service'),
-  2::bigint, 'Aufgaben für beide Leistungen');
+  4::bigint, 'Aufgaben für alle vier Leistungen');
 
 -- Economy hat keine Zusatzleistung; Buchung ohne Tarif ebenso
 insert into public.bookings (source, external_ref, customer_name, plate, start_at, end_at, parking_type, tariff_code)

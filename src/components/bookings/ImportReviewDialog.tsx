@@ -105,7 +105,7 @@ export function ImportReviewDialog({ onClose, onChanged }: { onClose: () => void
                 <span className="text-sm font-medium">{MAIL_TYPE_LABEL[r.mail_type]}</span>
                 {r.external_ref && <span className="font-mono text-sm">#{r.external_ref}</span>}
                 <span className="ml-auto text-xs text-muted">
-                  {formatDateTime(r.created_at)} · {r.channel === 'imap' ? 'automatisch' : 'von Hand'}
+                  {formatDateTime(r.created_at)} · {r.channel === 'webhook' ? 'CarHandling-Backend' : r.channel === 'imap' ? 'automatisch' : 'von Hand'}
                 </span>
                 {r.error && <span className="w-full text-sm text-subtle">{r.error}</span>}
               </button>

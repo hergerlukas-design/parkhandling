@@ -7,7 +7,7 @@ import { ImportReviewDialog } from '../components/bookings/ImportReviewDialog'
 import { InquiriesDialog } from '../components/bookings/InquiriesDialog'
 import { ParkosImportDialog } from '../components/bookings/ParkosImportDialog'
 import { countOpenImports } from '../lib/imports'
-import { countNewInquiries, LANDING_SOURCE } from '../lib/landing'
+import { CARHANDLING_SOURCE, countNewInquiries, LANDING_SOURCE } from '../lib/landing'
 import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
 import {
@@ -17,6 +17,7 @@ import {
   listBookings,
   type ArrivalGroup,
   type BookingCursor,
+  requestPendingBookingRefsOnce,
   type BookingListItem,
   type ListChip,
   type TaskChip,
@@ -66,6 +67,20 @@ function notArrived(b: BookingListItem): boolean {
   return b.status === 'booked'
 }
 
+/** Herkunft als Chip neben dem Kennzeichen; „manual“ = in der App angelegt (Telefonbuchung) */
+const SOURCE_CHIP: Record<string, string> = {
+  manual: 'Telefon',
+  parkos: 'Parkos',
+  [LANDING_SOURCE]: 'Website',
+  [CARHANDLING_SOURCE]: 'Rechner',
+}
+
+/** Buchungsnummer klein unter dem Kennzeichen (nur wenn vorhanden) */
+function BookingRef({ b }: { b: BookingListItem }) {
+  if (!b.external_ref) return null
+  return <span className="block font-mono text-[11px] text-muted">{b.external_ref}</span>
+}
+
 /** Kleine Hinweise neben dem Kennzeichen: noch nicht angekommen, Portal-Quelle und offene Import-Prüfung */
 function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePending?: boolean }) {
   const flags = b.import_flags ?? []
@@ -88,14 +103,9 @@ function SourceBadges({ b, hidePending = false }: { b: BookingListItem; hidePend
           noch nicht da
         </span>
       )}
-      {b.source === 'parkos' && (
+      {SOURCE_CHIP[b.source] && (
         <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Parkos
-        </span>
-      )}
-      {b.source === LANDING_SOURCE && (
-        <span className="ml-1.5 rounded bg-accent-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-accent-dark">
-          Website
+          {SOURCE_CHIP[b.source]}
         </span>
       )}
       {flags.length > 0 && (
@@ -125,6 +135,7 @@ function VehicleRow({ b, hidePending, onOpen }: { b: BookingListItem; hidePendin
       <td className="px-4 py-3">
         <span className="font-mono font-semibold whitespace-nowrap">{b.plate}</span>
         <SourceBadges b={b} hidePending={hidePending} />
+        <BookingRef b={b} />
       </td>
       <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
       <td className="px-3 py-3 whitespace-nowrap">
@@ -176,6 +187,7 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
             </span>
             <span className="text-sm text-subtle">{hasKeySlot(code) ? code : code ? whereabouts(code) : ''}</span>
           </span>
+          {b.external_ref && <span className="truncate font-mono text-[11px] text-muted">{b.external_ref}</span>}
           <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>
           {pending && (
             <span className={`text-sm font-semibold ${late ? 'text-warn' : 'text-accent-dark'}`}>
@@ -390,6 +402,13 @@ export function VehiclesPage() {
   useEffect(() => {
     reload()
   }, [reload])
+
+  // Telefonbuchungen ohne Buchungsnummer: einmal je Sitzung bei CarHandling nachholen
+  useEffect(() => {
+    void requestPendingBookingRefsOnce().then((n) => {
+      if (n > 0) reload()
+    })
+  }, [])
 
   const open = (id: string) => navigate(`/fahrzeuge/${id}`)
   const anyLoading = overdue.loading || main.loading || expected.loading

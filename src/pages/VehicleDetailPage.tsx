@@ -55,6 +55,8 @@ const SOURCE_LABEL: Record<string, string> = {
   demo: 'Demo-Daten',
   parkos: 'Parkos',
   landing: 'Online-Buchung (Website)',
+  website: 'Website-Rechner',
+  carhandling: 'Rechner (CarHandling-Backend)',
 }
 
 function fmtValue(key: string, v: unknown): string {

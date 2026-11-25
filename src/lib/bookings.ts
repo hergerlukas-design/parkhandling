@@ -20,6 +20,27 @@ export async function upsertBooking(input: BookingInput, source: string): Promis
   return data as UpsertResult
 }
 
+/**
+ * Buchungsnummer für Telefonbuchungen bei CarHandling abholen (Edge Function booking-ref).
+ * Ohne Ergebnis, wenn CarHandling nicht erreichbar ist – dann im nächsten Durchlauf ({ pending }).
+ * Gibt die Anzahl neu vergebener Nummern zurück.
+ */
+export async function requestBookingRefs(target: { bookingId: string } | { pending: true }): Promise<number> {
+  const body = 'bookingId' in target ? { booking_id: target.bookingId } : { pending: true }
+  const { data, error } = await db().functions.invoke<{ results?: { booking_ref?: string }[] }>('booking-ref', { body })
+  if (error) return 0
+  return (data?.results ?? []).filter((r) => r.booking_ref).length
+}
+
+let pendingRefsRequested = false
+
+/** Fehlende Nummern einmal je Sitzung nachholen (z. B. CarHandling war beim Speichern nicht erreichbar). */
+export async function requestPendingBookingRefsOnce(): Promise<number> {
+  if (pendingRefsRequested) return 0
+  pendingRefsRequested = true
+  return requestBookingRefs({ pending: true }).catch(() => 0)
+}
+
 /** Filter-Chips der Fahrzeugliste (wie im Klick-Prototyp) */
 export type ListChip =
   | 'all'
