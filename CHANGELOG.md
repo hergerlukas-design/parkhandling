@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.46.1 – 25.11.2026
+
+### Behoben
+- **Abmelden im Scanner führte zum Login mit E-Mail und Passwort.** Scanner- und Tageszugänge kommen nach „Abmelden“ (Kopfzeile, Einstellungen, „Zugang beendet“) jetzt wieder zur **PIN-Anmeldung** unter `/scanner`, mit gemerktem Namen
+- Login mit E-Mail und Passwort: Link **„Ohne Konto: Scanner mit PIN“**, falls man dort doch einmal landet
+
 ## 0.46.0 – 25.11.2026
 
 ### Geändert

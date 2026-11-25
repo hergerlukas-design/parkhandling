@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { ACCOUNT_ON_DEVICE, accessExpired, redeemHelperCode, redeemScannerPin, signIn, signOut, useAuth } from '../lib/auth'
+import { ACCOUNT_ON_DEVICE, accessExpired, redeemHelperCode, redeemScannerPin, signIn, signOut, signOutToScanner, useAuth } from '../lib/auth'
 import { codeFromHash, validPin } from '../lib/helpers'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { SetPassword } from './users/SetPassword'
@@ -214,6 +214,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <Screen title="Anmelden">
         <LoginForm />
+        <a href="/scanner" className="touch-target mt-3 flex items-center justify-center text-sm text-subtle underline">
+          Ohne Konto: Scanner mit PIN
+        </a>
       </Screen>
     )
   }
@@ -228,7 +231,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           className="btn-primary touch-target mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
           Zum Scanner
         </a>
-        <button type="button" onClick={() => void signOut()}
+        <button type="button" onClick={() => void signOutToScanner()}
           className="touch-target mt-4 w-full rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">
           Abmelden
         </button>

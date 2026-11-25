@@ -153,3 +153,9 @@ export async function signIn(email: string, password: string): Promise<string | 
 export async function signOut(): Promise<void> {
   await supabase?.auth.signOut()
 }
+
+/** Scanner-/Tageszugang abmelden: zurück zur PIN-Anmeldung statt zum Login mit E-Mail und Passwort */
+export async function signOutToScanner(): Promise<void> {
+  await signOut()
+  window.location.replace('/scanner')
+}
