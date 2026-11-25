@@ -32,6 +32,11 @@ export interface SyncInput {
   /** E-Auto laden gebucht → Leistung LADEN (Pauschale im Betrag) */
   charging: boolean
   charging_target: string | null
+  /** Ticket-Code aus dem Kunden-QR (32 Hex, klein); wird bei uns nur als Hash gespeichert */
+  checkin_token?: string
+  /** Check-in-Stand bei CarHandling (ISO); null = zurückgenommen, fehlt = nicht mitgeschickt */
+  checked_in_at?: string | null
+  checked_out_at?: string | null
 }
 
 /**
@@ -164,7 +169,7 @@ export function mapRecord(record: Rec, deleted: boolean): SyncInput {
   // Ohne Zahlung und mit einem „offen“-Status: abgebrochener oder laufender Checkout
   const pending = pay !== 'paid' && PENDING.includes(lower(pick(record, 'status', 'booking_status')))
 
-  return {
+  const input: SyncInput = {
     ...base,
     event: 'change',
     booking: b,
@@ -173,6 +178,22 @@ export function mapRecord(record: Rec, deleted: boolean): SyncInput {
     charging,
     charging_target: charging ? chargingTarget : null,
   }
+  const token = ticketToken(record)
+  if (token) input.checkin_token = token
+  if ('checked_in_at' in record) input.checked_in_at = isoOrNull(record.checked_in_at)
+  if ('checked_out_at' in record) input.checked_out_at = isoOrNull(record.checked_out_at)
+  return input
+}
+
+/** Ticket-Code (Kunden-QR) des Datensatzes, 32 Hex-Zeichen klein */
+export function ticketToken(r: Rec): string | null {
+  const token = str(pick(r, 'checkin_token', 'ticket_token'))
+  return token && /^[0-9a-f]{32}$/i.test(token) ? token.toLowerCase() : null
+}
+
+function isoOrNull(v: unknown): string | null {
+  const s = str(v)
+  return s && !Number.isNaN(Date.parse(s)) ? new Date(s).toISOString() : null
 }
 
 function notes(r: Rec): string {
@@ -182,8 +203,8 @@ function notes(r: Rec): string {
   const seats = int(pick(r, 'child_seats', 'kindersitze'))
   const luggage = int(pick(r, 'luggage', 'gepaeck'))
   if (seats !== null || luggage !== null) lines.push(`Kindersitze: ${seats ?? 0} · Gepäckstücke: ${luggage ?? 0}`)
-  const token = str(pick(r, 'checkin_token', 'ticket_token'))
-  if (token && /^[0-9a-f]{32}$/i.test(token)) lines.push(`Check-in-Ticket: ${TICKET_BASE}${token}`)
+  const token = ticketToken(r)
+  if (token) lines.push(`Check-in-Ticket: ${TICKET_BASE}${token}`)
   lines.push('Übernommen aus dem CarHandling-Buchungsbackend')
   return lines.join('\n')
 }

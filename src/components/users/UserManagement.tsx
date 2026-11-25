@@ -7,6 +7,7 @@ const ROLE_HINT: Record<Role, string> = {
   admin: 'alles inkl. Personal, Einstellungen',
   staff: 'Buchungen, Lageplan, Aufgaben, Shuttle',
   driver: 'Fahrerliste; allein nur Shuttle-Ansicht',
+  helper: 'per QR bis Tagesende: Scannen, Annahme, Rückgabe',
 }
 
 /** Rollen als Mehrfachauswahl (mindestens eine bleibt gewählt) */

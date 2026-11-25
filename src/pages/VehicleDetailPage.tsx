@@ -345,6 +345,15 @@ export function VehicleDetailPage() {
                 <Row label="Parkplatz">{PARKING_TYPE_LABEL[b.parking_type]}</Row>
                 {(tariff || b.tariff_code) && <Row label="Tarif">{tariff ?? b.tariff_code}</Row>}
                 <Row label="Quelle">{SOURCE_LABEL[b.source] ?? b.source}</Row>
+                {b.source === 'carhandling' && (
+                  <Row label="Ticket CarHandling">
+                    {b.carhandling_checked_out_at
+                      ? `ausgecheckt ${formatDateTime(b.carhandling_checked_out_at)}`
+                      : b.carhandling_checked_in_at
+                        ? `angenommen ${formatDateTime(b.carhandling_checked_in_at)}`
+                        : 'noch nicht angenommen'}
+                  </Row>
+                )}
                 <Row label="Zahlung"><PaymentBadge status={b.payment_status} /></Row>
               </div>
               {b.notes && (

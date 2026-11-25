@@ -3,6 +3,33 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.40.0 – 25.11.2026
+
+### Neu
+- **Aushilfen per QR-Code freischalten:** Aushilfen brauchen kein eigenes Konto. Unter Einstellungen → Team → **Aushilfe freischalten** gibt jemand mit der Rolle Personal den Namen ein, die App zeigt einen QR-Code (15 Minuten gültig, nur einmal). Die Aushilfe scannt ihn mit der Kamera ihres eigenen Handys und ist ohne E-Mail und Passwort angemeldet
+  - Zugang **bis Tagesende** (Berliner Zeit), danach „Zugang beendet“. Vorher jederzeit über **Sperren** beendbar; die Liste zeigt, wer heute freigeschaltet ist und von wem
+  - Aushilfen sehen nur **Scannen** und **Einchecken** und können Annahme- und Übergabeprotokolle ausfüllen. Fahrzeugliste, Lageplan, Aufgaben, Shuttle und Einstellungen sind für sie gesperrt
+  - Ihr Name steht automatisch als Prüfer im Protokoll
+  - Aushilfen können keine weiteren Aushilfen freischalten; ein Gerät mit eigenem Konto wird nie zur Aushilfe umgebaut
+- **Scan-Knopf wieder sichtbar** (Kopfzeile und Smartphone-Leiste) für Stellplatz- und Kunden-QR
+
+### Datenbank
+- Migration `20261125000200_helper_access.sql` (live eingespielt am 25.11.2026): Rolle `helper`, `profiles.access_until`, Tabelle `helper_invites` (nur Hash des Codes), Funktionen `create_helper_invite`, `redeem_helper_invite`, `list_helpers`, `revoke_helper`, `is_personnel`. `is_staff`/`is_member` berücksichtigen `access_until`
+- Voraussetzung: In Supabase **Authentication → Sign In / Providers → „Allow anonymous sign-ins“** einschalten
+
+## 0.39.0 – 25.11.2026
+
+### Neu
+- **Kunden-QR-Code im Dashboard:** Den QR-Code aus der Buchungsbestätigung des Rechners (Check-in-Ticket bei CarHandling) kann jetzt der Scan-Knopf der App lesen. Er öffnet direkt die **Annahme**: erst das Annahmeprotokoll, danach Einchecken mit Platzvorschlag. Steht das Fahrzeug schon, öffnet sich das Fahrzeug. Storniert, schon zurückgegeben oder unbekannt: Hinweis statt Weiterleitung
+  - Auch die **Buchungsnummer** (`PH261215-OEC-SH-002`) kann im Scan eingetippt werden
+  - Neue Einstiege für die Mitarbeiterseite des Rechners: `/annahme#<Ticket-Code>` (Annahme) und `/rueckgabe#<Ticket-Code>` (Übergabeprotokoll)
+- **Annahme und Rückgabe an CarHandling melden:** Wird bei einer Rechner-Buchung das Annahme- bzw. Übergabeprotokoll abgeschlossen, meldet die neue Edge Function `carhandling-checkin` Check-in bzw. Check-out an CarHandling (`checkin-status`, Header `x-ref-secret` mit `CARHANDLING_REF_SECRET`). Ging die Meldung nicht durch (kein Netz, CarHandling nicht erreichbar), holt die Fahrzeugliste sie beim nächsten Öffnen nach. Solange CarHandling `checkin-status` nicht anbietet, bleibt es bei der Anzeige im Dashboard
+- **Fahrzeug-Detail:** Zeile „Ticket CarHandling“ mit dem Check-in-Stand bei CarHandling (angenommen/ausgecheckt mit Zeitpunkt)
+
+### Datenbank
+- Migration `20261125000100_ticket_checkin.sql` (live eingespielt am 25.11.2026, alle 8 Rechner-Buchungen haben ihren Ticket-Code): Spalten `checkin_token_hash` (Ticket-Code nur als SHA-256), `carhandling_checked_in_at`, `carhandling_checked_out_at`; Funktion `find_booking_by_scan` (nur Mitarbeitende); `sync_external_booking` übernimmt Ticket-Code und Check-in-Stand aus dem Webhook. Bestehende Rechner-Buchungen bekommen den Ticket-Code aus dem Link in der Notiz
+- Function `booking-sync` gibt Ticket-Code, `checked_in_at` und `checked_out_at` weiter (live als Version 5); `carhandling-checkin` live als Version 1 (mit JWT-Prüfung)
+
 ## 0.38.1 – 25.11.2026
 
 ### Behoben

@@ -162,3 +162,13 @@ Deno.test('Antrieb: Schreibweisen', () => {
     eq(mapRecord({ ...carhandlingRow, fuel_type: v }, false).booking.fuel_type, e, v)
   }
 })
+
+Deno.test('Kunden-QR und Check-in-Stand', () => {
+  const r = mapRecord({ ...formRecord, checkin_token: '0123456789ABCDEF0123456789ABCDEF', checked_in_at: '2026-12-01T08:10:00Z' }, false)
+  eq(r.checkin_token, '0123456789abcdef0123456789abcdef', 'Ticket-Code klein')
+  eq(r.checked_in_at, '2026-12-01T08:10:00.000Z', 'Check-in übernommen')
+  eq('checked_out_at' in r, false, 'nicht mitgeschickt → nicht gesetzt')
+  eq(mapRecord({ ...formRecord, checked_in_at: null }, false).checked_in_at, null, 'zurückgenommen → null')
+  eq(mapRecord({ ...formRecord, checkin_token: 'kurz' }, false).checkin_token, undefined, 'ungültiger Code ignoriert')
+  eq(mapRecord({ ...formRecord, status: 'cancelled' }, false).checkin_token, undefined, 'Storno ohne Ticket')
+})

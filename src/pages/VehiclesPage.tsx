@@ -10,6 +10,7 @@ import { countOpenImports } from '../lib/imports'
 import { CARHANDLING_SOURCE, countNewInquiries, LANDING_SOURCE } from '../lib/landing'
 import { Icon } from '../components/Icon'
 import { Button, PaymentBadge, StatusBadge } from '../components/ui'
+import { reportPendingCheckinsOnce } from '../lib/ticket'
 import {
   countByChip,
   isOverdue,
@@ -403,11 +404,13 @@ export function VehiclesPage() {
     reload()
   }, [reload])
 
-  // Telefonbuchungen ohne Buchungsnummer: einmal je Sitzung bei CarHandling nachholen
+  // Telefonbuchungen ohne Buchungsnummer und ausstehende Annahme-/Rückgabe-Meldungen:
+  // einmal je Sitzung bei CarHandling nachholen
   useEffect(() => {
     void requestPendingBookingRefsOnce().then((n) => {
       if (n > 0) reload()
     })
+    void reportPendingCheckinsOnce()
   }, [])
 
   const open = (id: string) => navigate(`/fahrzeuge/${id}`)

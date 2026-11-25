@@ -13,6 +13,14 @@ describe('parseScan', () => {
     expect(parseScan('PF-KEY:W-UEB').kind).toBe('unknown')
     expect(parseScan('PF-KEY:K-018').kind).toBe('unknown')
   })
+  it('erkennt den Kunden-QR des Rechners und Buchungsnummern', () => {
+    expect(parseScan('https://parkhandling-rechner.pplx.app/ticket.html#0123456789ABCDEF0123456789abcdef'))
+      .toEqual({ kind: 'ticket', code: '0123456789abcdef0123456789abcdef' })
+    expect(parseScan(' 0123456789abcdef0123456789abcdef ')).toEqual({ kind: 'ticket', code: '0123456789abcdef0123456789abcdef' })
+    expect(parseScan('ph261215-oec-sh-002')).toEqual({ kind: 'booking_ref', code: 'PH261215-OEC-SH-002' })
+    expect(parseScan('PH261215-OE+-VA-010').kind).toBe('booking_ref')
+    expect(parseScan('https://parkhandling-rechner.pplx.app/ticket.html#kurz').kind).toBe('unknown')
+  })
 })
 
 describe('Schlüsselfächer', () => {
