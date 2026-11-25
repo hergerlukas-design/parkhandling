@@ -19,6 +19,7 @@ set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000d1';
 
 select public.upsert_booking(jsonb_build_object('external_ref', 'T-1', 'customer_name', 'Aufgabe', 'plate', 'M-AT 1',
   'start_at', now(), 'end_at', now() + interval '3 days', 'parking_type', 'outdoor', 'services', jsonb_build_array('AUF_INNEN')), 'aufgabentest') ->> 'id' as bid \gset
+insert into public.protocols (booking_id, type, status) values (:'bid', 'intake', 'final');
 select public.move_vehicle(:'bid', 'B1-20', 'Einlagern');
 select id as tid from public.tasks where booking_id = :'bid' and title = 'Aufbereitung innen' \gset
 

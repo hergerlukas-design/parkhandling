@@ -35,6 +35,9 @@ select id as b2 from public.bookings where external_ref = 'H-2' \gset
 select id as b4 from public.bookings where external_ref = 'H-4' \gset
 select id as b6 from public.bookings where external_ref = 'H-6' \gset
 select id as b8 from public.bookings where external_ref = 'H-8' \gset
+-- Einchecken erst mit abgeschlossenem Annahmeprotokoll (0.45.0)
+insert into public.protocols (booking_id, type, status)
+select id, 'intake', 'final' from public.bookings where external_ref in ('H-2', 'H-4', 'H-6', 'H-8');
 
 -- ---------------------------------------------------------------------------
 -- 1. Leere Spalte: Vorschlag ist eine leere Spalte ganz oben, keine Konflikte

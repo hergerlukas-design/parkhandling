@@ -11,6 +11,9 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Ein vorher **gescannter Stellplatz** geht mit ins Protokoll; nach dem Abschluss heißt der Knopf **Einchecken auf <Platz>** und führt genau dorthin (sonst wie bisher der empfohlene Platz)
   - Kann das Protokoll nicht geprüft werden (z. B. kein Netz), bleibt das Einchecken gesperrt und eine Fehlermeldung erscheint
 
+### Datenbank
+- Migration `20261125000600_checkin_requires_intake.sql` (**noch nicht live eingespielt**): `move_vehicle` lehnt die erste Platzierung eines Fahrzeugs ohne abgeschlossenes Annahmeprotokoll ab („Einchecken von … erst nach abgeschlossenem Annahmeprotokoll“). Gilt damit auch für ältere App-Versionen und direkte Aufrufe. Umsetzen, Auslagern und Übergabe stehender Fahrzeuge sind nicht betroffen
+
 ## 0.44.0 – 25.11.2026
 
 ### Geändert
