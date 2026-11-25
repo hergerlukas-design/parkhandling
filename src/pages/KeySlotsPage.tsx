@@ -68,7 +68,7 @@ export function KeySlotsPage() {
       {slots.length > 0 && (
         <section className="p-4 print:hidden">
           <p className="mb-3 text-sm text-subtle">
-            Jeder Stellplatz hat genau ein Schlüsselfach mit demselben Code. Der Schlüssel liegt im Fach des Platzes, auf dem
+            Jeder Parkplatz hat genau ein Schlüsselfach mit demselben Code. Der Schlüssel liegt im Fach des Platzes, auf dem
             das Fahrzeug steht. Zweitschlüssel kommen ins selbe Fach, mit dem Kennzeichen am Anhänger.
           </p>
           <div className="max-h-80 overflow-y-auto rounded-xl border border-line bg-surface">
@@ -76,7 +76,7 @@ export function KeySlotsPage() {
               <thead className="sticky top-0 bg-ground text-xs font-semibold text-subtle">
                 <tr>
                   <th className="px-4 py-2">Fach</th>
-                  <th className="px-3 py-2">Stellplatz</th>
+                  <th className="px-3 py-2">Parkplatz</th>
                   <th className="px-3 py-2">Bereich</th>
                   <th className="px-3 py-2">Fahrzeug</th>
                 </tr>
@@ -93,7 +93,7 @@ export function KeySlotsPage() {
               </tbody>
             </table>
           </div>
-          <h2 className="mt-5 text-sm font-semibold">Etiketten für Stellplatz-Schild und Fach</h2>
+          <h2 className="mt-5 text-sm font-semibold">Etiketten für Parkplatz-Schild und Fach</h2>
           <p className="text-sm text-subtle">
             63,5 × 38,1 mm, 3 × 7 je A4-Bogen. In Originalgröße ohne Skalierung drucken.
           </p>
@@ -109,7 +109,7 @@ export function KeySlotsPage() {
             <div className="size-[30mm] shrink-0 [&>svg]:size-full" dangerouslySetInnerHTML={{ __html: qr[s.code] ?? '' }} />
             <div className="min-w-0">
               <div className="font-mono text-[22pt] leading-none font-bold">{s.code}</div>
-              <div className="mt-[2mm] text-[8pt] text-neutral-600">Stellplatz & Fach · {AREA_LABEL[s.area]}</div>
+              <div className="mt-[2mm] text-[8pt] text-neutral-600">Parkplatz & Fach · {AREA_LABEL[s.area]}</div>
             </div>
           </div>
         ))}

@@ -3,6 +3,18 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.46.0 – 25.11.2026
+
+### Geändert
+- **Neue Begriffe in der App** (Navigation, Überschriften, Knöpfe, Hinweise):
+  - **Dashboard → Übersicht**
+  - **Lageplan → Parkplätze**
+  - **Fahrzeuge → Buchungen** (Liste und Rückweg im Fahrzeug-Detail)
+  - **Einchecken → Parken** (Menüpunkt, „Fahrzeug parken“, Knopf im Fahrzeug-Detail, „Parken auf <Platz>“ nach dem Protokoll, „Fahrzeug hier parken“)
+  - **Stellplatz → Parkplatz**
+- Adressen der Seiten bleiben gleich (z. B. `/lageplan`, `/fahrzeuge`, `/einchecken`), Lesezeichen und QR-Links funktionieren weiter
+- Fehlermeldung der Datenbank-Sperre aus 0.45.0 lautet jetzt „Parken von … erst nach abgeschlossenem Annahmeprotokoll“. Ältere Meldungen der Datenbank (z. B. in Umsetz-Aufgaben „Stellplatz“) bleiben vorerst
+
 ## 0.45.0 – 25.11.2026
 
 ### Geändert
@@ -12,7 +24,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Kann das Protokoll nicht geprüft werden (z. B. kein Netz), bleibt das Einchecken gesperrt und eine Fehlermeldung erscheint
 
 ### Datenbank
-- Migration `20261125000600_checkin_requires_intake.sql` (**noch nicht live eingespielt**): `move_vehicle` lehnt die erste Platzierung eines Fahrzeugs ohne abgeschlossenes Annahmeprotokoll ab („Einchecken von … erst nach abgeschlossenem Annahmeprotokoll“). Gilt damit auch für ältere App-Versionen und direkte Aufrufe. Umsetzen, Auslagern und Übergabe stehender Fahrzeuge sind nicht betroffen
+- Migration `20261125000600_checkin_requires_intake.sql` (**noch nicht live eingespielt**): `move_vehicle` lehnt die erste Platzierung eines Fahrzeugs ohne abgeschlossenes Annahmeprotokoll ab („Parken von … erst nach abgeschlossenem Annahmeprotokoll“). Gilt damit auch für ältere App-Versionen und direkte Aufrufe. Umsetzen, Auslagern und Übergabe stehender Fahrzeuge sind nicht betroffen
 
 ## 0.44.0 – 25.11.2026
 

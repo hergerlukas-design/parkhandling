@@ -35,19 +35,19 @@ where area in ('outdoor_a', 'outdoor_b') and occupancy < capacity and code <> :'
 
 -- Ohne Protokoll: gesperrt, nichts bewegt
 select pg_temp.assert_eq(pg_temp.error_of(format('select public.move_vehicle(%L, %L)', :'bid', :'spot')),
-  'Einchecken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'ohne Protokoll gesperrt');
+  'Parken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'ohne Protokoll gesperrt');
 select pg_temp.assert_eq((select current_location_id is null and status = 'booked' from public.bookings where id = :'bid'), true,
   'Buchung unverändert');
 
 -- Entwurf reicht nicht
 insert into public.protocols (booking_id, type, status) values (:'bid', 'intake', 'draft');
 select pg_temp.assert_eq(pg_temp.error_of(format('select public.move_vehicle(%L, %L)', :'bid', :'spot')),
-  'Einchecken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'Entwurf reicht nicht');
+  'Parken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'Entwurf reicht nicht');
 
 -- Übergabeprotokoll zählt nicht als Annahme
 insert into public.protocols (booking_id, type, status) values (:'bid', 'handover', 'final');
 select pg_temp.assert_eq(pg_temp.error_of(format('select public.move_vehicle(%L, %L)', :'bid', :'spot')),
-  'Einchecken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'Übergabeprotokoll zählt nicht');
+  'Parken von M-CI 1 erst nach abgeschlossenem Annahmeprotokoll', 'Übergabeprotokoll zählt nicht');
 -- Abgeschlossen: Einchecken klappt (Pflichtangaben beim Abschließen prüft ein anderer Test, hier direkt final)
 reset role;
 delete from public.protocols where booking_id = :'bid';

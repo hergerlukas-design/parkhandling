@@ -204,7 +204,7 @@ export function keyHint(from: string | null, to: string | null): string | null {
 
 /** Wo Fahrzeug und Schlüssel gerade sind, für Listen und Suche */
 export function whereabouts(code: string | null | undefined): string {
-  if (!code) return 'nicht eingecheckt'
+  if (!code) return 'nicht geparkt'
   if (KEY_SLOT_CODE.test(code)) return `Fach ${code}`
   if (code.startsWith('W-AUF')) return 'in Aufbereitung'
   if (code.startsWith('W-LAD')) return 'am Ladeplatz'

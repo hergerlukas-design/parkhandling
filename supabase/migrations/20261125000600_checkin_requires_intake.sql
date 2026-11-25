@@ -47,7 +47,7 @@ begin
     select 1 from public.protocols pr
     where pr.booking_id = b.id and pr.type = 'intake' and pr.status = 'final'
   ) then
-    raise exception 'Einchecken von % erst nach abgeschlossenem Annahmeprotokoll', b.plate using errcode = 'P0001';
+    raise exception 'Parken von % erst nach abgeschlossenem Annahmeprotokoll', b.plate using errcode = 'P0001';
   end if;
   if p_to_code is not null then
     select * into dst from public.locations

@@ -93,7 +93,7 @@ export function ScanPage() {
     setBusy(true)
     try {
       const slot = await findBookingAt(scan.code)
-      if (!slot) setError(`Stellplatz ${scan.code} ist unbekannt.`)
+      if (!slot) setError(`Parkplatz ${scan.code} ist unbekannt.`)
       else if (slot.booking_id) navigate(`/fahrzeuge/${slot.booking_id}`)
       else navigate(`/einchecken?platz=${encodeURIComponent(scan.code)}`)
     } catch (e) {

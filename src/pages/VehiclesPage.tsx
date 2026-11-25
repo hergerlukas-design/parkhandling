@@ -227,7 +227,7 @@ const TABLE_HEAD = (
       <tr>
         <th className="px-4 py-2.5">Kennzeichen</th>
         <th className="px-3 py-2.5">Fahrzeug</th>
-        <th className="px-3 py-2.5">Stellplatz / Fach</th>
+        <th className="px-3 py-2.5">Parkplatz / Fach</th>
         <th className="px-3 py-2.5">Zeitraum</th>
         <th className="px-3 py-2.5">Abholung</th>
         <th className="px-3 py-2.5">Leistungen</th>
@@ -491,7 +491,7 @@ export function VehiclesPage() {
 
       {!anyLoading && main.items.length + overdue.items.length + expected.items.length === 0 && (
         <p className="rounded-2xl border border-line bg-surface px-4 py-8 text-center text-sm text-muted">
-          Keine Fahrzeuge gefunden.
+          Keine Buchungen gefunden.
         </p>
       )}
 

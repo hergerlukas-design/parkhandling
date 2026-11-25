@@ -137,7 +137,7 @@ function LayoutEditor({ title, dims, current, preview, apply, onApplied }: {
           </p>
           {p.removed.length > 0 && (
             <p className="mt-2 text-sm text-subtle">
-              Deaktiviert werden: {p.removed.map((s) => s.code).join(', ')}. Sie verschwinden aus Lageplan,
+              Deaktiviert werden: {p.removed.map((s) => s.code).join(', ')}. Sie verschwinden aus Parkplätzen,
               Vorschlägen und Etiketten, bleiben aber gespeichert und kommen beim Vergrößern wieder.
             </p>
           )}

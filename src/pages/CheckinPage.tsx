@@ -72,7 +72,7 @@ export function CheckinPage() {
 
   // Einchecken erst nach abgeschlossenem (unterschriebenem) Annahmeprotokoll
   const step: Step = !booking ? 'vehicle' : intake === 'final' ? 'place' : 'protocol'
-  useUpdateBlocker(step === 'place' && !warnings, 'Check-in')
+  useUpdateBlocker(step === 'place' && !warnings, 'Parken')
   // Gescannter bzw. vorgegebener Stellplatz: geht mit ins Protokoll und kommt danach zurück
   const slotParam = params.get('platz')
   const protocolPath = booking
@@ -160,7 +160,7 @@ export function CheckinPage() {
     const sug = suggestions.find((x) => x.code === slot.code)
     if (slot.occupancy >= slot.capacity) setErrors([`${slot.code} ist belegt${slot.plate ? ` (${slot.plate})` : ''}.`])
     else if (slot.status === 'blocked' || sug?.kind === 'relocate') setErrors([`${slot.code} ist nur mit Umsetzen erreichbar.`])
-    else if (slot.area === 'transit') setErrors(['„Unterwegs“ ist kein Stellplatz.'])
+    else if (slot.area === 'transit') setErrors(['„Unterwegs“ ist kein Parkplatz.'])
     else setChosen(slot.code)
   }
 
@@ -206,7 +206,7 @@ export function CheckinPage() {
   if (warnings && booking) {
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-4 p-6">
-        <h1 className="text-xl font-semibold">{booking.plate} eingecheckt</h1>
+        <h1 className="text-xl font-semibold">{booking.plate} geparkt</h1>
         {hint && <p className="rounded-xl bg-accent-soft px-4 py-3 text-lg font-semibold text-accent-dark">{hint}</p>}
         {warnings.length > 0 && (
           <ul className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn-ink">
@@ -215,7 +215,7 @@ export function CheckinPage() {
         )}
         <div className="flex gap-2">
           <Button variant="primary" onClick={() => navigate(`/fahrzeuge/${booking.id}`)}>Zum Fahrzeug</Button>
-          <Button onClick={() => navigate('/lageplan')}>Lageplan</Button>
+          <Button onClick={() => navigate('/lageplan')}>Parkplätze</Button>
         </div>
       </div>
     )
@@ -227,7 +227,7 @@ export function CheckinPage() {
         <Link to="/lageplan" className="touch-target inline-flex items-center gap-1 text-sm text-subtle">
           <Icon name="close" className="size-5" /> Abbrechen
         </Link>
-        <h1 className="text-lg font-semibold">Fahrzeug einchecken</h1>
+        <h1 className="text-lg font-semibold">Fahrzeug parken</h1>
         <div className="ml-auto"><Stepper step={step} intake={intake} /></div>
       </header>
 
@@ -284,8 +284,8 @@ export function CheckinPage() {
                       {intake === 'draft'
                         ? 'Das Annahmeprotokoll ist angefangen, aber noch nicht unterschrieben.'
                         : 'Für dieses Fahrzeug gibt es noch kein Annahmeprotokoll.'}{' '}
-                      Eingecheckt wird erst nach dem abgeschlossenen Protokoll
-                      {slotParam ? `, danach geht es mit Stellplatz ${slotParam} weiter.` : '.'}
+                      Geparkt wird erst nach dem abgeschlossenen Protokoll
+                      {slotParam ? `, danach geht es mit Parkplatz ${slotParam} weiter.` : '.'}
                     </p>
                   </div>
                   <Button variant="primary" onClick={() => navigate(protocolPath)}>
@@ -337,7 +337,7 @@ export function CheckinPage() {
             )}
 
             {tab !== 'work' && <Legend />}
-            {board.length === 0 && <p className="text-sm text-muted">Lageplan lädt …</p>}
+            {board.length === 0 && <p className="text-sm text-muted">Parkplätze laden …</p>}
             {tab === 'hall' && hall.length > 0 && (
               <HallGrid slots={hall} conflictRacks={new Set()} selectedId={chosenSlot?.id ?? null} onSelect={pick} />
             )}

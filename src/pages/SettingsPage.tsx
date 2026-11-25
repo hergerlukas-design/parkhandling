@@ -155,7 +155,7 @@ export function SettingsPage() {
           )}
           <Card title="Stellplätze & Schlüsselfächer">
             <p className="text-sm text-subtle">
-              Jeder Stellplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
+              Jeder Parkplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
             </p>
             <Link
               to="/stellplaetze"

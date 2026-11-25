@@ -106,11 +106,11 @@ export function MoveDialog({
         ))}
         <button type="button" onClick={() => setTarget('')}
           className={`touch-target rounded-xl border-2 px-3 py-2 text-left text-sm font-medium ${target === '' ? 'border-accent bg-accent-soft' : 'border-line'}`}>
-          Anderer Stellplatz
+          Anderer Parkplatz
         </button>
       </div>
       {target === '' && (
-        <Field label="Stellplatz-Code (z. B. R7-E3, A1-07, P-01)" className="mt-3">
+        <Field label="Parkplatz-Code (z. B. R7-E3, A1-07, P-01)" className="mt-3">
           <TextInput value={otherCode} autoCapitalize="characters" onChange={(e) => setOtherCode(e.target.value)} />
         </Field>
       )}

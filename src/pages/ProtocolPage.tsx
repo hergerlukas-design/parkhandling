@@ -586,12 +586,12 @@ export function ProtocolPage() {
             </p>
             {type === 'intake' && canCheckIn && scannedSlot && (
               <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
-                <span className="font-semibold">Gescannter Stellplatz {scannedSlot}</span>
+                <span className="font-semibold">Gescannter Parkplatz {scannedSlot}</span>
               </p>
             )}
             {type === 'intake' && canCheckIn && !scannedSlot && recommendation && (
               <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
-                <span className="font-semibold">Empfohlener Stellplatz {recommendation.code}</span> – {recommendation.reason}
+                <span className="font-semibold">Empfohlener Parkplatz {recommendation.code}</span> – {recommendation.reason}
               </p>
             )}
           </div>
@@ -601,7 +601,7 @@ export function ProtocolPage() {
             )}
             {type === 'intake' && canCheckIn && (
               <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${checkinSlot ? `&platz=${encodeURIComponent(checkinSlot)}` : ''}`)}>
-                {checkinSlot ? `Einchecken auf ${checkinSlot}` : 'Weiter zum Einchecken'}
+                {checkinSlot ? `Parken auf ${checkinSlot}` : 'Weiter zum Parken'}
               </Button>
             )}
             {type === 'handover' && !handedOver && (

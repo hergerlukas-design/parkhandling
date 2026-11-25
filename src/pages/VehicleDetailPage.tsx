@@ -236,7 +236,7 @@ export function VehicleDetailPage() {
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Link to="/fahrzeuge" className="touch-target inline-flex items-center gap-1 text-sm text-subtle">
           <Icon name="back" className="size-5" />
-          Fahrzeuge
+          Buchungen
         </Link>
         <h1 className="font-mono text-2xl font-bold">{b.plate}</h1>
         <span className="text-sm text-subtle">
@@ -378,19 +378,19 @@ export function VehicleDetailPage() {
           <Card title="Ort & Schlüssel">
             <div className="grid grid-cols-2 gap-3">
               <div className={`rounded-xl border-2 p-3 ${b.location ? DUE_STYLE[due].tile : 'border-dashed border-line-strong'}`}>
-                <div className="text-xs text-subtle">Stellplatz</div>
+                <div className="text-xs text-subtle">Parkplatz</div>
                 <div className={`font-mono text-xl font-bold ${b.location ? DUE_STYLE[due].text : 'text-muted'}`}>
                   {b.location?.code ?? '–'}
                 </div>
                 <div className="text-xs text-subtle">
-                  {b.location ? AREA_LABEL[b.location.area as LocationArea] : 'noch nicht eingecheckt'}
+                  {b.location ? AREA_LABEL[b.location.area as LocationArea] : 'noch nicht geparkt'}
                 </div>
               </div>
               <div className="rounded-xl bg-ground p-3">
                 <div className="text-xs text-subtle">Schlüsselfach</div>
                 <div className="font-mono text-xl font-bold">{keySlot ?? '–'}</div>
                 <div className="text-xs text-subtle">
-                  {keySlot ? 'Fach = Stellplatz' : b.location ? `Schlüssel beim Fahrzeug, ${whereabouts(b.location.code)}` : 'noch nicht eingecheckt'}
+                  {keySlot ? 'Fach = Parkplatz' : b.location ? `Schlüssel beim Fahrzeug, ${whereabouts(b.location.code)}` : 'noch nicht geparkt'}
                 </div>
               </div>
             </div>
@@ -404,12 +404,12 @@ export function VehicleDetailPage() {
                 ) : (
                   <Link to={`/einchecken?booking=${b.id}`}
                     className="btn-primary touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
-                    Einchecken
+                    Parken
                   </Link>
                 )}
                 {b.location && (
                   <Link to={`/lageplan?platz=${encodeURIComponent(b.location.code)}`} className="text-center text-sm text-accent underline">
-                    Im Lageplan zeigen
+                    Bei den Parkplätzen zeigen
                   </Link>
                 )}
               </div>

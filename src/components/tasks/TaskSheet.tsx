@@ -129,7 +129,7 @@ export function TaskSheet({ taskId, onClose, onChanged }: { taskId: string; onCl
           <div className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger-ink">
             {task.note}
             {task.location_code && (
-              <Link to={`/lageplan?platz=${encodeURIComponent(task.location_code)}`} className="ml-2 underline">Im Lageplan</Link>
+              <Link to={`/lageplan?platz=${encodeURIComponent(task.location_code)}`} className="ml-2 underline">Bei den Parkplätzen</Link>
             )}
           </div>
         )}

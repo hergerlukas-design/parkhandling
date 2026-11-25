@@ -248,7 +248,7 @@ export function BookingFormDialog({
             {money(tariff.base_price)} bis 5 Tage · +{money(tariff.extra_day_price)}/Tag
           </div>
         ) : (
-          <Field label="Stellplatz">
+          <Field label="Parkplatz">
             <Select value={form.parking_type} onChange={(e) => set('parking_type', e.target.value as ParkingType)}>
               {Object.entries(PARKING_TYPE_LABEL).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>

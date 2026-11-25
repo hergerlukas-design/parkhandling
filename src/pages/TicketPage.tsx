@@ -25,7 +25,7 @@ export function TicketPage({ mode }: { mode: 'intake' | 'handover' }) {
       .then((booking) => {
         if (cancelled) return
         if (!booking) {
-          setError('Zu diesem Ticket gibt es (noch) keine Buchung im Dashboard. Ist die Buchung bezahlt?')
+          setError('Zu diesem Ticket gibt es (noch) keine Buchung in der App. Ist die Buchung bezahlt?')
           return
         }
         const step = ticketStep(booking, mode)
@@ -47,9 +47,9 @@ export function TicketPage({ mode }: { mode: 'intake' | 'handover' }) {
       <ErrorList errors={error ? [error] : []} />
       {error && (
         <div className="flex flex-wrap gap-3 text-sm">
-          {fallback && <Link className="underline" to={fallback}>Zum Fahrzeug</Link>}
+          {fallback && <Link className="underline" to={fallback}>Zur Buchung</Link>}
           <Link className="underline" to="/scan">Scannen</Link>
-          <Link className="underline" to="/einchecken">Einchecken</Link>
+          <Link className="underline" to="/einchecken">Parken</Link>
         </div>
       )}
     </div>

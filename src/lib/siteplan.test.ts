@@ -46,7 +46,7 @@ describe('Schlüsselfächer', () => {
     expect(whereabouts('R1-E1')).toBe('Fach R1-E1')
     expect(whereabouts('W-AUF2')).toBe('in Aufbereitung')
     expect(whereabouts('P-01')).toBe('im Puffer')
-    expect(whereabouts(null)).toBe('nicht eingecheckt')
+    expect(whereabouts(null)).toBe('nicht geparkt')
   })
 })
 

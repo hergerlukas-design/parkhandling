@@ -12,7 +12,7 @@ import { useStore } from '../lib/store'
 
 /** Seitentitel für Ansichten ohne eigenen Navigationseintrag */
 const EXTRA_TITLES = [
-  { to: '/einchecken', label: 'Einchecken' },
+  { to: '/einchecken', label: 'Parken' },
   { to: '/scan', label: 'Scannen' },
   { to: '/changelog', label: 'Änderungen' },
 ]
