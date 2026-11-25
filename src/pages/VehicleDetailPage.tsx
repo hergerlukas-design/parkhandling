@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { formFromBooking, IMPORT_FLAG_LABEL, type ImportFlag } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
+import { BookingQrPanel } from '../components/bookings/BookingQrPanel'
 import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
@@ -367,6 +368,12 @@ export function VehicleDetailPage() {
               )}
             </dl>
           </Card>
+
+          {b.status !== 'cancelled' && (
+            <Card title="QR-Code">
+              <BookingQrPanel booking={b} />
+            </Card>
+          )}
 
           <Card title="Ort & Schlüssel">
             <div className="grid grid-cols-2 gap-3">

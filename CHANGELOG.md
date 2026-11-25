@@ -5,6 +5,15 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 
 ## 0.42.0 – 25.11.2026
 
+### Neu
+- **QR-Code im Fahrzeug-Detail** (Karte „QR-Code“, nicht bei stornierten Buchungen): zum Vorzeigen (**Groß anzeigen**), Abfotografieren oder Schicken an den Kunden (**Teilen** als Bild, am PC Download). Scannen startet die Annahme
+  - Rechner-Buchungen: genau der Kunden-QR aus der Buchungsbestätigung
+  - Buchungen mit Nummer `PH…` (z. B. Telefon): QR-Code mit der Buchungsnummer
+  - übrige (z. B. Parkos): QR-Code `PF-BOOKING:<Buchungs-ID>`, den der Scanner ebenfalls erkennt
+
+### Geändert (Einstellungen)
+- **Team: Karten ausklappbar** (Benachrichtigungen, Tageszugang per QR, Scanner-PIN, Personal). Anfangs zugeklappt; welche offen ist, merkt sich das Gerät
+
 ### Geändert (Scan-Seite)
 - **Scan-Seite aufgeräumt:** über der Kamera nur noch „Kunden-QR-Code scannen“, die lange Erklärung und das Feld für Codes entfallen. Stellplatz-QR-Codes werden weiter erkannt
 - **Buchung suchen** unter der Kamera, für Kunden ohne QR-Code (z. B. Telefonbuchung): Suche nach **Name**, **Kennzeichen** (auch ohne Stadtkürzel, z. B. „AB 1234“) oder **Buchungsnummer**. Angezeigt werden Buchungen, die noch nicht eingeparkt sind. Ein Tipp auf einen Treffer öffnet das **Annahmeprotokoll** (ist es schon abgeschlossen, direkt das Einparken)
@@ -22,6 +31,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Fahrzeug-Detail, Historie: Änderungen aus dem Protokoll mit Quelle „Protokoll“, Antrieb lesbar (z. B. „Elektro“)
 
 ### Datenbank
+- Migration `20261125000500_scan_booking_id.sql`: `find_booking_by_scan` versteht `PF-BOOKING:<ID>`
 - Migration `20261125000400_protocol_vehicle.sql` (live eingespielt am 25.11.2026): `protocols.plate`, `protocols.fuel_type`, Ladestand 0–100, Trigger `protocols_sync_vehicle` (Kennzeichen/Antrieb → Buchung)
 
 ## 0.41.0 – 25.11.2026

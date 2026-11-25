@@ -66,14 +66,14 @@ export function ScanPage() {
       setError(`„${scan.code}“ ist kein Park & Fly QR-Code.`)
       return
     }
-    if (scan.kind === 'ticket' || scan.kind === 'booking_ref') {
+    if (scan.kind === 'ticket' || scan.kind === 'booking_ref' || scan.kind === 'booking_id') {
       setBusy(true)
       try {
         const booking = await findBookingByScan(scan.code)
         if (!booking) {
           setError(scan.kind === 'ticket'
             ? 'Zu diesem Kunden-QR-Code gibt es keine Buchung. Bitte über die Buchungsnummer oder das Kennzeichen suchen.'
-            : `Buchung ${scan.code} nicht gefunden.`)
+            : scan.kind === 'booking_id' ? 'Buchung zu diesem QR-Code nicht gefunden.' : `Buchung ${scan.code} nicht gefunden.`)
           return
         }
         const step = ticketStep(booking, 'intake')
