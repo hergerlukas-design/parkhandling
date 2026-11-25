@@ -10,6 +10,7 @@ import { NotificationSettings } from '../components/notifications/NotificationSe
 import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { HelperAccess } from '../components/users/HelperAccess'
+import { ScannerPinSettings } from '../components/users/ScannerPinSettings'
 import { UserManagement } from '../components/users/UserManagement'
 import { rolesLabel } from '../lib/users'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
@@ -121,9 +122,14 @@ export function SettingsPage() {
               <NotificationAdmin />
             </Card>
           )}
-          {isStaffProfile(profile) && (
-            <Card title="Aushilfe freischalten">
+          {isStaffProfile(profile) && !profile?.access_until && (
+            <Card title="Tageszugang per QR">
               <HelperAccess />
+            </Card>
+          )}
+          {admin && (
+            <Card title="Scanner-PIN">
+              <ScannerPinSettings />
             </Card>
           )}
           {admin && (

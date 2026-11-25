@@ -5,8 +5,8 @@ import { createHelperInvite, helperLink, listHelpers, revokeHelper, type ActiveH
 import { Button, ErrorList, Field, TextInput } from '../ui'
 
 /**
- * Aushilfe freischalten: Name eingeben → QR-Code zeigen, die Aushilfe scannt ihn mit der Handykamera.
- * Zugang bis Tagesende, nur Scannen, Annahme, Rückgabe und Einchecken.
+ * Tageszugang per QR: Name eingeben → QR-Code zeigen, die Person scannt ihn mit der Handykamera und hat
+ * bis Tagesende Zugang zum ganzen Dashboard. Darunter alle heutigen Tageszugänge (QR und Scanner-PIN).
  */
 export function HelperAccess() {
   const [name, setName] = useState('')
@@ -64,11 +64,12 @@ export function HelperAccess() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-subtle">
-        Aushilfen brauchen kein eigenes Konto: Namen eingeben, QR-Code zeigen, die Aushilfe scannt ihn mit der
-        Handykamera. Sie kann dann bis Tagesende scannen, annehmen, zurückgeben und einchecken, sonst nichts.
+        Für Aushilfen ohne eigenes Konto: Namen eingeben, QR-Code zeigen, die Person scannt ihn mit der
+        Handykamera und hat bis Tagesende Zugang zum ganzen Dashboard. Nur für Annahme, Einparken und Rückgabe
+        reicht der Scanner mit PIN.
       </p>
       <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
-        <Field label="Name der Aushilfe" className="min-w-0 flex-1">
+        <Field label="Name" className="min-w-0 flex-1">
           <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Max Muster" minLength={2} maxLength={60} required />
         </Field>
         <Button type="submit" variant="primary" disabled={busy || name.trim().length < 2}>QR-Code erzeugen</Button>
@@ -96,9 +97,9 @@ export function HelperAccess() {
       )}
 
       <div>
-        <h3 className="mb-1 text-sm font-semibold">Heute freigeschaltet</h3>
+        <h3 className="mb-1 text-sm font-semibold">Heute angemeldet (Tageszugänge)</h3>
         {helpers.length === 0 ? (
-          <p className="text-sm text-muted">Keine Aushilfe angemeldet.</p>
+          <p className="text-sm text-muted">Niemand mit Tageszugang angemeldet.</p>
         ) : (
           <ul className="divide-y divide-line">
             {helpers.map((h) => (
@@ -106,7 +107,7 @@ export function HelperAccess() {
                 <span className="min-w-0">
                   <span className="font-medium">{h.display_name}</span>
                   <span className="block text-xs text-muted">
-                    bis Tagesende{h.invited_by ? ` · freigeschaltet von ${h.invited_by}` : ''}
+                    {h.kind === 'scanner' ? 'Scanner (PIN)' : 'Dashboard (QR)'} · bis Tagesende{h.invited_by ? ` · freigeschaltet von ${h.invited_by}` : ''}
                   </span>
                 </span>
                 <Button variant="danger" onClick={() => void revoke(h)}>Sperren</Button>

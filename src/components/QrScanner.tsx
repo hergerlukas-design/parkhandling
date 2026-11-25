@@ -104,12 +104,12 @@ export function QrScanner({
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl bg-ink p-4 text-white">
-      <div className="relative aspect-square w-full max-w-64 overflow-hidden rounded-2xl border-4 border-white/90">
+    <div className="qr-scanner flex flex-col items-center gap-3 rounded-2xl bg-ink p-4 text-white">
+      <div className="qr-frame relative aspect-square w-full max-w-64 overflow-hidden rounded-2xl border-4 border-white/90">
         {!error && <video ref={video} muted playsInline className="size-full object-cover" />}
         {error && <div className="flex size-full items-center justify-center p-4 text-center text-sm text-white/80">{error}</div>}
       </div>
-      <p className="text-sm text-white/80">{label}</p>
+      <p className="qr-label text-sm text-white/80">{label}</p>
       <form onSubmit={submit} className="flex w-full max-w-64 gap-2">
         <input
           value={manual}
@@ -119,7 +119,7 @@ export function QrScanner({
           aria-label="Code manuell eingeben"
           className="touch-target min-w-0 flex-1 rounded-lg bg-white/10 px-3 text-base text-white placeholder:text-white/50"
         />
-        <button type="submit" className="touch-target rounded-lg bg-white px-3 text-sm font-semibold text-ink">OK</button>
+        <button type="submit" className="qr-ok btn-primary touch-target rounded-lg bg-white px-3 text-sm font-semibold text-ink">OK</button>
       </form>
     </div>
   )
