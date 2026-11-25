@@ -1,11 +1,12 @@
 import { Link, useSearchParams } from 'react-router'
-import { Card, Page } from '../components/Page'
+import { Card, CollapsibleCard, Page } from '../components/Page'
 import { isAdminProfile, isDriverOnly, isStaffProfile, profileRoles, signOut, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
+import { NotificationLog } from '../components/notifications/NotificationLog'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { HelperAccess } from '../components/users/HelperAccess'
@@ -109,29 +110,34 @@ export function SettingsPage() {
       )}
 
       {tab === 'team' && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [&>*]:min-w-0" role="tabpanel">
-          <Card title="Benachrichtigungen auf diesem Gerät">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 [&>*]:min-w-0" role="tabpanel">
+          <CollapsibleCard title="Benachrichtigungen auf diesem Gerät" storageKey="team-notifications-device">
             <NotificationSettings />
-          </Card>
+          </CollapsibleCard>
           {admin && (
-            <Card title="Benachrichtigungen: Einstellungen & Geräte">
+            <CollapsibleCard title="Benachrichtigungen: Einstellungen & Geräte" storageKey="team-notifications-admin">
               <NotificationAdmin />
-            </Card>
+            </CollapsibleCard>
+          )}
+          {admin && (
+            <CollapsibleCard title="Letzte Benachrichtigungen" storageKey="team-notifications-log">
+              <NotificationLog />
+            </CollapsibleCard>
           )}
           {isStaffProfile(profile) && !profile?.access_until && (
-            <Card title="Tageszugang per QR">
+            <CollapsibleCard title="Tageszugang per QR" storageKey="team-day-access">
               <HelperAccess />
-            </Card>
+            </CollapsibleCard>
           )}
           {admin && (
-            <Card title="Scanner-PIN">
+            <CollapsibleCard title="Scanner-PIN" storageKey="team-scanner-pin">
               <ScannerPinSettings />
-            </Card>
+            </CollapsibleCard>
           )}
           {admin && (
-            <Card title="Personal">
+            <CollapsibleCard title="Personal" storageKey="team-staff">
               <UserManagement />
-            </Card>
+            </CollapsibleCard>
           )}
         </div>
       )}

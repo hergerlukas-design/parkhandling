@@ -13,41 +13,25 @@ import {
 import {
   listDevices,
   loadNotificationConfig,
-  recentNotifications,
   saveNotificationConfig,
   setDeviceActive,
   type DeviceSubscription,
-  type NotificationLogEntry,
 } from '../../lib/push/pushClient'
 import { Button, ErrorList, TextInput } from '../ui'
 
-const STATUS_LABEL: Record<NotificationLogEntry['status'], { text: string; className: string }> = {
-  pending: { text: 'wartet', className: 'bg-chip text-subtle' },
-  sending: { text: 'wird gesendet', className: 'bg-accent-soft text-accent-dark' },
-  sent: { text: 'gesendet', className: 'bg-ok-soft text-ok-ink' },
-  failed: { text: 'fehlgeschlagen', className: 'bg-danger-soft text-danger-ink' },
-  skipped: { text: 'kein Empfänger', className: 'bg-chip text-muted' },
-}
-
-function eventLabel(event: string): string {
-  return event === 'test' ? 'Test' : (PUSH_EVENT_LABEL[event as PushEvent]?.title ?? event)
-}
-
-/** Admin: Ereignisse global schalten, Empfänger und Vorlaufzeiten, Geräte, Protokoll. */
+/** Admin: Ereignisse global schalten, Empfänger und Vorlaufzeiten, Geräte (Protokoll: NotificationLog). */
 export function NotificationAdmin() {
   const [config, setConfig] = useState<NotificationConfig | null>(null)
   const [dirty, setDirty] = useState(false)
   const [devices, setDevices] = useState<DeviceSubscription[]>([])
-  const [log, setLog] = useState<NotificationLogEntry[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function reload() {
     try {
-      const [cfg, devs, entries] = await Promise.all([loadNotificationConfig(), listDevices(), recentNotifications(50)])
+      const [cfg, devs] = await Promise.all([loadNotificationConfig(), listDevices()])
       setConfig(cfg)
       setDevices(devs)
-      setLog(entries)
       setDirty(false)
       setError(null)
     } catch (e) {
@@ -192,33 +176,6 @@ export function NotificationAdmin() {
         )}
       </section>
 
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Letzte Benachrichtigungen</h3>
-          <Button onClick={() => void reload()}>Aktualisieren</Button>
-        </div>
-        {log.length === 0 ? (
-          <p className="text-sm text-muted">Noch keine Benachrichtigungen.</p>
-        ) : (
-          <ul className="divide-y divide-line">
-            {log.map((n) => (
-              <li key={n.id} className="flex items-start justify-between gap-3 py-2 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{n.payload.title ?? eventLabel(n.event)}</p>
-                  <p className="truncate text-xs text-muted">
-                    {formatDateTime(n.created_at)} · {eventLabel(n.event)}
-                    {n.sent_count > 0 ? ` · ${n.sent_count} Gerät${n.sent_count === 1 ? '' : 'e'}` : ''}
-                    {n.error ? ` · ${n.error}` : ''}
-                  </p>
-                </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_LABEL[n.status].className}`}>
-                  {STATUS_LABEL[n.status].text}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   )
 }
