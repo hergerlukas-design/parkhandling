@@ -31,7 +31,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Fahrzeug-Detail, Historie: Änderungen aus dem Protokoll mit Quelle „Protokoll“, Antrieb lesbar (z. B. „Elektro“)
 
 ### Datenbank
-- Migration `20261125000500_scan_booking_id.sql`: `find_booking_by_scan` versteht `PF-BOOKING:<ID>`
+- Migration `20261125000500_scan_booking_id.sql` (live eingespielt am 25.11.2026): `find_booking_by_scan` versteht `PF-BOOKING:<ID>`
 - Migration `20261125000400_protocol_vehicle.sql` (live eingespielt am 25.11.2026): `protocols.plate`, `protocols.fuel_type`, Ladestand 0–100, Trigger `protocols_sync_vehicle` (Kennzeichen/Antrieb → Buchung)
 
 ## 0.41.0 – 25.11.2026
