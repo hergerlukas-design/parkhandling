@@ -69,6 +69,8 @@ select pg_temp.assert_eq((public.find_booking_by_scan(' ph301201-oec-sh-001 ') -
 select pg_temp.assert_eq((public.find_booking_by_scan('PH301201-OEC-SH-001') ->> 'intake_final')::boolean, false, 'Annahme offen');
 select pg_temp.assert_eq(public.find_booking_by_scan('ffffffffffffffffffffffffffffffff'), null::jsonb, 'unbekannter Code');
 select pg_temp.assert_eq(public.find_booking_by_scan(''), null::jsonb, 'leer');
+select pg_temp.assert_eq((public.find_booking_by_scan('PF-BOOKING:' || upper(:'bid')) ->> 'id'), :'bid', 'Buchungs-ID-QR gefunden');
+select pg_temp.assert_eq(public.find_booking_by_scan('PF-BOOKING:00000000-0000-0000-0000-000000000000'), null::jsonb, 'unbekannte ID');
 
 reset role;
 reset request.jwt.claim.sub;

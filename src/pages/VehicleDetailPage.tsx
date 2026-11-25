@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { formFromBooking, IMPORT_FLAG_LABEL, type ImportFlag } from '../booking-adapters'
 import { BookingFormDialog } from '../components/bookings/BookingFormDialog'
+import { BookingQrPanel } from '../components/bookings/BookingQrPanel'
 import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
@@ -17,8 +18,10 @@ import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LAB
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
+  FUEL_TYPE_LABEL,
   LANGUAGE_LABEL,
   PARKING_TYPE_LABEL,
+  type FuelType,
   type LocationArea,
   type Task,
 } from '../types/domain'
@@ -57,6 +60,7 @@ const SOURCE_LABEL: Record<string, string> = {
   landing: 'Online-Buchung (Website)',
   website: 'Website-Rechner',
   carhandling: 'Rechner (CarHandling-Backend)',
+  protocol: 'Protokoll',
 }
 
 function fmtValue(key: string, v: unknown): string {
@@ -64,6 +68,7 @@ function fmtValue(key: string, v: unknown): string {
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatDateTime(v)
   if (key === 'status') return BOOKING_STATUS_LABEL[v as keyof typeof BOOKING_STATUS_LABEL] ?? String(v)
   if (key === 'price_total') return formatMoney(Number(v))
+  if (key === 'fuel_type') return FUEL_TYPE_LABEL[v as FuelType] ?? String(v)
   return String(v)
 }
 
@@ -364,6 +369,12 @@ export function VehicleDetailPage() {
             </dl>
           </Card>
 
+          {b.status !== 'cancelled' && (
+            <Card title="QR-Code">
+              <BookingQrPanel booking={b} />
+            </Card>
+          )}
+
           <Card title="Ort & Schlüssel">
             <div className="grid grid-cols-2 gap-3">
               <div className={`rounded-xl border-2 p-3 ${b.location ? DUE_STYLE[due].tile : 'border-dashed border-line-strong'}`}>
@@ -392,7 +403,7 @@ export function VehicleDetailPage() {
                   </div>
                 ) : (
                   <Link to={`/einchecken?booking=${b.id}`}
-                    className="touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+                    className="btn-primary touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
                     Einchecken
                   </Link>
                 )}

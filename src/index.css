@@ -297,6 +297,9 @@
 [data-look='website'] .text-danger {
   color: #ff7a7e;
 }
+[data-look='website'] .bg-white.text-accent {
+  color: #b01f26;
+}
 [data-look='website'] .text-ok {
   color: #6fd39f;
 }

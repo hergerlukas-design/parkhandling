@@ -3,7 +3,7 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
-## 0.41.0 – 25.11.2026
+## 0.43.0 – 25.11.2026
 
 ### Neu
 - **Alternativ-Modus „Website-Design“:** Unter Einstellungen → Allgemein → **Darstellung** lässt sich die App auf den Look von parkhandling.de und dem Rechner umstellen: dunkelgrau, Logo in der Kopfzeile, Überschriften in Montserrat, Text in Mulish, eckige Karten, Rot als Akzent und Hauptknöpfe mit Reifenprofil, weißem Innenrahmen und rotem Pfeil. Standard bleibt das bisherige helle Layout
@@ -11,6 +11,42 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
   - Status- und Fälligkeitsfarben (Lageplan, Badges, Hinweise) haben dunkle Gegenstücke mit ausreichendem Kontrast
   - QR-Codes, Unterschriftenfeld und Schlüsselfach-Etiketten bleiben weiß
   - **Scanner** im selben Look: Anmeldeseite `/scanner` (und die anderen Anmeldeseiten) mit Logo und Knopf im Reifenprofil; Kamera-Ansicht mit eckigem Sucher und roten Ecken. Unter der Anmeldung lässt sich die Darstellung direkt umschalten, weil Scanner- und Tageszugänge keine Einstellungen sehen
+
+## 0.42.0 – 25.11.2026
+
+### Neu
+- **QR-Code im Fahrzeug-Detail** (Karte „QR-Code“, nicht bei stornierten Buchungen): zum Vorzeigen (**Groß anzeigen**), Abfotografieren oder Schicken an den Kunden (**Teilen** als Bild, am PC Download). Scannen startet die Annahme
+  - Rechner-Buchungen: genau der Kunden-QR aus der Buchungsbestätigung
+  - Buchungen mit Nummer `PH…` (z. B. Telefon): QR-Code mit der Buchungsnummer
+  - übrige (z. B. Parkos): QR-Code `PF-BOOKING:<Buchungs-ID>`, den der Scanner ebenfalls erkennt
+
+### Geändert (Einstellungen)
+- **Team: Karten ausklappbar** (Benachrichtigungen, Tageszugang per QR, Scanner-PIN, Personal). Anfangs zugeklappt; welche offen ist, merkt sich das Gerät
+- **„Letzte Benachrichtigungen“ als eigene Karte** (getrennt von Einstellungen & Geräte), **10 Einträge je Seite** mit „‹ Neuere“ / „Ältere ›“ und „Seite x von y“. Es wird nur die gezeigte Seite geladen
+
+### Geändert (Scan-Seite)
+- **Scan-Seite aufgeräumt:** über der Kamera nur noch „Kunden-QR-Code scannen“, die lange Erklärung und das Feld für Codes entfallen. Stellplatz-QR-Codes werden weiter erkannt
+- **Buchung suchen** unter der Kamera, für Kunden ohne QR-Code (z. B. Telefonbuchung): Suche nach **Name**, **Kennzeichen** (auch ohne Stadtkürzel, z. B. „AB 1234“) oder **Buchungsnummer**. Angezeigt werden Buchungen, die noch nicht eingeparkt sind. Ein Tipp auf einen Treffer öffnet das **Annahmeprotokoll** (ist es schon abgeschlossen, direkt das Einparken)
+- Kennzeichensuche beim Einchecken findet ebenfalls Teile des Kennzeichens
+
+### Geändert (Annahme- und Übergabeprotokoll, im Scanner und im Dashboard gleich)
+- **Basisdaten: Kennzeichen statt FIN.** Das Kennzeichen ist aus der Buchung vorbelegt und lässt sich korrigieren (Pflicht beim Abschließen). Eine Korrektur übernimmt auch die Buchung (Historie: Quelle „Protokoll“). Die FIN wird nicht mehr erfasst; ältere Protokolle behalten sie in der Datenbank
+- **Zustand: Antrieb wählen** mit drei Knöpfen **Verbrenner · Hybrid · Elektro** (aus der Buchung vorbelegt, Pflicht beim Abschließen; eine Änderung übernimmt auch die Buchung). Danach:
+  - Verbrenner: **Tankstand** in Achteln
+  - Hybrid: **Tankstand** in Achteln und **Ladestand** in Prozent
+  - Elektro: nur **Ladestand** in Prozent
+- **Ladestand als Regler** 0–100 % statt Textfeld
+- Übergabeprotokoll übernimmt Kennzeichen und Antrieb aus der Annahme
+- PDF: Zeile **Antrieb** statt VIN; Kennzeichen aus dem Protokoll; Tank- bzw. Ladestand nur passend zum Antrieb
+- Fahrzeug-Detail, Historie: Änderungen aus dem Protokoll mit Quelle „Protokoll“, Antrieb lesbar (z. B. „Elektro“)
+
+### Datenbank
+- Migration `20261125000500_scan_booking_id.sql` (live eingespielt am 25.11.2026): `find_booking_by_scan` versteht `PF-BOOKING:<ID>`
+- Migration `20261125000400_protocol_vehicle.sql` (live eingespielt am 25.11.2026): `protocols.plate`, `protocols.fuel_type`, Ladestand 0–100, Trigger `protocols_sync_vehicle` (Kennzeichen/Antrieb → Buchung)
+
+## 0.41.0 – 25.11.2026
+
+### Neu
 - **Scanner mit PIN und Namen:** Unter **parkhandling.fly.dev/scanner** meldet man sich mit einer gemeinsamen **4-stelligen PIN** und seinem **Namen** an, ohne Konto. Der Zugang gilt bis Tagesende und umfasst nur Scannen, Annahme, Einparken und Rückgabe. Der Name steht als Prüfer im Protokoll und wird auf dem Gerät für das nächste Mal gemerkt
   - Die PIN setzen **nur Admins** (Einstellungen → Team → **Scanner-PIN**), dort auch Adresse und QR-Code zum Aushängen. Ein PIN-Wechsel beendet laufende Zugänge nicht
   - Schutz gegen Durchprobieren: je Gerät 5 falsche Eingaben in 15 Minuten, insgesamt 20 je Stunde; die Einstellungen zeigen falsche Eingaben der letzten Stunde

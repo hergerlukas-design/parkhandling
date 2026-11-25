@@ -19,6 +19,8 @@ describe('parseScan', () => {
     expect(parseScan(' 0123456789abcdef0123456789abcdef ')).toEqual({ kind: 'ticket', code: '0123456789abcdef0123456789abcdef' })
     expect(parseScan('ph261215-oec-sh-002')).toEqual({ kind: 'booking_ref', code: 'PH261215-OEC-SH-002' })
     expect(parseScan('PH261215-OE+-VA-010').kind).toBe('booking_ref')
+    expect(parseScan('PF-BOOKING:0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0'))
+      .toEqual({ kind: 'booking_id', code: '0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0' })
     expect(parseScan('https://parkhandling-rechner.pplx.app/ticket.html#kurz').kind).toBe('unknown')
   })
 })

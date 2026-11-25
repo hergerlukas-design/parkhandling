@@ -57,7 +57,7 @@ export function KeySlotsPage() {
           type="button"
           disabled={shown.length === 0}
           onClick={() => window.print()}
-          className="touch-target ml-auto rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="btn-primary touch-target ml-auto rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {shown.length} Etiketten drucken
         </button>

@@ -90,11 +90,14 @@ export const FUEL_SEGMENTS = 8
 export interface ProtocolForm {
   inspector_name: string
   location_text: string
-  vin: string
+  /** Kennzeichen (aus der Buchung vorbelegt, korrigierbar; geht in die Buchung) */
+  plate: string
+  /** Antrieb laut Protokoll (geht in die Buchung); steuert Tank- und Ladestand */
+  fuel_type: FuelType | null
   /** Eingabe mit Dezimalkomma, z. B. „84213,5“ */
   mileage: string
   fuel_level: number | null
-  /** Ladestand in Prozent (1–100) */
+  /** Ladestand in Prozent (0–100) */
   charge_level: number | null
   conditions: string[]
   damages: DamageEntry[]
@@ -109,12 +112,15 @@ export interface ProtocolRow {
   status: 'draft' | 'final'
   inspector_name: string | null
   location_text: string | null
+  /** nicht mehr erfasst (bis 0.41.0) */
   vin: string | null
+  plate: string | null
+  fuel_type: FuelType | null
   /** numeric(10,1) – Punkt in der Datenbank */
   mileage: number | null
   /** smallint 0–8 */
   fuel_level: number | null
-  /** Prozent 1–100, Elektro und Hybrid (seit 0.16.0) */
+  /** Prozent 0–100, Elektro und Hybrid (seit 0.16.0, Regler seit 0.42.0) */
   charge_level: number | null
   conditions: string[]
   damages: StoredDamage[]
@@ -151,12 +157,15 @@ export function newDamageId(): string {
 export const showsFuel = (fuel: FuelType | null) => fuel !== 'electric'
 export const showsCharge = (fuel: FuelType | null) => fuel === 'electric' || fuel === 'hybrid'
 
-/** Ladestand eingeben: ganze Zahl 1–100, „%“ erlaubt; sonst null */
-export function parseChargePercent(value: string): number | null {
-  const s = value.trim().replace(/\s*%$/, '')
-  if (!/^\d{1,3}$/.test(s)) return null
-  const n = Number(s)
-  return n >= 1 && n <= 100 ? n : null
+/** Antrieb im Protokoll (Auswahl-Knöpfe) */
+export const DRIVE_OPTIONS: { value: FuelType; label: string }[] = [
+  { value: 'combustion', label: 'Verbrenner' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'electric', label: 'Elektro' },
+]
+
+export function driveLabel(fuel: FuelType | null): string {
+  return DRIVE_OPTIONS.find((o) => o.value === fuel)?.label ?? ''
 }
 
 export function defaultLocation(type: ProtocolType, customerName: string): string {
@@ -172,7 +181,8 @@ export function formFromRow(
   return {
     inspector_name: row?.inspector_name ?? ctx.inspectorName,
     location_text: row?.location_text ?? defaultLocation(ctx.type, ctx.booking.customer_name),
-    vin: row?.vin ?? base?.vin ?? '',
+    plate: row?.plate ?? base?.plate ?? ctx.booking.plate,
+    fuel_type: row?.fuel_type ?? base?.fuel_type ?? ctx.booking.fuel_type ?? null,
     // Übergabe: KM-Stand der Annahme übernehmen, dazu kommen nur die Meter bis zum Kunden
     mileage: row?.mileage != null ? formatMileage(row.mileage) : base?.mileage != null ? formatMileage(base.mileage) : '',
     fuel_level: row?.fuel_level ?? null,
@@ -209,14 +219,18 @@ export const MILEAGE_EXTRA_WARN_KM = 5
 /** Pflichtangaben vor dem Abschließen */
 export function validateForFinalize(
   form: ProtocolForm,
-  fuel: FuelType | null,
   signatures: { staff: boolean; customer: boolean },
 ): string[] {
   const errors: string[] = []
+  const fuel = form.fuel_type
   if (!form.inspector_name.trim()) errors.push('Name des Mitarbeiters fehlt')
+  if (!form.plate.trim()) errors.push('Kennzeichen fehlt')
   if (parseMileage(form.mileage) == null) errors.push('Kilometerstand fehlt oder ist ungültig')
-  if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
-  if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt oder ist ungültig (1–100 %)')
+  if (!fuel) errors.push('Antrieb wählen (Verbrenner, Hybrid oder Elektro)')
+  else {
+    if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
+    if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt')
+  }
   for (const [i, d] of form.damages.entries()) {
     if (!d.pos || !d.desc.trim()) errors.push(`Schaden ${i + 1}: Position und Beschreibung angeben`)
   }
@@ -349,13 +363,13 @@ export function buildPdfData(input: {
     inspector_name: form.inspector_name,
     location: form.location_text,
     odometer: parseMileage(form.mileage) ?? 0,
-    fuel_level: form.fuel_level,
-    charge_level: form.charge_level,
+    fuel_level: showsFuel(form.fuel_type) ? form.fuel_level : null,
+    charge_level: showsCharge(form.fuel_type) ? form.charge_level : null,
     remarks,
     inspection_date: input.inspectionDate,
-    license_plate: booking.plate,
+    license_plate: form.plate.trim() || booking.plate,
     brand_model: booking.vehicle_model ?? '',
-    vin: form.vin,
+    drive: driveLabel(form.fuel_type),
     photos,
     conditions: form.conditions,
     damage_records: form.damages.map(({ pos, desc }) => ({ pos, desc: desc.trim() })),
@@ -369,7 +383,7 @@ export function buildPdfData(input: {
 // ---------------------------------------------------------------------------
 
 const PROTOCOL_COLUMNS =
-  'id, booking_id, type, status, inspector_name, location_text, vin, mileage, fuel_level, charge_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
+  'id, booking_id, type, status, inspector_name, location_text, vin, plate, fuel_type, mileage, fuel_level, charge_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
 
 export async function getProtocolBooking(bookingId: string): Promise<ProtocolBooking> {
   const { data, error } = await db()
@@ -422,10 +436,12 @@ function formToColumns(form: ProtocolForm) {
   return {
     inspector_name: form.inspector_name.trim() || null,
     location_text: form.location_text.trim() || null,
-    vin: form.vin.trim().toUpperCase() || null,
+    plate: form.plate.trim().toUpperCase() || null,
+    fuel_type: form.fuel_type,
     mileage: parseMileage(form.mileage),
-    fuel_level: form.fuel_level,
-    charge_level: form.charge_level,
+    // Nur was zum Antrieb passt (Wechsel des Antriebs lässt sonst alte Werte stehen)
+    fuel_level: showsFuel(form.fuel_type) ? form.fuel_level : null,
+    charge_level: showsCharge(form.fuel_type) ? form.charge_level : null,
     conditions: form.conditions,
     damages: form.damages,
     remarks: form.remarks.trim() || null,

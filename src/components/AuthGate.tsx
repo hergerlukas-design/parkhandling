@@ -225,7 +225,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           und Namen oder mit einem neuen QR-Code vom Personal.
         </p>
         <a href="/scanner"
-          className="touch-target mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+          className="btn-primary touch-target mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
           Zum Scanner
         </a>
         <button type="button" onClick={() => void signOut()}

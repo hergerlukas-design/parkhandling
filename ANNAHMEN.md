@@ -218,3 +218,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Tageszugänge per QR (Rolle staff mit Ablaufdatum) dürfen selbst niemanden freischalten oder sperren
 - [ANNAHME] Freischalt-Code 15 Minuten gültig und nur einmal verwendbar; Anmeldung über anonyme Supabase-Anmeldung
 - [ANNAHME] Aushilfen haben für die Datenrechte dieselben Lese-/Schreibrechte wie Personal (nötig für Protokolle, Fotos, Einchecken); eingeschränkt ist die App-Oberfläche (nur Scannen, Annahme, Rückgabe, Einchecken). Über die Schnittstelle könnten sie während ihrer Schicht Buchungsdaten lesen
+
+## Protokoll: Kennzeichen und Antrieb (0.42.0)
+- [BELEGT 25.11.2026] FIN entfällt; Kennzeichen (aus der Buchung, korrigierbar) und Antrieb Verbrenner/Hybrid/Elektro im Protokoll; Verbrenner Tank in Achteln, Hybrid Tank + Ladestand %, Elektro nur Ladestand % als Regler (Lukas)
+- [ANNAHME] Kennzeichen und Antrieb aus dem Protokoll überschreiben die Buchung. Bei Rechner-Buchungen kann die nächste Änderung aus CarHandling sie wieder zurücksetzen (CarHandling ist führend); das Protokoll behält seinen Wert
+- [ANNAHME] Ladestand 0 % ist erlaubt (leere Batterie)

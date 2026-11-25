@@ -18,10 +18,13 @@ export function QrScanner({
   onResult,
   label = 'QR-Code scannen',
   paused = false,
+  manualInput = true,
 }: {
   onResult: (text: string) => void
   label?: string
   paused?: boolean
+  /** Feld für die manuelle Code-Eingabe anzeigen (Scan-Seite hat stattdessen die Buchungssuche) */
+  manualInput?: boolean
 }) {
   const video = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -110,7 +113,7 @@ export function QrScanner({
         {error && <div className="flex size-full items-center justify-center p-4 text-center text-sm text-white/80">{error}</div>}
       </div>
       <p className="qr-label text-sm text-white/80">{label}</p>
-      <form onSubmit={submit} className="flex w-full max-w-64 gap-2">
+      {manualInput && <form onSubmit={submit} className="flex w-full max-w-64 gap-2">
         <input
           value={manual}
           onChange={(e) => setManual(e.target.value)}
@@ -120,7 +123,7 @@ export function QrScanner({
           className="touch-target min-w-0 flex-1 rounded-lg bg-white/10 px-3 text-base text-white placeholder:text-white/50"
         />
         <button type="submit" className="qr-ok btn-primary touch-target rounded-lg bg-white px-3 text-sm font-semibold text-ink">OK</button>
-      </form>
+      </form>}
     </div>
   )
 }

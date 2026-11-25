@@ -41,7 +41,7 @@ import {
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
-  parseChargePercent,
+  DRIVE_OPTIONS,
   showsCharge,
   showsFuel,
   SIGNATURE_CUSTOMER,
@@ -55,7 +55,7 @@ import {
 import { getCheckinCandidate, keyHint, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
 import { reportCheckin } from '../lib/ticket'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
-import type { ProtocolType } from '../types/domain'
+import type { FuelType, ProtocolType } from '../types/domain'
 
 const MAIL_STATUS: Record<string, string> = {
   sent: 'E-Mail an die Testadresse versendet',
@@ -140,28 +140,54 @@ function FuelSlider({ value, disabled, onChange }: { value: number | null; disab
   )
 }
 
-/** Ladestand in Prozent (1–100) als Textfeld; ungültige Eingaben bleiben sichtbar, gespeichert wird nur ein gültiger Wert */
-function ChargeInput({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number | null) => void }) {
-  const [text, setText] = useState(value == null ? '' : String(value))
-  useEffect(() => {
-    setText((t) => (parseChargePercent(t) === value ? t : value == null ? t : String(value)))
-  }, [value])
-  const invalid = text.trim() !== '' && parseChargePercent(text) == null
+/** Ladestand in Prozent (0–100) als Regler */
+function ChargeSlider({ value, disabled, onChange }: { value: number | null; disabled: boolean; onChange: (v: number) => void }) {
   return (
-    <Field label="Ladestand in % (1–100)">
-      <TextInput
-        inputMode="numeric"
-        value={text}
+    <div className="flex flex-col gap-2 text-sm font-medium text-subtle">
+      <div className="flex items-baseline justify-between">
+        <span>Ladestand</span>
+        <span className="font-mono text-base text-ink">{value == null ? 'nicht erfasst' : `${value} %`}</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-sm bg-chip" aria-hidden="true">
+        <div className="h-full bg-ok" style={{ width: `${value ?? 0}%` }} />
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={value ?? 0}
         disabled={disabled}
-        placeholder="z. B. 80"
-        aria-invalid={invalid}
-        onChange={(e) => {
-          setText(e.target.value)
-          onChange(parseChargePercent(e.target.value))
-        }}
+        aria-label="Ladestand in Prozent"
+        aria-valuetext={value == null ? 'nicht erfasst' : `${value} Prozent`}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="touch-target h-11 w-full accent-accent"
       />
-      {invalid && <span className="text-xs text-danger">Bitte eine ganze Zahl von 1 bis 100 eingeben</span>}
-    </Field>
+      <div className="flex justify-between text-xs text-muted">
+        <span>0 %</span>
+        <span>100 %</span>
+      </div>
+    </div>
+  )
+}
+
+/** Antrieb: Verbrenner, Hybrid oder Elektro (steuert Tank- und Ladestand) */
+function DrivePicker({ value, onChange }: { value: FuelType | null; onChange: (v: FuelType) => void }) {
+  return (
+    <div className="flex flex-col gap-1 text-sm font-medium text-subtle">
+      Antrieb
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Antrieb">
+        {DRIVE_OPTIONS.map((o) => {
+          const on = value === o.value
+          return (
+            <button key={o.value} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
+              className={`touch-target rounded-lg border px-2 text-sm font-semibold ${on ? 'border-accent bg-accent text-white' : 'border-line-strong bg-surface text-ink'}`}>
+              {o.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -267,7 +293,12 @@ export function ProtocolPage() {
       if (current.status === 'draft') {
         const local = await get<LocalDraft>(draftKey(bookingId, type)).catch(() => undefined)
         // Lokale Entwürfe älterer Versionen: Schäden mit Art/Intensität in Freitext überführen
-        if (local && local.savedAt > current.updated_at) initial = { ...local.form, damages: (local.form.damages ?? []).map(normalizeDamage) }
+        // Ältere Entwürfe ohne Kennzeichen/Antrieb: Vorgaben aus Protokoll bzw. Buchung ergänzen
+        if (local && local.savedAt > current.updated_at) {
+          initial = { ...initial, ...local.form, damages: (local.form.damages ?? []).map(normalizeDamage) }
+          if (initial.plate == null) initial.plate = formFromRow(current, ctx).plate
+          if (initial.fuel_type === undefined) initial.fuel_type = formFromRow(current, ctx).fuel_type
+        }
       }
       setBooking(b)
       setIntake(base)
@@ -374,7 +405,7 @@ export function ProtocolPage() {
     )
   }
 
-  const fuel = booking.fuel_type
+  const fuel = form.fuel_type
   const title = PROTOCOL_TITLE[type]
 
   async function makePdf(status: 'draft' | 'final', f: ProtocolForm, protocol: ProtocolRow) {
@@ -392,7 +423,7 @@ export function ProtocolPage() {
 
   async function finalize() {
     if (!form || !row) return
-    const problems = validateForFinalize(form, fuel, {
+    const problems = validateForFinalize(form, {
       staff: hasSlot(SIGNATURE_STAFF),
       customer: hasSlot(SIGNATURE_CUSTOMER),
     })
@@ -507,7 +538,7 @@ export function ProtocolPage() {
           </Link>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
-              {title} <span className="font-mono">{booking.plate}</span>
+              {title} <span className="font-mono">{form.plate.trim().toUpperCase() || booking.plate}</span>
             </h1>
             <p className="text-sm text-subtle">
               {[booking.vehicle_model, booking.customer_name, isFinal && row.finalized_at ? `abgeschlossen ${formatDateTime(row.finalized_at)}` : 'Entwurf'].filter(Boolean).join(' · ')}
@@ -594,8 +625,9 @@ export function ProtocolPage() {
               <Field label="Mitarbeiter">
                 <TextInput value={form.inspector_name} onChange={(e) => update({ inspector_name: e.target.value })} />
               </Field>
-              <Field label="FIN (optional)">
-                <TextInput value={form.vin} maxLength={17} className="font-mono uppercase" onChange={(e) => update({ vin: e.target.value })} />
+              <Field label="Kennzeichen">
+                <TextInput value={form.plate} maxLength={15} autoCapitalize="characters" className="font-mono uppercase"
+                  placeholder="z. B. M-AB 1234" onChange={(e) => update({ plate: e.target.value })} />
               </Field>
               <Field label={type === 'intake' ? 'Ort' : 'Von → Nach'} className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
                 <TextInput value={form.location_text} onChange={(e) => update({ location_text: e.target.value })} />
@@ -611,13 +643,14 @@ export function ProtocolPage() {
                 <TextInput inputMode="decimal" value={form.mileage} placeholder="z. B. 84213,5" onChange={(e) => update({ mileage: e.target.value })} />
               </Field>
             )}
-            {showsFuel(fuel) && (
+            <DrivePicker value={fuel} onChange={(v) => update({ fuel_type: v })} />
+            {fuel && showsFuel(fuel) && (
               <FuelSlider value={form.fuel_level} disabled={fieldsDisabled} onChange={(v) => update({ fuel_level: v })} />
             )}
-            {showsCharge(fuel) && (
-              <ChargeInput value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
+            {fuel && showsCharge(fuel) && (
+              <ChargeSlider value={form.charge_level} disabled={fieldsDisabled} onChange={(v) => update({ charge_level: v })} />
             )}
-            {!fuel && <p className="text-xs text-muted">Antriebsart unbekannt – Tankstand erfassen, bei E-Fahrzeugen in der Buchung „Elektro“ setzen.</p>}
+            {!fuel && <p className="text-xs text-muted">Bitte den Antrieb wählen, dann erscheinen Tank- bzw. Ladestand.</p>}
             <div className="flex flex-col gap-1 text-sm font-medium text-subtle">
               Bedingungen bei der Prüfung
               <div className="flex flex-wrap gap-1.5">
