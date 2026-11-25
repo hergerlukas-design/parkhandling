@@ -14,7 +14,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Scan-Knopf wieder sichtbar** (Kopfzeile und Smartphone-Leiste) für Stellplatz- und Kunden-QR
 
 ### Datenbank
-- Migration `20261125000200_helper_access.sql`: Rolle `helper`, `profiles.access_until`, Tabelle `helper_invites` (nur Hash des Codes), Funktionen `create_helper_invite`, `redeem_helper_invite`, `list_helpers`, `revoke_helper`, `is_personnel`. `is_staff`/`is_member` berücksichtigen `access_until`
+- Migration `20261125000200_helper_access.sql` (live eingespielt am 25.11.2026): Rolle `helper`, `profiles.access_until`, Tabelle `helper_invites` (nur Hash des Codes), Funktionen `create_helper_invite`, `redeem_helper_invite`, `list_helpers`, `revoke_helper`, `is_personnel`. `is_staff`/`is_member` berücksichtigen `access_until`
 - Voraussetzung: In Supabase **Authentication → Sign In / Providers → „Allow anonymous sign-ins“** einschalten
 
 ## 0.39.0 – 25.11.2026

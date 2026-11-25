@@ -161,10 +161,10 @@ stable
 security definer
 set search_path = public
 as $$
-  select p.id, p.display_name, p.access_until, c.display_name
+  select p.id, p.display_name, p.access_until,
+         (select c.display_name from public.helper_invites i join public.profiles c on c.id = i.created_by
+          where i.redeemed_by = p.id order by i.redeemed_at desc limit 1)
   from public.profiles p
-  left join public.helper_invites i on i.redeemed_by = p.id
-  left join public.profiles c on c.id = i.created_by
   where public.is_personnel()
     and 'helper' = any (p.roles) and p.active and p.access_until > now()
   order by p.access_until desc, p.display_name
