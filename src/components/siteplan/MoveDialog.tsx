@@ -46,7 +46,7 @@ export function MoveDialog({
     setBusy(true)
     setError(null)
     try {
-      const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umsetzen' : undefined))
+      const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umparken' : undefined))
       if (res.warnings.length || keyHint(res.from, res.to) || res.to === HANDOVER_ZONE) setResult(res)
       else onDone(res)
     } catch (e) {
@@ -122,7 +122,7 @@ export function MoveDialog({
       )}
       {target !== null && (
         <Field label="Grund (optional)" className="mt-3">
-          <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umsetzen' : '')} onChange={(e) => setReason(e.target.value)} />
+          <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umparken' : '')} onChange={(e) => setReason(e.target.value)} />
         </Field>
       )}
       {error && <div className="mt-3"><ErrorList errors={[error]} /></div>}

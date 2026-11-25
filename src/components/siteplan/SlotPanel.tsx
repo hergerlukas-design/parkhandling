@@ -72,7 +72,7 @@ export function SlotPanel({
           <div className="mt-auto flex flex-col gap-2">
             <Button variant="primary" onClick={onCheckout}>Auschecken</Button>
             <div className="grid grid-cols-2 gap-2">
-              <Button onClick={onRelocate}>Umsetzen</Button>
+              <Button onClick={onRelocate}>Umparken</Button>
               <Link to={`/fahrzeuge/${slot.booking_id}`}
                 className="touch-target inline-flex items-center justify-center rounded-lg border border-line-strong bg-surface px-4 py-2 text-sm font-semibold">
                 Details
@@ -85,7 +85,7 @@ export function SlotPanel({
           <div className="font-mono text-3xl font-bold">{slot.code}</div>
           {slot.status === 'blocked' ? (
             <p className="rounded-xl bg-slot-blocked-bg px-3 py-2 text-sm">
-              Nur mit Umsetzen erreichbar{blockedBy ? `: darunter steht ${blockedBy}` : ''}. Einlagern geht nur von oben nach unten.
+              Nur mit Umparken erreichbar{blockedBy ? `: darunter steht ${blockedBy}` : ''}. Einlagern geht nur von oben nach unten.
             </p>
           ) : (
             <p className="text-sm text-subtle">Frei{slot.capacity > 1 ? ` (${slot.occupancy}/${slot.capacity})` : ''}.</p>

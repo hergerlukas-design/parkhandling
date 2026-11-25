@@ -192,7 +192,7 @@ export function VehicleDetailPage() {
       text: !m.to
         ? `Übergeben (${m.from?.code ?? '–'})`
         : m.from
-          ? `Umgesetzt: ${m.from.code} → ${m.to.code}${m.reason ? ` · ${m.reason}` : ''}`
+          ? `Umgeparkt: ${m.from.code} → ${m.to.code}${m.reason ? ` · ${m.reason}` : ''}`
           : `Eingelagert ${m.to.code}${m.reason ? ` · ${m.reason}` : ''}`,
       tone: 'bg-accent',
     })),
@@ -398,7 +398,7 @@ export function VehicleDetailPage() {
               <div className="mt-3 flex flex-col gap-2">
                 {b.location ? (
                   <div className="grid grid-cols-2 gap-2">
-                    <Button onClick={() => setMove('relocate')}>Umsetzen</Button>
+                    <Button onClick={() => setMove('relocate')}>Umparken</Button>
                     <Button variant="primary" onClick={() => setMove('checkout')}>Auschecken</Button>
                   </div>
                 ) : (

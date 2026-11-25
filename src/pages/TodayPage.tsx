@@ -137,7 +137,7 @@ export function TodayPage() {
             <Kpi label={`Ankünfte ${data.periodWord}`} value={data.kpis.arrivals} sub={`davon ${data.kpis.arrivalsHall} Halle`} to="/einchecken" />
             <Kpi label={`Abholungen ${data.periodWord}`} value={data.kpis.pickups} sub={`${data.kpis.pickupsHall} aus der Halle`} to="/fahrzeuge?filter=pickup_today" />
             <Kpi label="Offene Aufgaben" value={data.kpis.openTasks} sub={`${data.kpis.dueToday} fällig heute`} to="/aufgaben" />
-            <Kpi label="Umsetzen nötig" value={data.kpis.relocate} sub={data.kpis.relocateText} to="/aufgaben?filter=relocate" alert={data.kpis.relocate > 0} />
+            <Kpi label="Umparken nötig" value={data.kpis.relocate} sub={data.kpis.relocateText} to="/aufgaben?filter=relocate" alert={data.kpis.relocate > 0} />
           </div>
 
           {/* Smartphone: wichtigster Hinweis oben */}

@@ -3,6 +3,16 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.48.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Umparken im Scanner vereinfacht:** nur noch zwei Ziele, **Übergabezone** und **Anderer Parkplatz**. Bei „Anderer Parkplatz“ scannt man den QR-Code am neuen Platz, Code-Feld und Grund entfallen. Belegte oder gesperrte Plätze meldet der Scanner, derselbe Platz wird abgelehnt. Hol- & Bringservice und Übergeben stehen hier nicht mehr (Übergeben hat einen eigenen Knopf)
+- **Kunden-QR im Modus „Fahrzeug übergeben“:** wird erkannt und öffnet direkt das Übergabeprotokoll. Schon übergeben: Hinweis „… ist bereits übergeben“; noch nicht angenommen: Hinweis „… ist noch nicht angenommen“
+- Der Modus steht in der Adresse (`/scan?modus=uebergabe`), z. B. für ein Lesezeichen am Übergabeplatz
+
+### Geändert
+- **„Umsetzen“ heißt bei Fahrzeugen jetzt „Umparken“** (Knöpfe, Aufgaben, Übersicht, Parkplätze, Benachrichtigungen, Verlauf „Umgeparkt“). Beim Shuttle bleibt „Fahrgäste umsetzen“
+
 ## 0.47.0 – 25.11.2026
 
 ### Neu (Scanner)

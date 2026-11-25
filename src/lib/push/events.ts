@@ -16,7 +16,7 @@ export const PUSH_EVENT_LABEL: Record<PushEvent, { title: string; hint: string }
   booking_new: { title: 'Neue Buchung', hint: 'Import, Parkos oder von Hand angelegt' },
   booking_changed: { title: 'Umbuchung & Storno', hint: 'Zeiten, Parkart oder Rückgabe geändert' },
   booking_review: { title: 'Import prüfen', hint: 'Parkos-Mail oder Buchung braucht eine Prüfung' },
-  relocate_conflict: { title: 'Umsetzen nötig', hint: 'Regal-Konflikt und Erinnerung vor Fälligkeit' },
+  relocate_conflict: { title: 'Umparken nötig', hint: 'Regal-Konflikt und Erinnerung vor Fälligkeit' },
   arrival_soon: { title: 'Ankunft bald', hint: 'Kunde kommt in Kürze am Platz an' },
   pickup_soon: { title: 'Abholung bald', hint: 'Fahrzeug wird in Kürze abgeholt' },
   booking_ready: { title: 'Fahrzeug bereit', hint: 'Alle Aufgaben erledigt' },
@@ -47,7 +47,7 @@ export interface NotificationConfig {
 export const LEAD_FIELDS = [
   { key: 'arrival_lead_minutes', label: 'Ankunft bald', fallback: 60 },
   { key: 'pickup_lead_minutes', label: 'Abholung bald', fallback: 60 },
-  { key: 'relocate_reminder_minutes', label: 'Umsetzen (vor Fälligkeit)', fallback: 60 },
+  { key: 'relocate_reminder_minutes', label: 'Umparken (vor Fälligkeit)', fallback: 60 },
   { key: 'shuttle_lead_minutes', label: 'Shuttle', fallback: 15 },
 ] as const
 

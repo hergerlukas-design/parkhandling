@@ -106,7 +106,7 @@ function LayoutEditor({ title, dims, current, preview, apply, onApplied }: {
           </p>
           {p.blockers.length > 0 && (
             <p className="mt-2 rounded-lg bg-danger-soft px-4 py-2 text-danger-ink">
-              Erst umsetzen bzw. freigeben: {p.blockers.map((s) => `${s.code} (${s.plate ?? 'reserviert'})`).join(', ')}
+              Erst umparken bzw. freigeben: {p.blockers.map((s) => `${s.code} (${s.plate ?? 'reserviert'})`).join(', ')}
             </p>
           )}
         </div>

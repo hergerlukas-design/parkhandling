@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { QrScanner } from '../components/QrScanner'
-import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { Button, ErrorList, TextInput } from '../components/ui'
 import { isHelperOnly, useAuth } from '../lib/auth'
 import { formatPeriod, formatPickup } from '../lib/due'
@@ -11,6 +10,7 @@ import {
   getParkedVehicle,
   hasKeySlot,
   keyHint,
+  moveVehicle,
   listCheckinCandidates,
   listHandoverCandidates,
   parseScan,
@@ -26,6 +26,8 @@ const MIN_SEARCH = 2
 type Mode = 'parken' | 'uebergabe'
 
 const handoverPath = (id: string) => `/protokoll/uebergabe/${id}`
+/** Übergabezone (Arbeitsort): Fahrzeug zur Abholung bereitstellen */
+const HANDOVER_ZONE = 'W-UEB'
 
 /**
  * Zentraler Scan (Bottom-Bar / Kopfzeile):
@@ -39,7 +41,9 @@ export function ScanPage() {
   const navigate = useNavigate()
   const { profile } = useAuth()
   const helperOnly = isHelperOnly(profile)
-  const [mode, setMode] = useState<Mode>('parken')
+  // Modus steht in der Adresse (/scan?modus=uebergabe), damit Zurück und Lesezeichen passen
+  const [params, setParams] = useSearchParams()
+  const mode: Mode = params.get('modus') === 'uebergabe' ? 'uebergabe' : 'parken'
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -47,15 +51,17 @@ export function ScanPage() {
   const [results, setResults] = useState<(CheckinCandidate | ParkedVehicle)[] | null>(null)
   // Geparktes Fahrzeug gescannt: Übergeben oder Umparken?
   const [vehicle, setVehicle] = useState<ParkedVehicle | null>(null)
-  const [moving, setMoving] = useState(false)
+  // Umparken: erst Ziel wählen, bei „Anderer Parkplatz“ den neuen Platz scannen
+  const [relocate, setRelocate] = useState<'choose' | 'scan' | null>(null)
 
   const handover = mode === 'uebergabe'
 
   function switchMode(next: Mode) {
-    setMode(next)
+    setParams(next === 'uebergabe' ? { modus: 'uebergabe' } : {}, { replace: true })
     setError(null)
     setNotice(null)
     setVehicle(null)
+    setRelocate(null)
     setSearch('')
     setResults(null)
   }
@@ -102,9 +108,45 @@ export function ScanPage() {
     else setVehicle(v)
   }
 
+  function closeVehicle() {
+    setVehicle(null)
+    setRelocate(null)
+  }
+
+  /** Umparken ausführen; Regeln (belegt, Regal-Reihenfolge) prüft die Datenbank */
+  async function relocateTo(code: string, reason: string) {
+    if (!vehicle) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await moveVehicle(vehicle.id, code, reason)
+      setNotice([`${vehicle.plate} umgeparkt: ${res.from ?? '–'} → ${res.to ?? '–'}.`, keyHint(res.from, res.to), ...res.warnings]
+        .filter(Boolean).join(' '))
+      closeVehicle()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onResult(raw: string) {
-    if (busy || vehicle) return
+    if (busy) return
     const scan = parseScan(raw)
+    // Umparken: nur der Parkplatz-QR des neuen Platzes zählt
+    if (vehicle && relocate === 'scan') {
+      if (scan.kind !== 'location' && scan.kind !== 'key') {
+        setError('Bitte den QR-Code des neuen Parkplatzes scannen.')
+        return
+      }
+      if (scan.code === vehicle.location_code) {
+        setError(`${vehicle.plate} steht bereits auf ${scan.code}.`)
+        return
+      }
+      await relocateTo(scan.code, 'Umparken')
+      return
+    }
+    if (vehicle) return
     setError(null)
     setNotice(null)
     if (scan.kind === 'unknown') {
@@ -123,6 +165,8 @@ export function ScanPage() {
         }
         const step = ticketStep(booking, handover ? 'handover' : 'intake')
         if ('error' in step) setError(step.error)
+        // Übergabe-Modus, aber schon übergeben bzw. abgeschlossen (Buchungsseite ist für Scanner gesperrt)
+        else if (handover && step.path === `/fahrzeuge/${booking.id}`) setError(`${booking.plate} ist bereits übergeben.`)
         // Steht schon auf einem Platz: Übergeben oder Umparken
         else if (!handover && booking.has_location && step.path === `/fahrzeuge/${booking.id}`) await showVehicle(booking.id)
         else navigate(step.path)
@@ -153,11 +197,11 @@ export function ScanPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 md:p-6">
       <h1 className="text-2xl font-semibold">{handover ? 'Fahrzeug übergeben' : 'Scannen'}</h1>
-      {!vehicle && (
+      {(!vehicle || relocate === 'scan') && (
         <QrScanner
           onResult={(t) => void onResult(t)}
-          label="Kunden-QR oder Parkplatz-QR scannen"
-          paused={busy || !!vehicle}
+          label={vehicle ? `Neuen Parkplatz für ${vehicle.plate} scannen` : 'Kunden-QR oder Parkplatz-QR scannen'}
+          paused={busy}
           manualInput={false}
         />
       )}
@@ -176,38 +220,44 @@ export function ScanPage() {
               {vehicle.external_ref ? ` · ${vehicle.external_ref}` : ''}
             </div>
           </div>
-          <p className="text-sm font-semibold">Was möchten Sie tun?</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Button variant="primary" onClick={() => navigate(handoverPath(vehicle.id))}>Fahrzeug übergeben</Button>
-            <Button onClick={() => setMoving(true)}>Umparken</Button>
-          </div>
+          {!relocate && (
+            <>
+              <p className="text-sm font-semibold">Was möchten Sie tun?</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button variant="primary" onClick={() => navigate(handoverPath(vehicle.id))}>Fahrzeug übergeben</Button>
+                <Button onClick={() => setRelocate('choose')}>Umparken</Button>
+              </div>
+            </>
+          )}
+          {relocate === 'choose' && (
+            <>
+              <p className="text-sm font-semibold">Umparken: wohin?</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Button disabled={busy || vehicle.location_code === HANDOVER_ZONE}
+                  onClick={() => void relocateTo(HANDOVER_ZONE, 'Übergabe vorbereiten')}>
+                  Übergabezone
+                </Button>
+                <Button variant="primary" disabled={busy} onClick={() => { setError(null); setRelocate('scan') }}>
+                  Anderer Parkplatz
+                </Button>
+              </div>
+            </>
+          )}
+          {relocate === 'scan' && (
+            <p className="text-sm">Den QR-Code am <strong>neuen Parkplatz</strong> scannen.</p>
+          )}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            <button type="button" className="touch-target text-subtle underline" onClick={() => setVehicle(null)}>
-              Abbrechen, weiter scannen
+            <button type="button" className="touch-target text-subtle underline"
+              onClick={() => (relocate ? setRelocate(relocate === 'scan' ? 'choose' : null) : closeVehicle())}>
+              {relocate ? 'Zurück' : 'Abbrechen, weiter scannen'}
             </button>
-            {!helperOnly && (
+            {!helperOnly && !relocate && (
               <Link className="touch-target inline-flex items-center text-subtle underline" to={`/fahrzeuge/${vehicle.id}`}>
                 Zur Buchung
               </Link>
             )}
           </div>
         </section>
-      )}
-
-      {vehicle && moving && (
-        <MoveDialog
-          bookingId={vehicle.id}
-          plate={vehicle.plate}
-          fromCode={vehicle.location_code}
-          mode="relocate"
-          onClose={() => setMoving(false)}
-          onDone={(res) => {
-            setMoving(false)
-            setVehicle(null)
-            setNotice([`${vehicle.plate} umgeparkt: ${res.from ?? '–'} → ${res.to ?? 'übergeben'}.`, keyHint(res.from, res.to)]
-              .filter(Boolean).join(' '))
-          }}
-        />
       )}
 
       {!vehicle && (
