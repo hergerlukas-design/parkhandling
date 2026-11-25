@@ -13,6 +13,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 
 ### Geändert (Einstellungen)
 - **Team: Karten ausklappbar** (Benachrichtigungen, Tageszugang per QR, Scanner-PIN, Personal). Anfangs zugeklappt; welche offen ist, merkt sich das Gerät
+- **„Letzte Benachrichtigungen“ als eigene Karte** (getrennt von Einstellungen & Geräte), **10 Einträge je Seite** mit „‹ Neuere“ / „Ältere ›“ und „Seite x von y“. Es wird nur die gezeigte Seite geladen
 
 ### Geändert (Scan-Seite)
 - **Scan-Seite aufgeräumt:** über der Kamera nur noch „Kunden-QR-Code scannen“, die lange Erklärung und das Feld für Codes entfallen. Stellplatz-QR-Codes werden weiter erkannt

@@ -6,6 +6,7 @@ import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { checkForUpdate, updateStore } from '../lib/update/updateController'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
+import { NotificationLog } from '../components/notifications/NotificationLog'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { HelperAccess } from '../components/users/HelperAccess'
@@ -116,6 +117,11 @@ export function SettingsPage() {
           {admin && (
             <CollapsibleCard title="Benachrichtigungen: Einstellungen & Geräte" storageKey="team-notifications-admin">
               <NotificationAdmin />
+            </CollapsibleCard>
+          )}
+          {admin && (
+            <CollapsibleCard title="Letzte Benachrichtigungen" storageKey="team-notifications-log">
+              <NotificationLog />
             </CollapsibleCard>
           )}
           {isStaffProfile(profile) && !profile?.access_until && (

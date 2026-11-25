@@ -239,12 +239,25 @@ export async function setDeviceActive(id: string, active: boolean): Promise<void
   if (error) throw new Error('Gerät konnte nicht geändert werden')
 }
 
-export async function recentNotifications(limit = 50): Promise<NotificationLogEntry[]> {
-  const { data, error } = await client()
+/** Einträge je Seite im Protokoll „Letzte Benachrichtigungen“ */
+export const NOTIFICATION_PAGE_SIZE = 10
+
+/** Anzahl Seiten (mindestens 1) */
+export function pageCount(total: number, size = NOTIFICATION_PAGE_SIZE): number {
+  return Math.max(1, Math.ceil(total / size))
+}
+
+/** Eine Seite des Protokolls (page ab 0, neueste zuerst) samt Gesamtzahl */
+export async function notificationPage(
+  page: number,
+  size = NOTIFICATION_PAGE_SIZE,
+): Promise<{ entries: NotificationLogEntry[]; total: number }> {
+  const from = Math.max(0, page) * size
+  const { data, error, count } = await client()
     .from('notifications')
-    .select('id, event, status, payload, sent_count, error, created_at')
+    .select('id, event, status, payload, sent_count, error, created_at', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .limit(limit)
+    .range(from, from + size - 1)
   if (error) throw new Error('Protokoll konnte nicht geladen werden')
-  return (data ?? []) as NotificationLogEntry[]
+  return { entries: (data ?? []) as NotificationLogEntry[], total: count ?? 0 }
 }
