@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.51.1 – 25.11.2026
+
+### Geändert
+- **App-Icon ist jetzt das ParkHandling-Logo** (wie oben links in der Kopfzeile), auf Dunkelgrau: Homescreen-Icon (Android und iPhone/iPad), Icon der Benachrichtigungen und Symbol im Browser-Tab
+  - Bereits installierte Apps zeigen das neue Icon erst, wenn sie neu zum Homescreen hinzugefügt werden (iPhone/iPad) bzw. wenn Android das Icon aktualisiert (kann einige Tage dauern)
+
 ## 0.51.0 – 25.11.2026
 
 ### Geändert (Scanner)
