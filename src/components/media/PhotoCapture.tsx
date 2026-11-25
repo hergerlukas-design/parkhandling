@@ -28,7 +28,7 @@ export function PhotoCapture({ owner, label = 'Foto aufnehmen', single = false }
         type="button"
         disabled={busy}
         onClick={() => input.current?.click()}
-        className="touch-target inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+        className="touch-target inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-surface px-4 py-2 text-sm font-semibold disabled:opacity-60"
       >
         <Icon name="image" className="size-5" />
         {busy ? 'Wird verarbeitet …' : label}

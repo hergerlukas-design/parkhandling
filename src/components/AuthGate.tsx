@@ -4,19 +4,34 @@ import { codeFromHash, validPin } from '../lib/helpers'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { SetPassword } from './users/SetPassword'
 import { APP_VERSION } from '../lib/version'
+import { APPEARANCE_OPTIONS, appearanceStore, setAppearance } from '../lib/appearance'
+import { useStore } from '../lib/store'
 
 function Screen({ title, children }: { title: string; children: ReactNode }) {
+  const look = useStore(appearanceStore)
+  const website = look === 'website'
   return (
-    <div className="flex min-h-full items-center justify-center bg-nav p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+    <div className="flex min-h-full flex-col items-center justify-center gap-4 bg-nav p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
         <div className="mb-5 flex items-center gap-3">
-          <img src="/favicon.svg" alt="" className="size-10" />
+          {website
+            ? <img src="/website/logo.png" alt="ParkHandling" width={300} height={254} className="h-12 w-auto" />
+            : <img src="/favicon.svg" alt="" className="size-10" />}
           <div>
             <h1 className="text-lg font-semibold">{title}</h1>
             <p className="text-xs text-muted">Park &amp; Fly Manager · Version {APP_VERSION}</p>
           </div>
         </div>
         {children}
+      </div>
+      {/* Darstellung auch ohne Anmeldung wählbar: Scanner- und Tageszugänge sehen keine Einstellungen */}
+      <div role="radiogroup" aria-label="Darstellung" className="flex gap-1 text-xs">
+        {APPEARANCE_OPTIONS.map((o) => (
+          <button key={o.id} type="button" role="radio" aria-checked={look === o.id} onClick={() => setAppearance(o.id)}
+            className={`touch-target rounded-full px-3 ${look === o.id ? 'bg-nav-active font-semibold text-white' : 'text-white/60 hover:text-white'}`}>
+            {o.label}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -50,7 +65,7 @@ function LoginForm() {
       </label>
       {error && <p className="text-sm text-danger">{error}</p>}
       <button type="submit" disabled={busy}
-        className="touch-target mt-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-60">
+        className="btn-primary touch-target mt-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-60">
         {busy ? 'Anmelden …' : 'Anmelden'}
       </button>
     </form>
@@ -117,7 +132,7 @@ function ScannerLogin() {
           </button>
         )}
         <button type="submit" disabled={busy || !validPin(pin) || name.trim().length < 2}
-          className="touch-target mt-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-60">
+          className="btn-primary touch-target mt-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white disabled:opacity-60">
           {busy ? 'Anmelden …' : 'Anmelden'}
         </button>
       </form>
@@ -210,7 +225,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           und Namen oder mit einem neuen QR-Code vom Personal.
         </p>
         <a href="/scanner"
-          className="touch-target mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+          className="btn-primary touch-target mt-4 flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
           Zum Scanner
         </a>
         <button type="button" onClick={() => void signOut()}

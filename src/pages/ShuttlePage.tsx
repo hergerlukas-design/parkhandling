@@ -150,7 +150,7 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
   const next = nextStatus(job.status)
   const over = capacityState(job) === 'over'
   return (
-    <article className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${over ? 'border-danger/50' : 'border-line'} ${job.status === 'done' ? 'opacity-60' : ''}`}>
+    <article className={`overflow-hidden rounded-2xl border bg-surface shadow-sm ${over ? 'border-danger/50' : 'border-line'} ${job.status === 'done' ? 'opacity-60' : ''}`}>
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
         <span className="font-mono text-xl font-bold tabular-nums">{formatTime(job.scheduled_at)}</span>
         <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${job.type === 'premium_on_demand' ? 'bg-warn-soft text-warn-ink' : 'bg-accent-soft text-accent-dark'}`}>
@@ -191,7 +191,7 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
 function DriverCard({ job, busy, onStatus }: { job: TransportJob; busy: boolean; onStatus: (job: TransportJob) => void }) {
   const next = nextStatus(job.status)
   return (
-    <article className={`overflow-hidden rounded-2xl border border-line bg-white shadow-sm ${job.status === 'done' ? 'opacity-60' : ''}`}>
+    <article className={`overflow-hidden rounded-2xl border border-line bg-surface shadow-sm ${job.status === 'done' ? 'opacity-60' : ''}`}>
       <header className="flex items-center gap-3 px-4 py-3">
         <span className="font-mono text-3xl font-bold tabular-nums">{formatTime(job.scheduled_at)}</span>
         <span className="flex min-w-0 flex-1 flex-col">

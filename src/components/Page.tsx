@@ -22,7 +22,7 @@ export function Page({
 
 export function Card({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-line bg-white p-4 shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       {title && <h2 className="mb-3 text-base font-semibold">{title}</h2>}
       {children}
     </section>
@@ -69,7 +69,7 @@ export function CollapsibleCard({
   }
 
   return (
-    <section className="rounded-2xl border border-line bg-white shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface shadow-sm">
       <h2 className="text-base font-semibold">
         <button type="button" onClick={toggle} aria-expanded={open} aria-controls={bodyId}
           className="touch-target flex w-full items-center justify-between gap-3 px-4 py-3 text-left">

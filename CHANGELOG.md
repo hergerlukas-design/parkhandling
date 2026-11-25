@@ -3,6 +3,15 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.43.0 – 25.11.2026
+
+### Neu
+- **Alternativ-Modus „Website-Design“:** Unter Einstellungen → Allgemein → **Darstellung** lässt sich die App auf den Look von parkhandling.de und dem Rechner umstellen: dunkelgrau, Logo in der Kopfzeile, Überschriften in Montserrat, Text in Mulish, eckige Karten, Rot als Akzent und Hauptknöpfe mit Reifenprofil, weißem Innenrahmen und rotem Pfeil. Standard bleibt das bisherige helle Layout
+  - Gilt je Gerät (im Browser gespeichert), ohne Neuladen umschaltbar
+  - Status- und Fälligkeitsfarben (Lageplan, Badges, Hinweise) haben dunkle Gegenstücke mit ausreichendem Kontrast
+  - QR-Codes, Unterschriftenfeld und Schlüsselfach-Etiketten bleiben weiß
+  - **Scanner** im selben Look: Anmeldeseite `/scanner` (und die anderen Anmeldeseiten) mit Logo und Knopf im Reifenprofil; Kamera-Ansicht mit eckigem Sucher und roten Ecken. Unter der Anmeldung lässt sich die Darstellung direkt umschalten, weil Scanner- und Tageszugänge keine Einstellungen sehen
+
 ## 0.42.0 – 25.11.2026
 
 ### Neu

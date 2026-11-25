@@ -403,7 +403,7 @@ export function VehicleDetailPage() {
                   </div>
                 ) : (
                   <Link to={`/einchecken?booking=${b.id}`}
-                    className="touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
+                    className="btn-primary touch-target inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white">
                     Einchecken
                   </Link>
                 )}

@@ -73,7 +73,7 @@ const draftKey = (bookingId: string, type: ProtocolType) => `protocol-draft:${bo
 
 function Section({ id, title, children, aside }: { id?: string; title: string; children: ReactNode; aside?: ReactNode }) {
   return (
-    <section id={id} className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+    <section id={id} className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold">{title}</h2>
         {aside}
@@ -569,7 +569,7 @@ export function ProtocolPage() {
       <ErrorList errors={errors} />
 
       {isFinal && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm">
           <div className="text-sm">
             <p className="font-semibold">{title} abgeschlossen – nicht mehr änderbar.</p>
             <p className="text-subtle">
@@ -607,7 +607,7 @@ export function ProtocolPage() {
       )}
 
       {comparison && (
-        <div className={`rounded-2xl border px-4 py-3 text-sm ${comparison.newDamages.length ? 'border-danger/40 bg-danger-soft text-danger-ink' : 'border-line bg-white'}`}>
+        <div className={`rounded-2xl border px-4 py-3 text-sm ${comparison.newDamages.length ? 'border-danger/40 bg-danger-soft text-danger-ink' : 'border-line bg-surface'}`}>
           <p className="mb-1 font-semibold">Vergleich zur Annahme</p>
           <ul className="list-disc pl-5">
             {comparison.lines.map((l) => (

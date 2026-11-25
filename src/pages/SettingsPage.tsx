@@ -8,6 +8,7 @@ import { checkForUpdate, updateStore } from '../lib/update/updateController'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
 import { NotificationLog } from '../components/notifications/NotificationLog'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
+import { AppearanceSettings } from '../components/settings/AppearanceSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
 import { HelperAccess } from '../components/users/HelperAccess'
 import { ScannerPinSettings } from '../components/users/ScannerPinSettings'
@@ -81,7 +82,7 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => void checkForUpdate()}
-                className="touch-target rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
+                className="btn-primary touch-target rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
               >
                 Nach Updates suchen
               </button>
@@ -92,6 +93,9 @@ export function SettingsPage() {
                 Änderungsprotokoll
               </Link>
             </div>
+          </Card>
+          <Card title="Darstellung">
+            <AppearanceSettings />
           </Card>
           <Card title="Konto">
             <dl>
