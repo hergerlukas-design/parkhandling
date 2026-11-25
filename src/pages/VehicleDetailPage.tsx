@@ -12,7 +12,7 @@ import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
 import { listProtocols, type ProtocolRow } from '../lib/protocols'
 import { formatKwh } from '../lib/tasks'
-import { hasKeySlot, whereabouts } from '../lib/siteplan'
+import { hasKeySlot, undoLastMovement, whereabouts } from '../lib/siteplan'
 import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LABEL, type BookingTrip } from '../lib/transport'
 import {
   AREA_LABEL,
@@ -72,7 +72,20 @@ function describeChange(key: string, value: unknown): string {
   if (key === 'service_added') return `Leistung nachgebucht: ${v.code}`
   if (key === 'service_cancelled') return `Leistung storniert: ${v.code}`
   if (key === 'import_confirmed') return `Geprüft: ${IMPORT_FLAG_LABEL[v.code as ImportFlag] ?? v.code}`
+  if (key === 'movement_undone') return `Rückgängig gemacht: ${movementText(value as MovementLike)}`
   return `${FIELD_LABEL[key] ?? key}: ${fmtValue(key, v.old)} → ${fmtValue(key, v.new)}`
+}
+
+type MovementLike = { from: { code: string } | string | null; to: { code: string } | string | null; reason?: string | null }
+
+/** „Eingelagert B1-01“, „Umgesetzt: R1-E1 → R4-E2“, „Übergeben (A1-07)“ */
+function movementText(m: MovementLike): string {
+  const code = (x: MovementLike['from']) => (typeof x === 'string' ? x : x?.code ?? null)
+  const from = code(m.from)
+  const to = code(m.to)
+  const reason = m.reason ? ` · ${m.reason}` : ''
+  if (!to) return `Übergeben (${from ?? '–'})`
+  return from ? `Umgesetzt: ${from} → ${to}${reason}` : `Eingelagert ${to}${reason}`
 }
 
 function Card({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
@@ -142,6 +155,8 @@ export function VehicleDetailPage() {
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [move, setMove] = useState<'checkout' | 'relocate' | null>(null)
   const [moveNotice, setMoveNotice] = useState<string | null>(null)
+  const [confirmUndo, setConfirmUndo] = useState(false)
+  const [undoError, setUndoError] = useState<string | null>(null)
   const [openTask, setOpenTask] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [protocols, setProtocols] = useState<ProtocolRow[]>([])
@@ -173,6 +188,8 @@ export function VehicleDetailPage() {
   const done = relevant.filter((t) => t.status === 'done').length
   const due = dueCategory(b.end_at)
   const closed = b.status === 'cancelled' || b.status === 'completed'
+  // jüngste Bewegung (Liste ist absteigend nach moved_at); eine Übergabe lässt sich nicht zurücknehmen
+  const lastMove = !closed && movements[0]?.to ? movements[0] : null
 
   const timeline = [
     ...protocols
@@ -184,11 +201,7 @@ export function VehicleDetailPage() {
       })),
     ...movements.map((m) => ({
       at: m.moved_at,
-      text: !m.to
-        ? `Übergeben (${m.from?.code ?? '–'})`
-        : m.from
-          ? `Umgesetzt: ${m.from.code} → ${m.to.code}${m.reason ? ` · ${m.reason}` : ''}`
-          : `Eingelagert ${m.to.code}${m.reason ? ` · ${m.reason}` : ''}`,
+      text: movementText(m),
       tone: 'bg-accent',
     })),
     ...history.flatMap((h) =>
@@ -208,6 +221,22 @@ export function VehicleDetailPage() {
       load()
     } catch (e) {
       setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function doUndoMove() {
+    if (!lastMove) return
+    setBusy(true)
+    setUndoError(null)
+    try {
+      const res = await undoLastMovement(b.id, lastMove.id)
+      setConfirmUndo(false)
+      setMoveNotice(res.to ? `Rückgängig: wieder auf ${res.to}` : `Rückgängig: ${res.from ?? 'Platz'} wieder frei, Fahrzeug nicht eingecheckt`)
+      load()
+    } catch (e) {
+      setUndoError((e as Error).message)
     } finally {
       setBusy(false)
     }
@@ -394,6 +423,12 @@ export function VehicleDetailPage() {
                 )}
               </div>
             )}
+            {lastMove && (
+              <button type="button" onClick={() => { setUndoError(null); setConfirmUndo(true) }}
+                className="touch-target mt-2 w-full text-center text-sm text-subtle underline">
+                Rückgängig: {movementText(lastMove)}
+              </button>
+            )}
             {moveNotice && <p className="mt-2 rounded-lg bg-ok-soft px-3 py-2 text-sm text-ok-ink">{moveNotice}</p>}
           </Card>
         </div>
@@ -511,6 +546,29 @@ export function VehicleDetailPage() {
             load()
           }}
         />
+      )}
+      {confirmUndo && lastMove && (
+        <Dialog
+          title="Bewegung rückgängig machen?"
+          onClose={() => setConfirmUndo(false)}
+          footer={
+            <>
+              <Button onClick={() => setConfirmUndo(false)}>Abbrechen</Button>
+              <Button variant="primary" disabled={busy} onClick={() => void doUndoMove()}>
+                Rückgängig machen
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm">
+            <strong>{movementText(lastMove)}</strong> ({formatDateTime(lastMove.moved_at)}) wird zurückgenommen.{' '}
+            {lastMove.from
+              ? <>Das Fahrzeug steht danach wieder auf <strong>{lastMove.from.code}</strong>, {lastMove.to?.code} ist wieder frei.</>
+              : <>Das Fahrzeug hat danach keinen Stellplatz und kein Schlüsselfach mehr, {lastMove.to?.code} ist wieder frei. Der Status geht zurück auf den Stand vor dem Einlagern.</>}
+          </p>
+          {undoError && <p className="mt-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger-ink">{undoError}</p>}
+          <p className="mt-2 text-xs text-subtle">Nur für Fehleingaben. Wurde das Fahrzeug wirklich bewegt, bitte „Umsetzen“ nutzen.</p>
+        </Dialog>
       )}
       {confirmCancel && (
         <Dialog

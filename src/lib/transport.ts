@@ -123,6 +123,15 @@ export function nextStatus(status: TransportStatus): { to: TransportStatus; labe
   return null
 }
 
+/**
+ * Versehentlich losgefahren oder erledigt: Fahrt wieder öffnen.
+ * Zurück auf „eingeteilt“ (mit Fahrer) bzw. „geplant“ (ohne Fahrer), Fahrer und Fahrgäste bleiben.
+ */
+export function undoStatus(job: Pick<TransportJob, 'status' | 'driver_id'>): { to: TransportStatus; label: string } | null {
+  if (job.status !== 'underway' && job.status !== 'done') return null
+  return { to: job.driver_id ? 'assigned' : 'planned', label: job.status === 'done' ? 'Wieder öffnen' : 'Nicht losgefahren' }
+}
+
 /** Hol- & Bring: wie der Fahrer zum Terminal kommt bzw. zurückfährt */
 export function driverShuttleHint(job: Pick<TransportJob, 'type' | 'direction' | 'driver_shuttle_at'>): string | null {
   if (!isValet(job)) return null

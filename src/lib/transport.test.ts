@@ -4,6 +4,7 @@ import {
   driverOrder,
   moveTargets,
   nextStatus,
+  undoStatus,
   passengerTimeHint,
   routeLabel,
   driverShuttleHint,
@@ -72,6 +73,15 @@ describe('Shuttle-Dispo', () => {
     expect(nextStatus('assigned')?.label).toBe('Losfahren')
     expect(nextStatus('underway')?.to).toBe('done')
     expect(nextStatus('done')).toBeNull()
+  })
+
+  it('öffnet erledigte oder losgefahrene Fahrten wieder', () => {
+    expect(undoStatus({ status: 'done', driver_id: 'd1' })).toEqual({ to: 'assigned', label: 'Wieder öffnen' })
+    expect(undoStatus({ status: 'done', driver_id: null })?.to).toBe('planned')
+    expect(undoStatus({ status: 'underway', driver_id: 'd1' })).toEqual({ to: 'assigned', label: 'Nicht losgefahren' })
+    expect(undoStatus({ status: 'assigned', driver_id: 'd1' })).toBeNull()
+    expect(undoStatus({ status: 'planned', driver_id: null })).toBeNull()
+    expect(undoStatus({ status: 'cancelled', driver_id: null })).toBeNull()
   })
 
   it('Wartezeit am Terminal nur für Rückfahrten', () => {

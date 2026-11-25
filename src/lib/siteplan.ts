@@ -126,6 +126,19 @@ export async function moveVehicle(
   return data as MoveResult
 }
 
+/** Letzte Bewegung zurücknehmen (versehentlich eingelagert/umgesetzt); keine Übergabe */
+export async function undoLastMovement(
+  bookingId: string,
+  movementId: string,
+): Promise<{ from: string | null; to: string | null; status: BookingStatus }> {
+  const { data, error } = await db().rpc('undo_last_movement', {
+    p_booking_id: bookingId,
+    p_movement_id: movementId,
+  })
+  if (error) throw new Error(error.message)
+  return data as { from: string | null; to: string | null; status: BookingStatus }
+}
+
 export interface CheckinCandidate {
   id: string
   plate: string

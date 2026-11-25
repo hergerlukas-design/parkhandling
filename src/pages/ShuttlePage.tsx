@@ -28,6 +28,7 @@ import {
   summarize,
   TRANSPORT_STATUS_LABEL,
   TRANSPORT_TYPE_LABEL,
+  undoStatus,
   waitAfterLanding,
   type Driver,
   type TransportDirection,
@@ -138,16 +139,18 @@ function PassengerRow({ job, p, onMove, onReset, compact }: {
   )
 }
 
-function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
+function JobCard({ job, drivers, busy, onStatus, onUndo, onDriver, onMove, onReset }: {
   job: TransportJob
   drivers: Driver[]
   busy: boolean
   onStatus: (job: TransportJob) => void
+  onUndo: (job: TransportJob) => void
   onDriver: (job: TransportJob, driverId: string | null) => void
   onMove: (job: TransportJob, p: TransportPassenger) => void
   onReset: (p: TransportPassenger) => void
 }) {
   const next = nextStatus(job.status)
+  const undo = undoStatus(job)
   const over = capacityState(job) === 'over'
   return (
     <article className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${over ? 'border-danger/50' : 'border-line'} ${job.status === 'done' ? 'opacity-60' : ''}`}>
@@ -173,6 +176,7 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
               <option value={job.driver_id}>{job.driver_name ?? 'Fahrer'}</option>
             )}
           </Select>
+          {undo && <Button disabled={busy} onClick={() => onUndo(job)}>{undo.label}</Button>}
           {next && <Button variant="primary" disabled={busy} onClick={() => onStatus(job)}>{next.label}</Button>}
         </div>
       </header>
@@ -188,8 +192,14 @@ function JobCard({ job, drivers, busy, onStatus, onDriver, onMove, onReset }: {
 }
 
 /** Fahreransicht: nur Zeit, Route, Kennzeichen, Personen und der nächste Schritt */
-function DriverCard({ job, busy, onStatus }: { job: TransportJob; busy: boolean; onStatus: (job: TransportJob) => void }) {
+function DriverCard({ job, busy, onStatus, onUndo }: {
+  job: TransportJob
+  busy: boolean
+  onStatus: (job: TransportJob) => void
+  onUndo: (job: TransportJob) => void
+}) {
   const next = nextStatus(job.status)
+  const undo = job.status === 'done' ? undoStatus(job) : null
   return (
     <article className={`overflow-hidden rounded-2xl border border-line bg-white shadow-sm ${job.status === 'done' ? 'opacity-60' : ''}`}>
       <header className="flex items-center gap-3 px-4 py-3">
@@ -213,6 +223,11 @@ function DriverCard({ job, busy, onStatus }: { job: TransportJob; busy: boolean;
       <ul>
         {job.passengers.map((p) => <PassengerRow key={p.id} job={job} p={p} compact />)}
       </ul>
+      {undo && (
+        <div className="flex justify-end border-t border-line px-4 py-2">
+          <Button disabled={busy} onClick={() => onUndo(job)}>{undo.label}</Button>
+        </div>
+      )}
     </article>
   )
 }
@@ -373,6 +388,13 @@ export function ShuttlePage() {
     void act(() => setJobStatus(job.id, n.to, n.to === 'underway' && !job.driver_id ? profile?.id ?? null : null))
   }
 
+  /** Versehentlich erledigt/losgefahren: Fahrt wieder öffnen (Fahrer und Fahrgäste bleiben) */
+  function reopen(job: TransportJob) {
+    const u = undoStatus(job)
+    if (!u) return
+    void act(() => setJobStatus(job.id, u.to))
+  }
+
   const visible = (jobs ?? []).filter((j) => j.passengers.length > 0 && j.status !== 'cancelled')
   const split = splitByDirection(visible)
   const sum = summarize(visible)
@@ -414,6 +436,7 @@ export function ShuttlePage() {
                 {split[dir].map((j) => (
                   <JobCard key={j.id} job={j} drivers={drivers} busy={busy}
                     onStatus={advance}
+                    onUndo={reopen}
                     onDriver={(x, d) => void act(() => setJobDriver(x, d))}
                     onMove={(x, p) => setMoving({ job: x, p })}
                     onReset={(p) => void act(() => resetPassenger(p.id))} />
@@ -444,7 +467,7 @@ export function ShuttlePage() {
             <div className="flex flex-col gap-3">
               {driverOrder(visible, onlyMine ? profile?.id : null).map((j) => (
                 <DriverCard key={j.id} job={j} busy={busy}
-                  onStatus={advance} />
+                  onStatus={advance} onUndo={reopen} />
               ))}
             </div>
           )}

@@ -3,6 +3,15 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.39.0 – 25.11.2026
+
+### Neu
+- **Shuttle: Fahrt wieder öffnen.** Versehentlich auf „Erledigt“ getippt? In der Dispo und in der Fahreransicht hat jede erledigte Fahrt jetzt den Knopf **Wieder öffnen**; in der Dispo zusätzlich **Nicht losgefahren** bei laufenden Fahrten. Die Fahrt geht zurück auf „Eingeteilt“ (ohne Fahrer „Geplant“), Fahrer und Fahrgäste bleiben
+- **Fahrzeug: letzte Bewegung rückgängig.** In der Karte „Ort & Schlüssel“ lässt sich die jüngste Einlagerung oder Umsetzung nach Rückfrage zurücknehmen, z. B. „Rückgängig: Eingelagert B1-01“. Das Fahrzeug steht danach wieder auf dem alten Platz bzw. ohne Stellplatz und Schlüsselfach, der Platz ist wieder frei, der Status geht auf den Stand davor (Eingelagert → Gebucht). Nur die letzte Bewegung, keine Übergabe; ist der alte Platz inzwischen belegt, kommt ein Hinweis. Im Verlauf steht „Rückgängig gemacht: …“
+
+### Datenbank
+- Migration `20261125000100_undo_last_movement.sql`: Funktion `undo_last_movement` (nur Mitarbeitende), rein additiv
+
 ## 0.38.1 – 25.11.2026
 
 ### Behoben
