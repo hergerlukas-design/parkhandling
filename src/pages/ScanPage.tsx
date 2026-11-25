@@ -11,10 +11,9 @@ import {
   hasKeySlot,
   keyHint,
   moveVehicle,
-  listCheckinCandidates,
   listHandoverCandidates,
+  listScanCandidates,
   parseScan,
-  type CheckinCandidate,
   type ParkedVehicle,
 } from '../lib/siteplan'
 import { findBookingByScan, ticketStep, type ScannedBooking } from '../lib/ticket'
@@ -50,7 +49,7 @@ export function ScanPage() {
   const [intakeOffer, setIntakeOffer] = useState<ScannedBooking | null>(null)
   const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
-  const [results, setResults] = useState<(CheckinCandidate | ParkedVehicle)[] | null>(null)
+  const [results, setResults] = useState<ParkedVehicle[] | null>(null)
   // Geparktes Fahrzeug gescannt: Übergeben oder Umparken?
   const [vehicle, setVehicle] = useState<ParkedVehicle | null>(null)
   // Umparken: erst Ziel wählen, bei „Anderer Parkplatz“ den neuen Platz scannen
@@ -78,7 +77,7 @@ export function ScanPage() {
     }
     let cancelled = false
     const t = setTimeout(() => {
-      const load = handover ? listHandoverCandidates(text) : listCheckinCandidates(text)
+      const load = handover ? listHandoverCandidates(text) : listScanCandidates(text)
       load.then((list) => !cancelled && setResults(list)).catch((e: Error) => !cancelled && setError(e.message))
     }, 250)
     return () => {
@@ -88,7 +87,7 @@ export function ScanPage() {
   }, [search, handover])
 
   /** Treffer zum Parken: Annahmeprotokoll, ist es schon abgeschlossen, weiter zum Parken */
-  async function startIntake(b: CheckinCandidate) {
+  async function startIntake(b: { id: string }) {
     setBusy(true)
     setError(null)
     try {
@@ -304,26 +303,31 @@ export function ScanPage() {
             autoComplete="off"
           />
           {results && results.length === 0 && (
-            <p className="text-sm text-muted">{handover ? 'Kein Fahrzeug auf dem Gelände gefunden.' : 'Keine offene Buchung gefunden.'}</p>
+            <p className="text-sm text-muted">{handover ? 'Kein Fahrzeug auf dem Gelände gefunden.' : 'Keine passende Buchung gefunden.'}</p>
           )}
           {results && results.length > 0 && (
             <ul className="flex flex-col gap-2">
               {results.map((b) => (
                 <li key={b.id}>
                   <button type="button" disabled={busy}
-                    onClick={() => (handover ? navigate(handoverPath(b.id)) : void startIntake(b as CheckinCandidate))}
+                    onClick={() => {
+                      if (handover) navigate(handoverPath(b.id))
+                      // steht schon bei uns: Übergeben oder Umparken; sonst Annahme
+                      else if (b.location_code) setVehicle(b)
+                      else void startIntake(b)
+                    }}
                     className="touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left hover:bg-ground disabled:opacity-60">
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">{b.customer_name}</span>
                       <span className="block truncate text-sm text-subtle">
                         <span className="font-mono">{b.plate}</span> ·{' '}
-                        {'location_code' in b
+                        {b.location_code || handover
                           ? `${b.location_code ?? 'unterwegs'} · Abholung ${formatPickup(b.end_at)}`
                           : formatPeriod(b.start_at, b.end_at)}
                         {b.external_ref ? ` · ${b.external_ref}` : ''}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-semibold text-accent">{handover ? 'Übergabe' : 'Annahme'}</span>
+                    <span className="shrink-0 text-sm font-semibold text-accent">{handover ? 'Übergabe' : b.location_code ? 'Geparkt' : 'Annahme'}</span>
                   </button>
                 </li>
               ))}

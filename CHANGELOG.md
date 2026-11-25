@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.50.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Suche im Scanner findet alle offenen Buchungen:** auch Fahrzeuge, die schon geparkt sind. Treffer zeigen **Annahme** (noch nicht angenommen bzw. geparkt) oder **Geparkt** mit Parkplatz und Abholung. Ein geparktes Fahrzeug öffnet wie beim Scannen die Frage **Fahrzeug übergeben** oder **Umparken**; die übrigen führen zur Annahme
+- Im Modus „Fahrzeug übergeben“ zeigt die Suche weiterhin nur Fahrzeuge auf dem Gelände
+
 ## 0.49.0 – 25.11.2026
 
 ### Neu (Scanner)
