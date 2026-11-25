@@ -151,7 +151,11 @@ export async function listCheckinCandidates(search = ''): Promise<CheckinCandida
   const text = search.trim()
   if (text) {
     const plate = text.toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g, '')
-    q = q.or(`plate_normalized.like.${plate}%,customer_name.ilike.%${text.replace(/[%,()"]/g, ' ')}%,external_ref.ilike.${text.replace(/[%,()"]/g, ' ')}%`)
+    const clean = text.replace(/[%,()"]/g, ' ')
+    const filters = [`customer_name.ilike.%${clean}%`, `external_ref.ilike.${clean}%`]
+    // Kennzeichen auch ohne Stadtkürzel finden („AB1234“ in „MAB1234“); nur Buchstaben/Ziffern
+    if (plate) filters.unshift(`plate_normalized.like.%${plate}%`)
+    q = q.or(filters.join(','))
   }
   const { data, error } = await q
   if (error) throw new Error(error.message)

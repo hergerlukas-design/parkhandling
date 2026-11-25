@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { QrScanner } from '../components/QrScanner'
-import { ErrorList } from '../components/ui'
-import { findBookingAt, hasKeySlot, parseScan } from '../lib/siteplan'
+import { ErrorList, TextInput } from '../components/ui'
+import { formatPeriod } from '../lib/due'
+import { getProtocol } from '../lib/protocols'
+import { findBookingAt, hasKeySlot, listCheckinCandidates, parseScan, type CheckinCandidate } from '../lib/siteplan'
 import { findBookingByScan, ticketStep } from '../lib/ticket'
+
+/** Mindestlänge für die Buchungssuche */
+const MIN_SEARCH = 2
 
 /**
  * Zentraler Scan (Bottom-Bar / Kopfzeile):
@@ -11,11 +16,47 @@ import { findBookingByScan, ticketStep } from '../lib/ticket'
  *  Stellplatz/Fach frei    → Einparken auf diesem Platz (Fahrzeug zuordnen, bestätigen)
  *  Arbeits-/Pufferplatz    → Lageplan mit ausgewähltem Platz
  *  Kunden-QR / Buchungsnr.  → Annahme (Annahmeprotokoll, dann Einchecken) bzw. Fahrzeug
+ * Darunter die Suche nach Name, Kennzeichen oder Buchungsnummer (z. B. Telefonbuchung ohne QR-Code):
+ * ein Treffer startet ebenfalls die Annahme.
  */
 export function ScanPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [search, setSearch] = useState('')
+  const [results, setResults] = useState<CheckinCandidate[] | null>(null)
+
+  // Buchungen suchen, die noch angenommen bzw. eingeparkt werden können
+  useEffect(() => {
+    const text = search.trim()
+    if (text.length < MIN_SEARCH) {
+      setResults(null)
+      return
+    }
+    let cancelled = false
+    const t = setTimeout(() => {
+      listCheckinCandidates(text)
+        .then((list) => !cancelled && setResults(list))
+        .catch((e: Error) => !cancelled && setError(e.message))
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [search])
+
+  /** Treffer gewählt: Annahmeprotokoll, ist es schon abgeschlossen, weiter zum Einparken */
+  async function startIntake(b: CheckinCandidate) {
+    setBusy(true)
+    setError(null)
+    try {
+      const intake = await getProtocol(b.id, 'intake')
+      navigate(intake?.status === 'final' ? `/einchecken?booking=${b.id}` : `/protokoll/annahme/${b.id}`)
+    } catch (e) {
+      setError((e as Error).message)
+      setBusy(false)
+    }
+  }
 
   async function onResult(raw: string) {
     if (busy) return
@@ -65,13 +106,42 @@ export function ScanPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 md:p-6">
       <h1 className="text-2xl font-semibold">Scannen</h1>
-      <QrScanner onResult={(t) => void onResult(t)} label="Stellplatz- oder Kunden-QR scannen" paused={busy} />
+      <QrScanner onResult={(t) => void onResult(t)} label="Kunden-QR-Code scannen" paused={busy} manualInput={false} />
       <ErrorList errors={error ? [error] : []} />
-      <p className="text-sm text-subtle">
-        Ein belegter Stellplatz öffnet das Fahrzeug zum Auschecken oder Umsetzen. Ein freier Stellplatz startet das
-        Einparken: Fahrzeug zuordnen und bestätigen. Arbeits- und Pufferplätze öffnen den Lageplan.
-        Der QR-Code aus der Buchungsbestätigung des Kunden (oder die Buchungsnummer PH…) startet die Annahme.
-      </p>
+
+      <section className="flex flex-col gap-2" aria-label="Buchung suchen">
+        <h2 className="text-sm font-semibold">Kein QR-Code? Buchung suchen</h2>
+        <TextInput
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Name, Kennzeichen oder Buchungsnummer"
+          aria-label="Buchung suchen nach Name, Kennzeichen oder Buchungsnummer"
+          autoComplete="off"
+        />
+        {results && results.length === 0 && (
+          <p className="text-sm text-muted">Keine offene Buchung gefunden.</p>
+        )}
+        {results && results.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {results.map((b) => (
+              <li key={b.id}>
+                <button type="button" disabled={busy} onClick={() => void startIntake(b)}
+                  className="touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left hover:bg-ground disabled:opacity-60">
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{b.customer_name}</span>
+                    <span className="block truncate text-sm text-subtle">
+                      <span className="font-mono">{b.plate}</span> · {formatPeriod(b.start_at, b.end_at)}
+                      {b.external_ref ? ` · ${b.external_ref}` : ''}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-accent">Annahme</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

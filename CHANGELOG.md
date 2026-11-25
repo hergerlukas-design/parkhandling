@@ -5,6 +5,11 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 
 ## 0.42.0 – 25.11.2026
 
+### Geändert (Scan-Seite)
+- **Scan-Seite aufgeräumt:** über der Kamera nur noch „Kunden-QR-Code scannen“, die lange Erklärung und das Feld für Codes entfallen. Stellplatz-QR-Codes werden weiter erkannt
+- **Buchung suchen** unter der Kamera, für Kunden ohne QR-Code (z. B. Telefonbuchung): Suche nach **Name**, **Kennzeichen** (auch ohne Stadtkürzel, z. B. „AB 1234“) oder **Buchungsnummer**. Angezeigt werden Buchungen, die noch nicht eingeparkt sind. Ein Tipp auf einen Treffer öffnet das **Annahmeprotokoll** (ist es schon abgeschlossen, direkt das Einparken)
+- Kennzeichensuche beim Einchecken findet ebenfalls Teile des Kennzeichens
+
 ### Geändert (Annahme- und Übergabeprotokoll, im Scanner und im Dashboard gleich)
 - **Basisdaten: Kennzeichen statt FIN.** Das Kennzeichen ist aus der Buchung vorbelegt und lässt sich korrigieren (Pflicht beim Abschließen). Eine Korrektur übernimmt auch die Buchung (Historie: Quelle „Protokoll“). Die FIN wird nicht mehr erfasst; ältere Protokolle behalten sie in der Datenbank
 - **Zustand: Antrieb wählen** mit drei Knöpfen **Verbrenner · Hybrid · Elektro** (aus der Buchung vorbelegt, Pflicht beim Abschließen; eine Änderung übernimmt auch die Buchung). Danach:
