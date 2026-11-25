@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.38.1 – 25.11.2026
+
+### Behoben
+- **Buchungsdetails ragten auf dem Handy rechts über den Rand**, wenn ein Wert lang und ohne Leerzeichen war (z. B. E-Mail-Adresse bei Rechnerbuchungen). Lange Werte werden jetzt umbrochen, die Karte bleibt in Bildschirmbreite. Gleiche Absicherung für die Einstellungen
+
 ## 0.38.0 – 24.11.2026
 
 ### Neu
