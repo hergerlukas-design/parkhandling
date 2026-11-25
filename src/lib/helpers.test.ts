@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { accessExpired, isHelperOnly } from './auth'
-import { codeFromHash, helperLink } from './helpers'
+import { codeFromHash, helperLink, scannerLink, validPin } from './helpers'
 import { helperMayOpen } from '../components/navigation'
 
 const code = 'a'.repeat(64)
@@ -13,6 +13,11 @@ describe('Aushilfen-Freischaltung', () => {
     expect(codeFromHash(`#${code.toUpperCase()}`)).toBe(code)
     expect(codeFromHash('#kurz')).toBeNull()
     expect(codeFromHash('')).toBeNull()
+  })
+  it('prüft die Scanner-PIN und baut die Adresse', () => {
+    expect(validPin('0815')).toBe(true)
+    for (const p of ['123', '12345', '12a4', '']) expect(validPin(p)).toBe(false)
+    expect(scannerLink('https://parkhandling.fly.dev')).toBe('https://parkhandling.fly.dev/scanner')
   })
   it('erkennt reine Aushilfen', () => {
     expect(isHelperOnly({ role: 'staff', roles: ['helper'] })).toBe(true)

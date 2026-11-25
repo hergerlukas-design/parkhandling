@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AppShell } from './components/AppShell'
 import { AuthGate } from './components/AuthGate'
 import { AuthProvider } from './lib/auth'
@@ -34,6 +34,7 @@ export function App() {
               <Route path="shuttle" element={<ShuttlePage />} />
               <Route path="scan" element={<ScanPage />} />
               <Route path="einchecken" element={<CheckinPage />} />
+              <Route path="scanner" element={<Navigate to="/scan" replace />} />
               <Route path="annahme" element={<TicketPage mode="intake" />} />
               <Route path="rueckgabe" element={<TicketPage mode="handover" />} />
               <Route path="protokoll/:type/:bookingId" element={<ProtocolPage />} />

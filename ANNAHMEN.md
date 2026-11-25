@@ -213,5 +213,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 
 ## Aushilfen (0.40.0)
 - [BELEGT 25.11.2026] Aushilfen nutzen ihr eigenes Handy ohne Registrierung; freischalten darf jeder mit Rolle Personal (oder Admin); Zugang bis Tagesende (Lukas)
+- [BELEGT 25.11.2026] Scanner-Zugang (/scanner) mit gemeinsamer 4-stelliger PIN und Namen; PIN setzen nur Admins; Zugang bis Tagesende, ein PIN-Wechsel beendet laufende Zugänge nicht; QR-Freischaltung gibt Zugang zum ganzen Dashboard (Lukas)
+- [ANNAHME] Sperre gegen Durchprobieren der PIN: je Gerät 5 Fehlversuche in 15 Minuten, insgesamt 20 je Stunde (bei 4 Ziffern bleibt ein Restrisiko; PIN regelmäßig wechseln)
+- [ANNAHME] Tageszugänge per QR (Rolle staff mit Ablaufdatum) dürfen selbst niemanden freischalten oder sperren
 - [ANNAHME] Freischalt-Code 15 Minuten gültig und nur einmal verwendbar; Anmeldung über anonyme Supabase-Anmeldung
 - [ANNAHME] Aushilfen haben für die Datenrechte dieselben Lese-/Schreibrechte wie Personal (nötig für Protokolle, Fotos, Einchecken); eingeschränkt ist die App-Oberfläche (nur Scannen, Annahme, Rückgabe, Einchecken). Über die Schnittstelle könnten sie während ihrer Schicht Buchungsdaten lesen
