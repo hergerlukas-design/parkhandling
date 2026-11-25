@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.49.0 – 25.11.2026
+
+### Neu (Scanner)
+- **Annahme direkt aus dem Übergabe-Modus:** Wird im Modus „Fahrzeug übergeben“ der Kunden-QR eines Fahrzeugs gescannt, das noch nicht angenommen ist, zeigt der Scanner Kennzeichen und Buchung mit dem Knopf **Fahrzeug annehmen**. Er öffnet das Annahmeprotokoll (danach wie gewohnt Parken). Annahme und Übergabe gehen so mit demselben Scanner, ohne den Modus zu wechseln
+
 ## 0.48.0 – 25.11.2026
 
 ### Geändert (Scanner)

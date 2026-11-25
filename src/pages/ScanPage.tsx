@@ -17,7 +17,7 @@ import {
   type CheckinCandidate,
   type ParkedVehicle,
 } from '../lib/siteplan'
-import { findBookingByScan, ticketStep } from '../lib/ticket'
+import { findBookingByScan, ticketStep, type ScannedBooking } from '../lib/ticket'
 
 /** Mindestlänge für die Buchungssuche */
 const MIN_SEARCH = 2
@@ -46,6 +46,8 @@ export function ScanPage() {
   const mode: Mode = params.get('modus') === 'uebergabe' ? 'uebergabe' : 'parken'
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // Übergabe-Modus, Fahrzeug aber noch nicht angenommen: Annahme direkt hier anbieten
+  const [intakeOffer, setIntakeOffer] = useState<ScannedBooking | null>(null)
   const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<(CheckinCandidate | ParkedVehicle)[] | null>(null)
@@ -62,6 +64,7 @@ export function ScanPage() {
     setNotice(null)
     setVehicle(null)
     setRelocate(null)
+    setIntakeOffer(null)
     setSearch('')
     setResults(null)
   }
@@ -146,7 +149,7 @@ export function ScanPage() {
       await relocateTo(scan.code, 'Umparken')
       return
     }
-    if (vehicle) return
+    if (vehicle || intakeOffer) return
     setError(null)
     setNotice(null)
     if (scan.kind === 'unknown') {
@@ -161,6 +164,11 @@ export function ScanPage() {
           setError(scan.kind === 'ticket'
             ? 'Zu diesem Kunden-QR-Code gibt es keine Buchung. Bitte über Name, Kennzeichen oder Buchungsnummer suchen.'
             : scan.kind === 'booking_id' ? 'Buchung zu diesem QR-Code nicht gefunden.' : `Buchung ${scan.code} nicht gefunden.`)
+          return
+        }
+        // Übergabe-Modus, aber noch nicht angenommen: gleich hier annehmen statt Scanner wechseln
+        if (handover && !booking.intake_final && !booking.has_location && !['cancelled', 'completed'].includes(booking.status)) {
+          setIntakeOffer(booking)
           return
         }
         const step = ticketStep(booking, handover ? 'handover' : 'intake')
@@ -197,7 +205,29 @@ export function ScanPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 md:p-6">
       <h1 className="text-2xl font-semibold">{handover ? 'Fahrzeug übergeben' : 'Scannen'}</h1>
-      {(!vehicle || relocate === 'scan') && (
+      {intakeOffer && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-warn bg-warn-soft p-4 text-warn-ink" aria-label="Noch nicht angenommen">
+          <div>
+            <div className="font-mono text-3xl font-bold">{intakeOffer.plate}</div>
+            <p className="mt-1 text-sm">
+              ist noch nicht angenommen{intakeOffer.external_ref ? ` (Buchung ${intakeOffer.external_ref})` : ''}. Übergeben geht erst
+              nach der Annahme.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => {
+            const step = ticketStep(intakeOffer, 'intake')
+            if ('error' in step) setError(step.error)
+            else navigate(step.path)
+          }}>
+            Fahrzeug annehmen
+          </Button>
+          <button type="button" className="touch-target self-start text-sm underline" onClick={() => setIntakeOffer(null)}>
+            Abbrechen, weiter scannen
+          </button>
+        </section>
+      )}
+
+      {!intakeOffer && (!vehicle || relocate === 'scan') && (
         <QrScanner
           onResult={(t) => void onResult(t)}
           label={vehicle ? `Neuen Parkplatz für ${vehicle.plate} scannen` : 'Kunden-QR oder Parkplatz-QR scannen'}
@@ -260,7 +290,7 @@ export function ScanPage() {
         </section>
       )}
 
-      {!vehicle && (
+      {!vehicle && !intakeOffer && (
         <section className="flex flex-col gap-2" aria-label="Buchung suchen">
           <h2 className="text-sm font-semibold">
             {handover ? 'Kein QR-Code? Fahrzeug suchen' : 'Kein QR-Code? Buchung suchen'}
@@ -302,7 +332,7 @@ export function ScanPage() {
         </section>
       )}
 
-      {!vehicle && (
+      {!vehicle && !intakeOffer && (
         handover ? (
           <Button onClick={() => switchMode('parken')}>Zurück zu Annahme und Parken</Button>
         ) : (
