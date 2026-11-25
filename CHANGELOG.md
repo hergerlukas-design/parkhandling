@@ -3,6 +3,22 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.42.0 – 25.11.2026
+
+### Geändert (Annahme- und Übergabeprotokoll, im Scanner und im Dashboard gleich)
+- **Basisdaten: Kennzeichen statt FIN.** Das Kennzeichen ist aus der Buchung vorbelegt und lässt sich korrigieren (Pflicht beim Abschließen). Eine Korrektur übernimmt auch die Buchung (Historie: Quelle „Protokoll“). Die FIN wird nicht mehr erfasst; ältere Protokolle behalten sie in der Datenbank
+- **Zustand: Antrieb wählen** mit drei Knöpfen **Verbrenner · Hybrid · Elektro** (aus der Buchung vorbelegt, Pflicht beim Abschließen; eine Änderung übernimmt auch die Buchung). Danach:
+  - Verbrenner: **Tankstand** in Achteln
+  - Hybrid: **Tankstand** in Achteln und **Ladestand** in Prozent
+  - Elektro: nur **Ladestand** in Prozent
+- **Ladestand als Regler** 0–100 % statt Textfeld
+- Übergabeprotokoll übernimmt Kennzeichen und Antrieb aus der Annahme
+- PDF: Zeile **Antrieb** statt VIN; Kennzeichen aus dem Protokoll; Tank- bzw. Ladestand nur passend zum Antrieb
+- Fahrzeug-Detail, Historie: Änderungen aus dem Protokoll mit Quelle „Protokoll“, Antrieb lesbar (z. B. „Elektro“)
+
+### Datenbank
+- Migration `20261125000400_protocol_vehicle.sql`: `protocols.plate`, `protocols.fuel_type`, Ladestand 0–100, Trigger `protocols_sync_vehicle` (Kennzeichen/Antrieb → Buchung)
+
 ## 0.41.0 – 25.11.2026
 
 ### Neu

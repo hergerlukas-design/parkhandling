@@ -17,8 +17,10 @@ import { loadBookingTrips, tripLabel, TRANSPORT_STATUS_LABEL, TRANSPORT_TYPE_LAB
 import {
   AREA_LABEL,
   BOOKING_STATUS_LABEL,
+  FUEL_TYPE_LABEL,
   LANGUAGE_LABEL,
   PARKING_TYPE_LABEL,
+  type FuelType,
   type LocationArea,
   type Task,
 } from '../types/domain'
@@ -57,6 +59,7 @@ const SOURCE_LABEL: Record<string, string> = {
   landing: 'Online-Buchung (Website)',
   website: 'Website-Rechner',
   carhandling: 'Rechner (CarHandling-Backend)',
+  protocol: 'Protokoll',
 }
 
 function fmtValue(key: string, v: unknown): string {
@@ -64,6 +67,7 @@ function fmtValue(key: string, v: unknown): string {
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatDateTime(v)
   if (key === 'status') return BOOKING_STATUS_LABEL[v as keyof typeof BOOKING_STATUS_LABEL] ?? String(v)
   if (key === 'price_total') return formatMoney(Number(v))
+  if (key === 'fuel_type') return FUEL_TYPE_LABEL[v as FuelType] ?? String(v)
   return String(v)
 }
 

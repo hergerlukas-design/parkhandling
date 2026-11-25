@@ -8,7 +8,6 @@ import {
   formFromRow,
   formatMileage,
   normalizeDamage,
-  parseChargePercent,
   parseMileage,
   pickSlotUrls,
   validateForFinalize,
@@ -71,10 +70,18 @@ describe('formFromRow', () => {
     expect(f.damages).toEqual([])
   })
 
-  it('übernimmt bei der Übergabe die FIN aus der Annahme', () => {
-    const intake = { vin: 'WVWZZZ1KZ6W000001' } as never
+  it('belegt Kennzeichen und Antrieb aus der Buchung vor', () => {
+    const f = formFromRow(null, { type: 'intake', booking, inspectorName: 'M1' })
+    expect(f.plate).toBe('M-PF 1001')
+    expect(f.fuel_type).toBe('combustion')
+    expect(formFromRow(null, { type: 'intake', booking: { ...booking, fuel_type: null }, inspectorName: 'M1' }).fuel_type).toBeNull()
+  })
+
+  it('übernimmt bei der Übergabe Kennzeichen und Antrieb aus der Annahme', () => {
+    const intake = { plate: 'M-PF 1002', fuel_type: 'hybrid' } as never
     const f = formFromRow(null, { type: 'handover', booking, inspectorName: 'M2', intake })
-    expect(f.vin).toBe('WVWZZZ1KZ6W000001')
+    expect(f.plate).toBe('M-PF 1002')
+    expect(f.fuel_type).toBe('hybrid')
     expect(f.location_text).toBe('Park & Fly Flughafen München → Erika Test')
   })
 
@@ -86,7 +93,7 @@ describe('formFromRow', () => {
 
 describe('validateForFinalize', () => {
   it('verlangt KM, Tank und beide Unterschriften', () => {
-    const errors = validateForFinalize(form({ mileage: '', fuel_level: null }), 'combustion', { staff: false, customer: false })
+    const errors = validateForFinalize(form({ mileage: '', fuel_level: null }), { staff: false, customer: false })
     expect(errors).toEqual([
       'Kilometerstand fehlt oder ist ungültig',
       'Tankstand fehlt',
@@ -97,19 +104,23 @@ describe('validateForFinalize', () => {
 
   it('verlangt bei E-Fahrzeugen den Ladestand statt des Tankstands', () => {
     const sigs = { staff: true, customer: true }
-    expect(validateForFinalize(form({ fuel_level: null }), 'electric', sigs)).toEqual(['Ladestand fehlt oder ist ungültig (1–100 %)'])
-    expect(validateForFinalize(form({ fuel_level: null, charge_level: 80 }), 'electric', sigs)).toEqual([])
+    expect(validateForFinalize(form({ fuel_type: 'electric', fuel_level: null }), sigs)).toEqual(['Ladestand fehlt'])
+    expect(validateForFinalize(form({ fuel_type: 'electric', fuel_level: null, charge_level: 0 }), sigs)).toEqual([])
   })
 
   it('verlangt bei Hybrid Tank- und Ladestand', () => {
-    const errors = validateForFinalize(form({ fuel_level: null }), 'hybrid', { staff: true, customer: true })
-    expect(errors).toEqual(['Tankstand fehlt', 'Ladestand fehlt oder ist ungültig (1–100 %)'])
+    const errors = validateForFinalize(form({ fuel_type: 'hybrid', fuel_level: null }), { staff: true, customer: true })
+    expect(errors).toEqual(['Tankstand fehlt', 'Ladestand fehlt'])
+  })
+
+  it('verlangt Antrieb und Kennzeichen', () => {
+    const errors = validateForFinalize(form({ fuel_type: null, plate: ' ' }), { staff: true, customer: true })
+    expect(errors).toEqual(['Kennzeichen fehlt', 'Antrieb wählen (Verbrenner, Hybrid oder Elektro)'])
   })
 
   it('verlangt vollständige Schadensangaben', () => {
     const errors = validateForFinalize(
       form({ damages: [{ id: 'a', pos: 'Dach', desc: '  ' }, { id: 'b', pos: '', desc: 'Delle' }] }),
-      'combustion',
       { staff: true, customer: true },
     )
     expect(errors).toEqual(['Schaden 1: Position und Beschreibung angeben', 'Schaden 2: Position und Beschreibung angeben'])
@@ -120,18 +131,6 @@ describe('normalizeDamage', () => {
   it('führt ältere Einträge mit Art und Intensität in Freitext über', () => {
     expect(normalizeDamage({ id: 'x', pos: 'Dach', type: 'Kratzer', int: 'Mittel' })).toEqual({ id: 'x', pos: 'Dach', desc: 'Kratzer, Mittel' })
     expect(normalizeDamage({ id: 'y', pos: 'Dach', desc: 'Delle' })).toEqual({ id: 'y', pos: 'Dach', desc: 'Delle' })
-  })
-})
-
-describe('parseChargePercent', () => {
-  it('akzeptiert ganze Zahlen von 1 bis 100, auch mit %', () => {
-    expect(parseChargePercent('80')).toBe(80)
-    expect(parseChargePercent(' 100 % ')).toBe(100)
-    expect(parseChargePercent('1')).toBe(1)
-  })
-
-  it('lehnt 0, über 100, Dezimalzahlen und Text ab', () => {
-    for (const v of ['', '0', '101', '55,5', 'abc', '-5']) expect(parseChargePercent(v)).toBeNull()
   })
 })
 
@@ -189,6 +188,18 @@ describe('pickSlotUrls / buildPdfData', () => {
     expect(urls).toEqual({ zusatz_0: 's', anzeige: 'a', zusatz_1: 'z' })
     const data = buildPdfData({ type: 'intake', status: 'final', form: form(), booking, slotUrls: urls, inspectionDate: '2026-10-06T08:00:00Z' })
     expect(data.photos.anzeige).toBe('a')
+  })
+
+  it('übernimmt Kennzeichen und Antrieb ins PDF, Tank/Ladestand passend zum Antrieb', () => {
+    const base = { type: 'intake' as const, status: 'final' as const, booking, slotUrls: {}, inspectionDate: '2026-10-06T08:00:00Z' }
+    const e = buildPdfData({ ...base, form: form({ plate: 'M-XY 9', fuel_type: 'electric', fuel_level: 5, charge_level: 70 }) })
+    expect(e.license_plate).toBe('M-XY 9')
+    expect(e.drive).toBe('Elektro')
+    expect([e.fuel_level, e.charge_level]).toEqual([null, 70])
+    const c = buildPdfData({ ...base, form: form({ fuel_type: 'combustion', fuel_level: 5, charge_level: 70 }) })
+    expect([c.drive, c.fuel_level, c.charge_level]).toEqual(['Verbrenner', 5, null])
+    const h = buildPdfData({ ...base, form: form({ fuel_type: 'hybrid', fuel_level: 5, charge_level: 70 }) })
+    expect([h.drive, h.fuel_level, h.charge_level]).toEqual(['Hybrid', 5, 70])
   })
 
   it('beschriftet das Anzeige-Foto nach Antriebsart', () => {

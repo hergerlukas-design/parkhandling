@@ -78,7 +78,7 @@ export interface PdfLabels {
   title_annahme: string; title_transfer: string; watermark: string
   section1: string; section2: string; section3: string; section4: string
   section5: string; section6: string; section7: string; extra_photo: string
-  plate: string; brand_model: string; vin: string; creator: string
+  plate: string; brand_model: string; drive: string; creator: string
   odometer: string; location: string; receiver: string; from: string; to: string
   transfer_type_label: string; conditions: string; fuel: string; battery: string
   condition_header: string; equipment_header: string
@@ -99,7 +99,7 @@ const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
     section3: '3. Checkliste', section4: '4. Bemerkungen',
     section5: '5. Fotodokumentation', section6: '6. Erfasste Schäden',
     section7: '7. Weitere Fotos', extra_photo: 'Foto',
-    plate: 'Kennzeichen', brand_model: 'Marke / Modell', vin: 'VIN',
+    plate: 'Kennzeichen', brand_model: 'Marke / Modell', drive: 'Antrieb',
     creator: 'Ersteller', odometer: 'KM-Stand', location: 'Standort',
     receiver: 'Empfänger', from: 'Von', to: 'Nach',
     transfer_type_label: 'Art der Überführung', conditions: 'Bedingungen',
@@ -123,7 +123,7 @@ const PDF_LABELS: Record<'de' | 'en', PdfLabels> = {
     section3: '3. Checklist', section4: '4. Remarks',
     section5: '5. Photo Documentation', section6: '6. Recorded Damages',
     section7: '7. Additional Photos', extra_photo: 'Photo',
-    plate: 'License Plate', brand_model: 'Make / Model', vin: 'VIN',
+    plate: 'License Plate', brand_model: 'Make / Model', drive: 'Drive',
     creator: 'Inspector', odometer: 'Mileage', location: 'Location',
     receiver: 'Receiver', from: 'From', to: 'To',
     transfer_type_label: 'Transfer Type', conditions: 'Conditions',
@@ -265,13 +265,14 @@ export interface PdfData {
   odometer: number
   /** Tankstand in Segmenten 0–8, null = nicht erfasst */
   fuel_level: number | null
-  /** Ladestand in Prozent 1–100, null = nicht erfasst */
+  /** Ladestand in Prozent 0–100, null = nicht erfasst */
   charge_level: number | null
   remarks: string
   inspection_date: string
   license_plate: string
   brand_model: string
-  vin: string
+  /** Antrieb (Verbrenner, Hybrid, Elektro); ersetzt seit 0.42.0 die FIN */
+  drive: string
   /** Supabase Storage public URLs keyed by photo role. */
   photos: Record<string, string>
   conditions: string[]
@@ -554,7 +555,7 @@ function drawSection1Basisdaten(
     // 2×3 grid
     const rows: [string, string, string, string][] = [
       [_L.plate, data.license_plate,  _L.brand_model, data.brand_model],
-      [_L.vin,   data.vin,            _L.creator,     data.inspector_name],
+      [_L.drive, data.drive,          _L.creator,     data.inspector_name],
       [_L.odometer, kmText(data.odometer), _L.location, data.location],
     ]
     for (const [l1, v1, l2, v2] of rows) {
@@ -565,7 +566,7 @@ function drawSection1Basisdaten(
   } else {
     // 2×2 + extra rows
     const rows: [string, string, string, string][] = [
-      [_L.plate,       data.license_plate,    _L.vin,      data.vin],
+      [_L.plate,       data.license_plate,    _L.drive,    data.drive],
       [_L.brand_model, data.brand_model,      _L.odometer, kmText(data.odometer)],
       [_L.creator,     data.inspector_name,   _L.receiver, data.receiver_name ?? ''],
       [_L.from,        von,                   _L.to,       nach],
