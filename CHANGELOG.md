@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.44.0 – 25.11.2026
+
+### Geändert
+- **Website-Design ist jetzt die Voreinstellung** auf allen Geräten, auch für Scanner und Tageszugänge. Wer unter Einstellungen → Allgemein → Darstellung ausdrücklich **Hell** gewählt hat, behält das. Die helle Darstellung heißt jetzt „Hell“
+- Browser- und App-Leiste (PWA) in den Farben des Website-Designs
+
 ## 0.43.0 – 25.11.2026
 
 ### Neu

@@ -2,15 +2,18 @@ import { createStore } from './store'
 
 /**
  * Darstellung der App, je Gerät gespeichert.
- * - `standard`: helles Layout aus dem Klick-Prototyp (mockup/)
- * - `website`: Alternativ-Modus im Look von parkhandling.de und dem Rechner
+ * - `website`: Voreinstellung (seit 0.44.0), Look von parkhandling.de und dem Rechner
  *   (dunkelgrau, Montserrat/Mulish, eckig, Rot als Akzent, Buttons mit Reifenprofil)
+ * - `standard`: helles Layout aus dem Klick-Prototyp (mockup/), nur wenn ausdrücklich gewählt
  */
 export type Appearance = 'standard' | 'website'
 
+/** Ohne gespeicherte Wahl gilt das Website-Design */
+export const DEFAULT_APPEARANCE: Appearance = 'website'
+
 export const APPEARANCE_OPTIONS: { id: Appearance; label: string; text: string }[] = [
-  { id: 'standard', label: 'Standard', text: 'Hell, wie bisher' },
-  { id: 'website', label: 'Website-Design', text: 'Dunkel, wie parkhandling.de und der Rechner' },
+  { id: 'website', label: 'Website-Design', text: 'Dunkel, wie parkhandling.de und der Rechner (Standard)' },
+  { id: 'standard', label: 'Hell', text: 'Helles Layout wie bis Version 0.43' },
 ]
 
 const STORAGE_KEY = 'pf-appearance'
@@ -19,18 +22,19 @@ const STORAGE_KEY = 'pf-appearance'
 const THEME_COLOR: Record<Appearance, string> = { standard: '#1a1d21', website: '#2b2b2d' }
 
 export function parseAppearance(value: string | null | undefined): Appearance {
-  return value === 'website' ? 'website' : 'standard'
+  if (value === 'website' || value === 'standard') return value
+  return DEFAULT_APPEARANCE
 }
 
 function readStored(): Appearance {
   try {
     return parseAppearance(localStorage.getItem(STORAGE_KEY))
   } catch {
-    return 'standard'
+    return DEFAULT_APPEARANCE
   }
 }
 
-export const appearanceStore = createStore<Appearance>(typeof window === 'undefined' ? 'standard' : readStored())
+export const appearanceStore = createStore<Appearance>(typeof window === 'undefined' ? DEFAULT_APPEARANCE : readStored())
 
 /** Setzt das Attribut am <html>-Element; alle Farben hängen daran (index.css) */
 export function applyAppearance(value: Appearance = appearanceStore.get()) {
