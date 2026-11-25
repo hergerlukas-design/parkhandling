@@ -2,7 +2,7 @@ import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
-import { isDriverOnly, isHelperOnly, signOut, useAuth } from '../lib/auth'
+import { isDayAccess, isDriverOnly, isHelperOnly, signOut, useAuth } from '../lib/auth'
 import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, HELPER_ITEMS, helperMayOpen, NAV_ITEMS, SCAN_ENABLED, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
@@ -38,7 +38,7 @@ export function AppShell() {
 
   // Reiner Fahrer: alles außer Shuttle und Einstellungen führt zur Shuttle-Ansicht
   if (driverOnly && !driverMayOpen(pathname)) return <Navigate to="/shuttle" replace />
-  // Aushilfe: nur Scannen, Annahme, Rückgabe, Einchecken
+  // Scanner-Zugang (PIN): nur Scannen, Annahme, Rückgabe, Einchecken
   if (helperOnly && !helperMayOpen(pathname)) return <Navigate to="/scan" replace />
 
   return (
@@ -53,9 +53,11 @@ export function AppShell() {
           {WEEKDAY.format(now).replace('.', '')}, {formatDate(now)}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          {helperOnly && (
+          {isDayAccess(profile) && (
             <span className="flex items-center gap-2 text-xs text-muted">
-              <span className="hidden sm:inline">Aushilfe {profile?.display_name} · bis Tagesende</span>
+              <span className="hidden sm:inline">
+                {helperOnly ? 'Scanner' : 'Tageszugang'} · {profile?.display_name} · bis Tagesende
+              </span>
               <button type="button" onClick={() => void signOut()} className="rounded-full bg-chip px-3 py-1.5 font-semibold text-ink">
                 Abmelden
               </button>

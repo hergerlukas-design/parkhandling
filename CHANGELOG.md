@@ -3,6 +3,22 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.41.0 – 25.11.2026
+
+### Neu
+- **Scanner mit PIN und Namen:** Unter **parkhandling.fly.dev/scanner** meldet man sich mit einer gemeinsamen **4-stelligen PIN** und seinem **Namen** an, ohne Konto. Der Zugang gilt bis Tagesende und umfasst nur Scannen, Annahme, Einparken und Rückgabe. Der Name steht als Prüfer im Protokoll und wird auf dem Gerät für das nächste Mal gemerkt
+  - Die PIN setzen **nur Admins** (Einstellungen → Team → **Scanner-PIN**), dort auch Adresse und QR-Code zum Aushängen. Ein PIN-Wechsel beendet laufende Zugänge nicht
+  - Schutz gegen Durchprobieren: je Gerät 5 falsche Eingaben in 15 Minuten, insgesamt 20 je Stunde; die Einstellungen zeigen falsche Eingaben der letzten Stunde
+
+### Geändert
+- **QR-Freischaltung gibt jetzt Zugang zum ganzen Dashboard** (bis Tagesende), nicht mehr nur zum Scanner. Erzeugen dürfen sie weiterhin alle mit der Rolle Personal, aber nicht selbst Personen mit Tageszugang
+- Liste **„Heute angemeldet (Tageszugänge)“** zeigt QR- und Scanner-Zugänge mit Art; beide lassen sich sperren
+- Kopfzeile zeigt bei Tageszugängen „Scanner“ bzw. „Tageszugang“ mit Namen und einen Knopf **Abmelden** (für geteilte Geräte)
+- Abgelaufener Tageszugang: Hinweis mit Knopf **Zum Scanner**
+
+### Datenbank
+- Migration `20261125000300_scanner_pin.sql` (live eingespielt am 25.11.2026): Tabellen `scanner_pin` (nur gesalzener Hash) und `scanner_login_attempts`, Funktionen `set_scanner_pin`, `scanner_pin_status`, `redeem_scanner_pin`; `redeem_helper_invite` vergibt `staff`; `is_personnel` nur noch für Konten ohne Ablaufdatum; `list_helpers` mit Art
+
 ## 0.40.0 – 25.11.2026
 
 ### Neu

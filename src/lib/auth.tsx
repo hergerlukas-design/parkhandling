@@ -101,22 +101,40 @@ export function accessExpired(p: Pick<Profile, 'access_until'> | null | undefine
   return !!p?.access_until && new Date(p.access_until).getTime() <= now.getTime()
 }
 
-/**
- * Aushilfe freischalten: anonym anmelden (falls nötig) und den Freischalt-Code einlösen.
- * Gibt eine Fehlermeldung zurück oder null.
- */
-export async function redeemHelperCode(code: string): Promise<string | null> {
+export const ACCOUNT_ON_DEVICE = 'Auf diesem Gerät ist bereits ein Konto angemeldet. Bitte erst abmelden.'
+
+/** Für Tageszugänge: anonym anmelden, falls noch niemand angemeldet ist. Fehlermeldung oder null. */
+async function ensureAnonymousSession(): Promise<string | null> {
   if (!supabase) return 'Supabase ist nicht konfiguriert'
   const { data: current } = await supabase.auth.getSession()
-  if (current.session && !current.session.user.is_anonymous) {
-    return 'Auf diesem Gerät ist bereits ein Konto angemeldet. Bitte erst abmelden.'
-  }
-  if (!current.session) {
-    const { error } = await supabase.auth.signInAnonymously()
-    if (error) return /anonymous/i.test(error.message) ? 'Freischaltung ist im System noch nicht eingeschaltet.' : error.message
-  }
+  if (current.session && !current.session.user.is_anonymous) return ACCOUNT_ON_DEVICE
+  if (current.session) return null
+  const { error } = await supabase.auth.signInAnonymously()
+  if (!error) return null
+  return /anonymous/i.test(error.message) ? 'Anmeldung ohne Konto ist im System noch nicht eingeschaltet.' : error.message
+}
+
+/** QR-Freischaltung einlösen: Zugang zum ganzen Dashboard bis Tagesende. Fehlermeldung oder null. */
+export async function redeemHelperCode(code: string): Promise<string | null> {
+  const err = await ensureAnonymousSession()
+  if (err || !supabase) return err ?? 'Supabase ist nicht konfiguriert'
   const { error } = await supabase.rpc('redeem_helper_invite', { p_code: code })
   return error ? error.message : null
+}
+
+/** Anmeldung am Scanner mit PIN und Namen (bis Tagesende). Fehlermeldung oder null. */
+export async function redeemScannerPin(pin: string, name: string): Promise<string | null> {
+  const err = await ensureAnonymousSession()
+  if (err || !supabase) return err ?? 'Supabase ist nicht konfiguriert'
+  const { data, error } = await supabase.rpc('redeem_scanner_pin', { p_pin: pin, p_name: name })
+  if (error) return error.message
+  const res = data as { ok: boolean; error?: string }
+  return res.ok ? null : res.error ?? 'Anmeldung fehlgeschlagen'
+}
+
+/** Tageszugang (QR oder Scanner-PIN, endet um Mitternacht) statt festem Konto */
+export function isDayAccess(p: Pick<Profile, 'access_until'> | null | undefined): boolean {
+  return !!p?.access_until
 }
 
 export function useAuth() {
