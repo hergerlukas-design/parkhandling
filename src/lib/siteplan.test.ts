@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hallLayout, hasKeySlot, keyHint, outdoorLayout, previewHallLayout, previewOutdoorLayout, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
+import { bookingSearchFilter, hallLayout, hasKeySlot, keyHint, outdoorLayout, previewHallLayout, previewOutdoorLayout, whereabouts, outdoorSuggestions, parseScan, rankHallSuggestions, recommendedSuggestion, type BoardSlot, type Suggestion } from './siteplan'
 
 describe('parseScan', () => {
   it('erkennt Schlüssel- und Stellplatz-QR-Codes', () => {
@@ -127,5 +127,17 @@ describe('Außenfläche umstellen', () => {
     expect(p.removed).toHaveLength(28)
     expect(p.blockers.map((s) => s.code)).toEqual(['A2-03'])
     expect(previewOutdoorLayout(board, 'outdoor_a', 3, 30).added).toBe(42)
+  })
+})
+
+describe('bookingSearchFilter', () => {
+  it('sucht Kennzeichen ohne Sonderzeichen, Name und Buchungsnummer', () => {
+    expect(bookingSearchFilter('m-ab 12')).toBe('plate_normalized.like.%MAB12%,customer_name.ilike.%m-ab 12%,external_ref.ilike.m-ab 12%')
+  })
+  it('ohne Text kein Filter', () => {
+    expect(bookingSearchFilter('  ')).toBeNull()
+  })
+  it('entfernt Zeichen, die den Filter brechen würden', () => {
+    expect(bookingSearchFilter('Müller, (Test)')).toContain('customer_name.ilike.%Müller   Test %')
   })
 })

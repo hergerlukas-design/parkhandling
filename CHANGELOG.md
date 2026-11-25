@@ -3,6 +3,17 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.47.0 – 25.11.2026
+
+### Neu (Scanner)
+- **Parkplatz-QR scannen fragt nach:** Steht dort ein Fahrzeug, zeigt der Scanner Kennzeichen, Kunde und Abholung und fragt **Fahrzeug übergeben** oder **Umparken**
+  - **Fahrzeug übergeben** öffnet das Übergabeprotokoll; nach den Unterschriften „Fahrzeug übergeben“ schließt die Buchung ab
+  - **Umparken** öffnet die Auswahl: anderer Parkplatz (Code eintippen), Übergabezone oder Hol- & Bringservice
+  - Freier Parkplatz: wie bisher Parken auf diesem Platz
+- **Kunden-QR eines schon geparkten Fahrzeugs** fragt ebenso nach Übergeben oder Umparken (bisher landeten Scanner-Zugänge wieder auf „Scannen“)
+- **Knopf „Fahrzeug übergeben“ unter dem Scanner:** Danach führen Kunden-QR, Parkplatz-QR oder die Suche nach Name, Kennzeichen oder Buchungsnummer direkt ins Übergabeprotokoll. Die Suche zeigt nur Fahrzeuge auf dem Gelände, früheste Abholung zuerst. „Zurück zu Annahme und Parken“ wechselt zurück
+- Alles auch mit dem Scanner-Zugang (PIN) nutzbar
+
 ## 0.46.1 – 25.11.2026
 
 ### Behoben

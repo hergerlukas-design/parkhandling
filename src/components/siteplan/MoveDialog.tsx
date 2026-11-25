@@ -81,7 +81,7 @@ export function MoveDialog({
 
   return (
     <Dialog
-      title={`${mode === 'relocate' ? 'Umsetzen' : 'Auschecken'} · ${plate}`}
+      title={`${mode === 'relocate' ? 'Umparken' : 'Auschecken'} · ${plate}`}
       onClose={onClose}
       footer={
         <>

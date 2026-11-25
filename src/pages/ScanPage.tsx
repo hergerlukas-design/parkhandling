@@ -1,32 +1,66 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { QrScanner } from '../components/QrScanner'
-import { ErrorList, TextInput } from '../components/ui'
-import { formatPeriod } from '../lib/due'
+import { MoveDialog } from '../components/siteplan/MoveDialog'
+import { Button, ErrorList, TextInput } from '../components/ui'
+import { isHelperOnly, useAuth } from '../lib/auth'
+import { formatPeriod, formatPickup } from '../lib/due'
 import { getProtocol } from '../lib/protocols'
-import { findBookingAt, hasKeySlot, listCheckinCandidates, parseScan, type CheckinCandidate } from '../lib/siteplan'
+import {
+  findBookingAt,
+  getParkedVehicle,
+  hasKeySlot,
+  keyHint,
+  listCheckinCandidates,
+  listHandoverCandidates,
+  parseScan,
+  type CheckinCandidate,
+  type ParkedVehicle,
+} from '../lib/siteplan'
 import { findBookingByScan, ticketStep } from '../lib/ticket'
 
 /** Mindestlänge für die Buchungssuche */
 const MIN_SEARCH = 2
 
+/** parken = Annahme und Parken (Standard), uebergabe = „Fahrzeug übergeben“ */
+type Mode = 'parken' | 'uebergabe'
+
+const handoverPath = (id: string) => `/protokoll/uebergabe/${id}`
+
 /**
  * Zentraler Scan (Bottom-Bar / Kopfzeile):
- *  Stellplatz/Fach belegt  → Fahrzeug (Auschecken, Umsetzen)
- *  Stellplatz/Fach frei    → Einparken auf diesem Platz (Fahrzeug zuordnen, bestätigen)
- *  Arbeits-/Pufferplatz    → Lageplan mit ausgewähltem Platz
- *  Kunden-QR / Buchungsnr.  → Annahme (Annahmeprotokoll, dann Einchecken) bzw. Fahrzeug
- * Darunter die Suche nach Name, Kennzeichen oder Buchungsnummer (z. B. Telefonbuchung ohne QR-Code):
- * ein Treffer startet ebenfalls die Annahme.
+ *  Parkplatz belegt         → Frage: Fahrzeug übergeben oder umparken
+ *  Parkplatz frei           → Parken auf diesem Platz (Fahrzeug zuordnen, bestätigen)
+ *  Kunden-QR / Buchungsnr.  → Annahme (Annahmeprotokoll, dann Parken); steht das Fahrzeug schon: Frage wie oben
+ * Darunter die Buchungssuche (z. B. Telefonbuchung ohne QR-Code) und der Knopf „Fahrzeug übergeben“:
+ * danach führen Kunden-QR, Parkplatz-QR und Suche direkt ins Übergabeprotokoll.
  */
 export function ScanPage() {
   const navigate = useNavigate()
+  const { profile } = useAuth()
+  const helperOnly = isHelperOnly(profile)
+  const [mode, setMode] = useState<Mode>('parken')
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [search, setSearch] = useState('')
-  const [results, setResults] = useState<CheckinCandidate[] | null>(null)
+  const [results, setResults] = useState<(CheckinCandidate | ParkedVehicle)[] | null>(null)
+  // Geparktes Fahrzeug gescannt: Übergeben oder Umparken?
+  const [vehicle, setVehicle] = useState<ParkedVehicle | null>(null)
+  const [moving, setMoving] = useState(false)
 
-  // Buchungen suchen, die noch angenommen bzw. eingeparkt werden können
+  const handover = mode === 'uebergabe'
+
+  function switchMode(next: Mode) {
+    setMode(next)
+    setError(null)
+    setNotice(null)
+    setVehicle(null)
+    setSearch('')
+    setResults(null)
+  }
+
+  // Buchungen suchen: zum Parken noch nicht geparkte, zur Übergabe Fahrzeuge auf dem Gelände
   useEffect(() => {
     const text = search.trim()
     if (text.length < MIN_SEARCH) {
@@ -35,17 +69,16 @@ export function ScanPage() {
     }
     let cancelled = false
     const t = setTimeout(() => {
-      listCheckinCandidates(text)
-        .then((list) => !cancelled && setResults(list))
-        .catch((e: Error) => !cancelled && setError(e.message))
+      const load = handover ? listHandoverCandidates(text) : listCheckinCandidates(text)
+      load.then((list) => !cancelled && setResults(list)).catch((e: Error) => !cancelled && setError(e.message))
     }, 250)
     return () => {
       cancelled = true
       clearTimeout(t)
     }
-  }, [search])
+  }, [search, handover])
 
-  /** Treffer gewählt: Annahmeprotokoll, ist es schon abgeschlossen, weiter zum Einparken */
+  /** Treffer zum Parken: Annahmeprotokoll, ist es schon abgeschlossen, weiter zum Parken */
   async function startIntake(b: CheckinCandidate) {
     setBusy(true)
     setError(null)
@@ -58,44 +91,58 @@ export function ScanPage() {
     }
   }
 
+  /** Fahrzeug steht auf dem Gelände: im Übergabe-Modus direkt ins Protokoll, sonst fragen */
+  async function showVehicle(id: string) {
+    if (handover) {
+      navigate(handoverPath(id))
+      return
+    }
+    const v = await getParkedVehicle(id)
+    if (!v) setError('Buchung nicht gefunden.')
+    else setVehicle(v)
+  }
+
   async function onResult(raw: string) {
-    if (busy) return
+    if (busy || vehicle) return
     const scan = parseScan(raw)
     setError(null)
+    setNotice(null)
     if (scan.kind === 'unknown') {
       setError(`„${scan.code}“ ist kein Park & Fly QR-Code.`)
       return
     }
-    if (scan.kind === 'ticket' || scan.kind === 'booking_ref' || scan.kind === 'booking_id') {
-      setBusy(true)
-      try {
+    setBusy(true)
+    try {
+      if (scan.kind === 'ticket' || scan.kind === 'booking_ref' || scan.kind === 'booking_id') {
         const booking = await findBookingByScan(scan.code)
         if (!booking) {
           setError(scan.kind === 'ticket'
-            ? 'Zu diesem Kunden-QR-Code gibt es keine Buchung. Bitte über die Buchungsnummer oder das Kennzeichen suchen.'
+            ? 'Zu diesem Kunden-QR-Code gibt es keine Buchung. Bitte über Name, Kennzeichen oder Buchungsnummer suchen.'
             : scan.kind === 'booking_id' ? 'Buchung zu diesem QR-Code nicht gefunden.' : `Buchung ${scan.code} nicht gefunden.`)
           return
         }
-        const step = ticketStep(booking, 'intake')
+        const step = ticketStep(booking, handover ? 'handover' : 'intake')
         if ('error' in step) setError(step.error)
+        // Steht schon auf einem Platz: Übergeben oder Umparken
+        else if (!handover && booking.has_location && step.path === `/fahrzeuge/${booking.id}`) await showVehicle(booking.id)
         else navigate(step.path)
-      } catch (e) {
-        setError((e as Error).message)
-      } finally {
-        setBusy(false)
+        return
       }
-      return
-    }
-    if (!hasKeySlot(scan.code)) {
-      navigate(`/lageplan?platz=${encodeURIComponent(scan.code)}`)
-      return
-    }
-    setBusy(true)
-    try {
+
       const slot = await findBookingAt(scan.code)
-      if (!slot) setError(`Parkplatz ${scan.code} ist unbekannt.`)
-      else if (slot.booking_id) navigate(`/fahrzeuge/${slot.booking_id}`)
-      else navigate(`/einchecken?platz=${encodeURIComponent(scan.code)}`)
+      if (!slot) {
+        setError(`Parkplatz ${scan.code} ist unbekannt.`)
+      } else if (slot.booking_id) {
+        await showVehicle(slot.booking_id)
+      } else if (handover) {
+        setError(`Auf ${scan.code} steht kein Fahrzeug.`)
+      } else if (hasKeySlot(scan.code)) {
+        navigate(`/einchecken?platz=${encodeURIComponent(scan.code)}`)
+      } else if (!helperOnly) {
+        navigate(`/lageplan?platz=${encodeURIComponent(scan.code)}`)
+      } else {
+        setError(`Auf ${scan.code} steht kein Fahrzeug.`)
+      }
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -105,43 +152,113 @@ export function ScanPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4 p-4 md:p-6">
-      <h1 className="text-2xl font-semibold">Scannen</h1>
-      <QrScanner onResult={(t) => void onResult(t)} label="Kunden-QR-Code scannen" paused={busy} manualInput={false} />
-      <ErrorList errors={error ? [error] : []} />
-
-      <section className="flex flex-col gap-2" aria-label="Buchung suchen">
-        <h2 className="text-sm font-semibold">Kein QR-Code? Buchung suchen</h2>
-        <TextInput
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Name, Kennzeichen oder Buchungsnummer"
-          aria-label="Buchung suchen nach Name, Kennzeichen oder Buchungsnummer"
-          autoComplete="off"
+      <h1 className="text-2xl font-semibold">{handover ? 'Fahrzeug übergeben' : 'Scannen'}</h1>
+      {!vehicle && (
+        <QrScanner
+          onResult={(t) => void onResult(t)}
+          label="Kunden-QR oder Parkplatz-QR scannen"
+          paused={busy || !!vehicle}
+          manualInput={false}
         />
-        {results && results.length === 0 && (
-          <p className="text-sm text-muted">Keine offene Buchung gefunden.</p>
-        )}
-        {results && results.length > 0 && (
-          <ul className="flex flex-col gap-2">
-            {results.map((b) => (
-              <li key={b.id}>
-                <button type="button" disabled={busy} onClick={() => void startIntake(b)}
-                  className="touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left hover:bg-ground disabled:opacity-60">
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">{b.customer_name}</span>
-                    <span className="block truncate text-sm text-subtle">
-                      <span className="font-mono">{b.plate}</span> · {formatPeriod(b.start_at, b.end_at)}
-                      {b.external_ref ? ` · ${b.external_ref}` : ''}
+      )}
+      <ErrorList errors={error ? [error] : []} />
+      {notice && <p className="rounded-xl bg-ok-soft px-4 py-2 text-sm text-ok-ink" role="status">{notice}</p>}
+
+      {vehicle && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4" aria-label="Fahrzeug gescannt">
+          <div>
+            <p className="text-xs text-subtle">
+              {vehicle.location_code ? `Steht auf ${vehicle.location_code}` : 'Auf dem Gelände'}
+            </p>
+            <div className="font-mono text-3xl font-bold">{vehicle.plate}</div>
+            <div className="text-sm text-subtle">
+              {vehicle.customer_name} · Abholung {formatPickup(vehicle.end_at)}
+              {vehicle.external_ref ? ` · ${vehicle.external_ref}` : ''}
+            </div>
+          </div>
+          <p className="text-sm font-semibold">Was möchten Sie tun?</p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Button variant="primary" onClick={() => navigate(handoverPath(vehicle.id))}>Fahrzeug übergeben</Button>
+            <Button onClick={() => setMoving(true)}>Umparken</Button>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <button type="button" className="touch-target text-subtle underline" onClick={() => setVehicle(null)}>
+              Abbrechen, weiter scannen
+            </button>
+            {!helperOnly && (
+              <Link className="touch-target inline-flex items-center text-subtle underline" to={`/fahrzeuge/${vehicle.id}`}>
+                Zur Buchung
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+
+      {vehicle && moving && (
+        <MoveDialog
+          bookingId={vehicle.id}
+          plate={vehicle.plate}
+          fromCode={vehicle.location_code}
+          mode="relocate"
+          onClose={() => setMoving(false)}
+          onDone={(res) => {
+            setMoving(false)
+            setVehicle(null)
+            setNotice([`${vehicle.plate} umgeparkt: ${res.from ?? '–'} → ${res.to ?? 'übergeben'}.`, keyHint(res.from, res.to)]
+              .filter(Boolean).join(' '))
+          }}
+        />
+      )}
+
+      {!vehicle && (
+        <section className="flex flex-col gap-2" aria-label="Buchung suchen">
+          <h2 className="text-sm font-semibold">
+            {handover ? 'Kein QR-Code? Fahrzeug suchen' : 'Kein QR-Code? Buchung suchen'}
+          </h2>
+          <TextInput
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Name, Kennzeichen oder Buchungsnummer"
+            aria-label="Buchung suchen nach Name, Kennzeichen oder Buchungsnummer"
+            autoComplete="off"
+          />
+          {results && results.length === 0 && (
+            <p className="text-sm text-muted">{handover ? 'Kein Fahrzeug auf dem Gelände gefunden.' : 'Keine offene Buchung gefunden.'}</p>
+          )}
+          {results && results.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {results.map((b) => (
+                <li key={b.id}>
+                  <button type="button" disabled={busy}
+                    onClick={() => (handover ? navigate(handoverPath(b.id)) : void startIntake(b as CheckinCandidate))}
+                    className="touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left hover:bg-ground disabled:opacity-60">
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{b.customer_name}</span>
+                      <span className="block truncate text-sm text-subtle">
+                        <span className="font-mono">{b.plate}</span> ·{' '}
+                        {'location_code' in b
+                          ? `${b.location_code ?? 'unterwegs'} · Abholung ${formatPickup(b.end_at)}`
+                          : formatPeriod(b.start_at, b.end_at)}
+                        {b.external_ref ? ` · ${b.external_ref}` : ''}
+                      </span>
                     </span>
-                  </span>
-                  <span className="shrink-0 text-sm font-semibold text-accent">Annahme</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                    <span className="shrink-0 text-sm font-semibold text-accent">{handover ? 'Übergabe' : 'Annahme'}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {!vehicle && (
+        handover ? (
+          <Button onClick={() => switchMode('parken')}>Zurück zu Annahme und Parken</Button>
+        ) : (
+          <Button variant="primary" onClick={() => switchMode('uebergabe')}>Fahrzeug übergeben</Button>
+        )
+      )}
     </div>
   )
 }
