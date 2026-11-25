@@ -24,7 +24,7 @@ import {
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import { PARKING_TYPE_LABEL } from '../types/domain'
 
-type Step = 'vehicle' | 'place'
+type Step = 'vehicle' | 'protocol' | 'place'
 type PlanTab = 'hall' | 'outdoor' | 'work'
 
 const PLAN_TABS: [PlanTab, string][] = [['hall', 'Halle'], ['outdoor', 'Außen'], ['work', 'Arbeitsorte']]
@@ -37,7 +37,7 @@ type IntakeState = 'none' | 'draft' | 'final' | null
 
 function Stepper({ step, intake }: { step: Step; intake: IntakeState }) {
   const items: [string, boolean, boolean][] = [
-    ['Protokoll', false, intake === 'final'],
+    ['Protokoll', step === 'protocol', intake === 'final'],
     ['Platz wählen', step === 'place', false],
   ]
   return (
@@ -70,8 +70,14 @@ export function CheckinPage() {
   const [board, setBoard] = useState<BoardSlot[]>([])
   const [tab, setTab] = useState<PlanTab>('hall')
 
-  const step: Step = !booking ? 'vehicle' : 'place'
-  useUpdateBlocker(!!booking && !warnings, 'Check-in')
+  // Einchecken erst nach abgeschlossenem (unterschriebenem) Annahmeprotokoll
+  const step: Step = !booking ? 'vehicle' : intake === 'final' ? 'place' : 'protocol'
+  useUpdateBlocker(step === 'place' && !warnings, 'Check-in')
+  // Gescannter bzw. vorgegebener Stellplatz: geht mit ins Protokoll und kommt danach zurück
+  const slotParam = params.get('platz')
+  const protocolPath = booking
+    ? `/protokoll/annahme/${booking.id}${slotParam ? `?platz=${encodeURIComponent(slotParam)}` : ''}`
+    : ''
 
   // Annahmeprotokoll der gewählten Buchung
   useEffect(() => {
@@ -79,7 +85,10 @@ export function CheckinPage() {
     if (!booking) return
     getProtocol(booking.id, 'intake')
       .then((p) => setIntake(p ? p.status : 'none'))
-      .catch(() => setIntake(null))
+      .catch((e: Error) => {
+        setIntake(null)
+        setErrors([`Annahmeprotokoll konnte nicht geprüft werden: ${e.message}`])
+      })
   }, [booking])
 
   // Buchung aus URL übernehmen
@@ -163,7 +172,7 @@ export function CheckinPage() {
   )
 
   async function confirm(code: string, reason = 'Einlagern') {
-    if (!booking) return
+    if (!booking || intake !== 'final') return
     setBusy(true)
     setErrors([])
     try {
@@ -234,13 +243,6 @@ export function CheckinPage() {
                 <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">{PARKING_TYPE_LABEL[booking.parking_type]}</span>
                 <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-ink">Abholung {formatPickup(booking.end_at)}</span>
               </div>
-              {intake && intake !== 'final' && (
-                <Link to={`/protokoll/annahme/${booking.id}`}
-                  className="touch-target mt-3 flex items-center justify-between gap-2 rounded-xl border border-warn bg-warn-soft px-3 py-2 text-sm text-warn-ink">
-                  <span>{intake === 'draft' ? 'Annahmeprotokoll angefangen, noch nicht unterschrieben' : 'Annahmeprotokoll fehlt noch'}</span>
-                  <span className="font-semibold">{intake === 'draft' ? 'Fortsetzen' : 'Erstellen'}</span>
-                </Link>
-              )}
               {booking.task_chips.length > 0 && (
                 <p className="mt-3 text-sm"><span className="font-semibold">Gebuchte Leistungen</span><br />{booking.task_chips.map((c) => c.title).join(' · ')}</p>
               )}
@@ -270,6 +272,30 @@ export function CheckinPage() {
             </section>
           )}
 
+          {step === 'protocol' && booking && !(intake === null && errors.length > 0) && (
+            <section className="flex flex-col gap-3 rounded-2xl border border-warn bg-warn-soft p-4 text-sm text-warn-ink">
+              {intake === null ? (
+                <p>Annahmeprotokoll wird geprüft …</p>
+              ) : (
+                <>
+                  <div>
+                    <h2 className="font-semibold">Erst das Annahmeprotokoll</h2>
+                    <p className="mt-1">
+                      {intake === 'draft'
+                        ? 'Das Annahmeprotokoll ist angefangen, aber noch nicht unterschrieben.'
+                        : 'Für dieses Fahrzeug gibt es noch kein Annahmeprotokoll.'}{' '}
+                      Eingecheckt wird erst nach dem abgeschlossenen Protokoll
+                      {slotParam ? `, danach geht es mit Stellplatz ${slotParam} weiter.` : '.'}
+                    </p>
+                  </div>
+                  <Button variant="primary" onClick={() => navigate(protocolPath)}>
+                    {intake === 'draft' ? 'Protokoll fortsetzen' : 'Annahmeprotokoll starten'}
+                  </Button>
+                </>
+              )}
+            </section>
+          )}
+
           {step === 'place' && openServices > 0 && booking?.parking_type === 'indoor' && (
             <section className="rounded-2xl bg-warn-soft p-4 text-sm text-warn-ink">
               <h2 className="font-semibold">{openServices} Leistung{openServices === 1 ? '' : 'en'} offen</h2>
@@ -281,7 +307,7 @@ export function CheckinPage() {
             </section>
           )}
 
-          {step === 'vehicle' && <ErrorList errors={errors} />}
+          {step !== 'place' && <ErrorList errors={errors} />}
         </div>
 
         {/* Rechte Spalte: Platzwahl im Lageplan */}

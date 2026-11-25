@@ -3,6 +3,14 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.45.0 – 25.11.2026
+
+### Geändert
+- **Einchecken erst nach abgeschlossenem Annahmeprotokoll** (Scanner und Dashboard): Ist das Annahmeprotokoll noch nicht unterschrieben, zeigt „Fahrzeug einchecken“ keinen Lageplan und keinen Bestätigen-Knopf mehr, sondern **Annahmeprotokoll starten** bzw. **Protokoll fortsetzen**. Bisher war das nur ein Hinweis, Einparken ging trotzdem
+  - Gilt für alle Wege: Kunden-QR, Buchungssuche, freier Stellplatz gescannt, Menüpunkt „Einchecken“, Lageplan „Fahrzeug hier einchecken“
+  - Ein vorher **gescannter Stellplatz** geht mit ins Protokoll; nach dem Abschluss heißt der Knopf **Einchecken auf <Platz>** und führt genau dorthin (sonst wie bisher der empfohlene Platz)
+  - Kann das Protokoll nicht geprüft werden (z. B. kein Netz), bleibt das Einchecken gesperrt und eine Fehlermeldung erscheint
+
 ## 0.44.0 – 25.11.2026
 
 ### Geändert
