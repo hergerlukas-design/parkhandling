@@ -176,7 +176,7 @@ export function buildToday(
   for (const t of relocate) {
     alerts.push({
       tone: 'danger',
-      title: `${t.location_code ? `Regal ${t.location_code.split('-')[0]}` : t.plate} · Umsetzen`,
+      title: `${t.location_code ? `Regal ${t.location_code.split('-')[0]}` : t.plate} · Umparken`,
       text: `${t.title ?? 'Reihenfolge im Regal passt nicht'}${t.due_at ? ` – bis ${formatDate(t.due_at).slice(0, 6)} ${formatTime(t.due_at)}` : ''}.`,
       href: t.location_code ? `/lageplan?platz=${encodeURIComponent(t.location_code)}` : '/aufgaben',
     })

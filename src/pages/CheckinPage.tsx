@@ -24,7 +24,7 @@ import {
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import { PARKING_TYPE_LABEL } from '../types/domain'
 
-type Step = 'vehicle' | 'place'
+type Step = 'vehicle' | 'protocol' | 'place'
 type PlanTab = 'hall' | 'outdoor' | 'work'
 
 const PLAN_TABS: [PlanTab, string][] = [['hall', 'Halle'], ['outdoor', 'Außen'], ['work', 'Arbeitsorte']]
@@ -37,7 +37,7 @@ type IntakeState = 'none' | 'draft' | 'final' | null
 
 function Stepper({ step, intake }: { step: Step; intake: IntakeState }) {
   const items: [string, boolean, boolean][] = [
-    ['Protokoll', false, intake === 'final'],
+    ['Protokoll', step === 'protocol', intake === 'final'],
     ['Platz wählen', step === 'place', false],
   ]
   return (
@@ -70,8 +70,14 @@ export function CheckinPage() {
   const [board, setBoard] = useState<BoardSlot[]>([])
   const [tab, setTab] = useState<PlanTab>('hall')
 
-  const step: Step = !booking ? 'vehicle' : 'place'
-  useUpdateBlocker(!!booking && !warnings, 'Check-in')
+  // Einchecken erst nach abgeschlossenem (unterschriebenem) Annahmeprotokoll
+  const step: Step = !booking ? 'vehicle' : intake === 'final' ? 'place' : 'protocol'
+  useUpdateBlocker(step === 'place' && !warnings, 'Parken')
+  // Gescannter bzw. vorgegebener Stellplatz: geht mit ins Protokoll und kommt danach zurück
+  const slotParam = params.get('platz')
+  const protocolPath = booking
+    ? `/protokoll/annahme/${booking.id}${slotParam ? `?platz=${encodeURIComponent(slotParam)}` : ''}`
+    : ''
 
   // Annahmeprotokoll der gewählten Buchung
   useEffect(() => {
@@ -79,7 +85,10 @@ export function CheckinPage() {
     if (!booking) return
     getProtocol(booking.id, 'intake')
       .then((p) => setIntake(p ? p.status : 'none'))
-      .catch(() => setIntake(null))
+      .catch((e: Error) => {
+        setIntake(null)
+        setErrors([`Annahmeprotokoll konnte nicht geprüft werden: ${e.message}`])
+      })
   }, [booking])
 
   // Buchung aus URL übernehmen
@@ -150,8 +159,8 @@ export function CheckinPage() {
     setErrors([])
     const sug = suggestions.find((x) => x.code === slot.code)
     if (slot.occupancy >= slot.capacity) setErrors([`${slot.code} ist belegt${slot.plate ? ` (${slot.plate})` : ''}.`])
-    else if (slot.status === 'blocked' || sug?.kind === 'relocate') setErrors([`${slot.code} ist nur mit Umsetzen erreichbar.`])
-    else if (slot.area === 'transit') setErrors(['„Unterwegs“ ist kein Stellplatz.'])
+    else if (slot.status === 'blocked' || sug?.kind === 'relocate') setErrors([`${slot.code} ist nur mit Umparken erreichbar.`])
+    else if (slot.area === 'transit') setErrors(['„Unterwegs“ ist kein Parkplatz.'])
     else setChosen(slot.code)
   }
 
@@ -163,7 +172,7 @@ export function CheckinPage() {
   )
 
   async function confirm(code: string, reason = 'Einlagern') {
-    if (!booking) return
+    if (!booking || intake !== 'final') return
     setBusy(true)
     setErrors([])
     try {
@@ -197,7 +206,7 @@ export function CheckinPage() {
   if (warnings && booking) {
     return (
       <div className="mx-auto flex max-w-xl flex-col gap-4 p-6">
-        <h1 className="text-xl font-semibold">{booking.plate} eingecheckt</h1>
+        <h1 className="text-xl font-semibold">{booking.plate} geparkt</h1>
         {hint && <p className="rounded-xl bg-accent-soft px-4 py-3 text-lg font-semibold text-accent-dark">{hint}</p>}
         {warnings.length > 0 && (
           <ul className="rounded-xl bg-warn-soft px-4 py-3 text-sm text-warn-ink">
@@ -206,7 +215,7 @@ export function CheckinPage() {
         )}
         <div className="flex gap-2">
           <Button variant="primary" onClick={() => navigate(`/fahrzeuge/${booking.id}`)}>Zum Fahrzeug</Button>
-          <Button onClick={() => navigate('/lageplan')}>Lageplan</Button>
+          <Button onClick={() => navigate('/lageplan')}>Parkplätze</Button>
         </div>
       </div>
     )
@@ -218,7 +227,7 @@ export function CheckinPage() {
         <Link to="/lageplan" className="touch-target inline-flex items-center gap-1 text-sm text-subtle">
           <Icon name="close" className="size-5" /> Abbrechen
         </Link>
-        <h1 className="text-lg font-semibold">Fahrzeug einchecken</h1>
+        <h1 className="text-lg font-semibold">Fahrzeug parken</h1>
         <div className="ml-auto"><Stepper step={step} intake={intake} /></div>
       </header>
 
@@ -234,13 +243,6 @@ export function CheckinPage() {
                 <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white">{PARKING_TYPE_LABEL[booking.parking_type]}</span>
                 <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-ink">Abholung {formatPickup(booking.end_at)}</span>
               </div>
-              {intake && intake !== 'final' && (
-                <Link to={`/protokoll/annahme/${booking.id}`}
-                  className="touch-target mt-3 flex items-center justify-between gap-2 rounded-xl border border-warn bg-warn-soft px-3 py-2 text-sm text-warn-ink">
-                  <span>{intake === 'draft' ? 'Annahmeprotokoll angefangen, noch nicht unterschrieben' : 'Annahmeprotokoll fehlt noch'}</span>
-                  <span className="font-semibold">{intake === 'draft' ? 'Fortsetzen' : 'Erstellen'}</span>
-                </Link>
-              )}
               {booking.task_chips.length > 0 && (
                 <p className="mt-3 text-sm"><span className="font-semibold">Gebuchte Leistungen</span><br />{booking.task_chips.map((c) => c.title).join(' · ')}</p>
               )}
@@ -270,10 +272,34 @@ export function CheckinPage() {
             </section>
           )}
 
+          {step === 'protocol' && booking && !(intake === null && errors.length > 0) && (
+            <section className="flex flex-col gap-3 rounded-2xl border border-warn bg-warn-soft p-4 text-sm text-warn-ink">
+              {intake === null ? (
+                <p>Annahmeprotokoll wird geprüft …</p>
+              ) : (
+                <>
+                  <div>
+                    <h2 className="font-semibold">Erst das Annahmeprotokoll</h2>
+                    <p className="mt-1">
+                      {intake === 'draft'
+                        ? 'Das Annahmeprotokoll ist angefangen, aber noch nicht unterschrieben.'
+                        : 'Für dieses Fahrzeug gibt es noch kein Annahmeprotokoll.'}{' '}
+                      Geparkt wird erst nach dem abgeschlossenen Protokoll
+                      {slotParam ? `, danach geht es mit Parkplatz ${slotParam} weiter.` : '.'}
+                    </p>
+                  </div>
+                  <Button variant="primary" onClick={() => navigate(protocolPath)}>
+                    {intake === 'draft' ? 'Protokoll fortsetzen' : 'Annahmeprotokoll starten'}
+                  </Button>
+                </>
+              )}
+            </section>
+          )}
+
           {step === 'place' && openServices > 0 && booking?.parking_type === 'indoor' && (
             <section className="rounded-2xl bg-warn-soft p-4 text-sm text-warn-ink">
               <h2 className="font-semibold">{openServices} Leistung{openServices === 1 ? '' : 'en'} offen</h2>
-              <p className="mt-1">{openNames}. Wird das Fahrzeug jetzt auf E2/E3 eingelagert, kostet jede spätere Arbeit Umsetzvorgänge. Empfehlung: erst Aufbereitung, dann einlagern.</p>
+              <p className="mt-1">{openNames}. Wird das Fahrzeug jetzt auf E2/E3 eingelagert, kostet jede spätere Arbeit Umparkvorgänge. Empfehlung: erst Aufbereitung, dann einlagern.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" disabled={busy} onClick={() => void firstPrep()}
                   className="touch-target rounded-lg bg-warn-ink px-4 py-2 font-semibold text-white">Erst Aufbereitung</button>
@@ -281,7 +307,7 @@ export function CheckinPage() {
             </section>
           )}
 
-          {step === 'vehicle' && <ErrorList errors={errors} />}
+          {step !== 'place' && <ErrorList errors={errors} />}
         </div>
 
         {/* Rechte Spalte: Platzwahl im Lageplan */}
@@ -311,7 +337,7 @@ export function CheckinPage() {
             )}
 
             {tab !== 'work' && <Legend />}
-            {board.length === 0 && <p className="text-sm text-muted">Lageplan lädt …</p>}
+            {board.length === 0 && <p className="text-sm text-muted">Parkplätze laden …</p>}
             {tab === 'hall' && hall.length > 0 && (
               <HallGrid slots={hall} conflictRacks={new Set()} selectedId={chosenSlot?.id ?? null} onSelect={pick} />
             )}

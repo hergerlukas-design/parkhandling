@@ -122,7 +122,7 @@ export function TodayPage() {
     <div className="mx-auto flex max-w-screen-2xl flex-col gap-4 p-4 md:p-6">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Übersicht</h1>
           <span className="text-sm text-subtle">{weekday}, {formatDate(now)} · {formatTime(now)}</span>
         </div>
         <PeriodBar period={period} onChange={setPeriod} label={data?.periodWord ?? ''} />
@@ -137,7 +137,7 @@ export function TodayPage() {
             <Kpi label={`Ankünfte ${data.periodWord}`} value={data.kpis.arrivals} sub={`davon ${data.kpis.arrivalsHall} Halle`} to="/einchecken" />
             <Kpi label={`Abholungen ${data.periodWord}`} value={data.kpis.pickups} sub={`${data.kpis.pickupsHall} aus der Halle`} to="/fahrzeuge?filter=pickup_today" />
             <Kpi label="Offene Aufgaben" value={data.kpis.openTasks} sub={`${data.kpis.dueToday} fällig heute`} to="/aufgaben" />
-            <Kpi label="Umsetzen nötig" value={data.kpis.relocate} sub={data.kpis.relocateText} to="/aufgaben?filter=relocate" alert={data.kpis.relocate > 0} />
+            <Kpi label="Umparken nötig" value={data.kpis.relocate} sub={data.kpis.relocateText} to="/aufgaben?filter=relocate" alert={data.kpis.relocate > 0} />
           </div>
 
           {/* Smartphone: wichtigster Hinweis oben */}
@@ -201,7 +201,7 @@ export function TodayPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/lageplan" className="mt-3 inline-block text-sm text-accent underline">Zum Lageplan</Link>
+                <Link to="/lageplan" className="mt-3 inline-block text-sm text-accent underline">Zu den Parkplätzen</Link>
               </section>
             </div>
           </div>

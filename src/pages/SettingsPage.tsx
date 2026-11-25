@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router'
 import { Card, CollapsibleCard, Page } from '../components/Page'
-import { isAdminProfile, isDriverOnly, isStaffProfile, profileRoles, signOut, useAuth } from '../lib/auth'
+import { isAdminProfile, isDayAccess, isDriverOnly, isStaffProfile, profileRoles, signOut, signOutToScanner, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -104,7 +104,7 @@ export function SettingsPage() {
             </dl>
             <button
               type="button"
-              onClick={() => void signOut()}
+              onClick={() => void (isDayAccess(profile) ? signOutToScanner() : signOut())}
               className="touch-target mt-4 rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold"
             >
               Abmelden
@@ -155,7 +155,7 @@ export function SettingsPage() {
           )}
           <Card title="Stellplätze & Schlüsselfächer">
             <p className="text-sm text-subtle">
-              Jeder Stellplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
+              Jeder Parkplatz in Halle und Außenfläche hat genau ein Schlüsselfach mit demselben Code.
             </p>
             <Link
               to="/stellplaetze"

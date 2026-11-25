@@ -143,7 +143,7 @@ export function ParkosImportDialog({ onClose, onDone }: { onClose: () => void; o
           )}
           {result.error && <p className="text-sm text-subtle">{result.error}</p>}
           {(result.status === 'needs_review' || result.status === 'failed') && (
-            <p className="text-sm text-subtle">Die Mail liegt in der Prüfliste unter „Fahrzeuge → Importe prüfen“.</p>
+            <p className="text-sm text-subtle">Die Mail liegt in der Prüfliste unter „Buchungen → Importe prüfen“.</p>
           )}
         </div>
       ) : (

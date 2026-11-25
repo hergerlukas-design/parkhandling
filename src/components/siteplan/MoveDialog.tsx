@@ -46,7 +46,7 @@ export function MoveDialog({
     setBusy(true)
     setError(null)
     try {
-      const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umsetzen' : undefined))
+      const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umparken' : undefined))
       if (res.warnings.length || keyHint(res.from, res.to) || res.to === HANDOVER_ZONE) setResult(res)
       else onDone(res)
     } catch (e) {
@@ -81,7 +81,7 @@ export function MoveDialog({
 
   return (
     <Dialog
-      title={`${mode === 'relocate' ? 'Umsetzen' : 'Auschecken'} · ${plate}`}
+      title={`${mode === 'relocate' ? 'Umparken' : 'Auschecken'} · ${plate}`}
       onClose={onClose}
       footer={
         <>
@@ -106,11 +106,11 @@ export function MoveDialog({
         ))}
         <button type="button" onClick={() => setTarget('')}
           className={`touch-target rounded-xl border-2 px-3 py-2 text-left text-sm font-medium ${target === '' ? 'border-accent bg-accent-soft' : 'border-line'}`}>
-          Anderer Stellplatz
+          Anderer Parkplatz
         </button>
       </div>
       {target === '' && (
-        <Field label="Stellplatz-Code (z. B. R7-E3, A1-07, P-01)" className="mt-3">
+        <Field label="Parkplatz-Code (z. B. R7-E3, A1-07, P-01)" className="mt-3">
           <TextInput value={otherCode} autoCapitalize="characters" onChange={(e) => setOtherCode(e.target.value)} />
         </Field>
       )}
@@ -122,7 +122,7 @@ export function MoveDialog({
       )}
       {target !== null && (
         <Field label="Grund (optional)" className="mt-3">
-          <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umsetzen' : '')} onChange={(e) => setReason(e.target.value)} />
+          <TextInput value={reason} placeholder={preset?.reason ?? (mode === 'relocate' ? 'Umparken' : '')} onChange={(e) => setReason(e.target.value)} />
         </Field>
       )}
       {error && <div className="mt-3"><ErrorList errors={[error]} /></div>}

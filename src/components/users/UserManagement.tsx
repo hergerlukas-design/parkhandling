@@ -5,7 +5,7 @@ import { Button, Dialog, ErrorList, Field, TextInput } from '../ui'
 
 const ROLE_HINT: Record<Role, string> = {
   admin: 'alles inkl. Personal, Einstellungen',
-  staff: 'Buchungen, Lageplan, Aufgaben, Shuttle',
+  staff: 'Buchungen, Parkplätze, Aufgaben, Shuttle',
   driver: 'Fahrerliste; allein nur Shuttle-Ansicht',
   helper: 'per QR bis Tagesende: Scannen, Annahme, Rückgabe',
 }

@@ -100,7 +100,7 @@ describe('buildToday', () => {
     const titles = data.alerts.map((a) => [a.tone, a.title])
     expect(titles).toEqual([
       ['danger', expect.stringMatching(/ · Abholung 14:00$/)],
-      ['danger', 'Regal R5 · Umsetzen'],
+      ['danger', 'Regal R5 · Umparken'],
       ['warn', expect.stringMatching(/Abholung morgen 07:45$/)],
       ['warn', expect.stringMatching(/Anreise 05\.10\. 10:00$/)],
       ['warn', expect.stringMatching(/Zahlung offen$/)],

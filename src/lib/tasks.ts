@@ -37,7 +37,7 @@ export function taskKind(t: Pick<BoardTask, 'type' | 'service_category'>): TaskK
 }
 
 export function taskKindLabel(t: Pick<BoardTask, 'type' | 'service_category'>): string {
-  if (t.type === 'relocate') return 'Umsetzen'
+  if (t.type === 'relocate') return 'Umparken'
   if (t.type === 'charge') return 'Laden'
   if (t.type === 'fuel') return 'Tanken'
   if (t.service_category === 'cleaning') return 'Aufbereitung'
@@ -51,7 +51,7 @@ export const TASK_FILTERS: [TaskFilter, string][] = [
   ['all', 'Alle'],
   ['care', 'Aufbereitung'],
   ['charge_fuel', 'Laden/Tanken'],
-  ['relocate', 'Umsetzen'],
+  ['relocate', 'Umparken'],
   ['service', 'Service'],
   ['due_today', 'Nur heute fällig'],
 ]

@@ -29,7 +29,7 @@ export function SlotTile({
 
   return (
     <button type="button" onClick={() => onSelect(slot)} className={`${base} ${style} ${ring} ${height}`}
-      aria-label={`${slot.code}${occupied ? ` ${slot.plate}` : slot.status === 'blocked' ? ' nur mit Umsetzen' : ' frei'}`}>
+      aria-label={`${slot.code}${occupied ? ` ${slot.plate}` : slot.status === 'blocked' ? ' nur mit Umparken' : ' frei'}`}>
       {occupied ? (
         <>
           <span className="truncate font-mono text-[13px] font-semibold">{slot.plate}</span>
@@ -58,7 +58,7 @@ export function Legend() {
     ['border-due-week bg-due-week-bg', 'Diese Woche'],
     ['border-due-later bg-due-later-bg', 'Später'],
     ['border-dashed border-slot-free bg-surface', 'Frei'],
-    ['border-dashed border-slot-blocked bg-slot-blocked-bg', 'Nur mit Umsetzen'],
+    ['border-dashed border-slot-blocked bg-slot-blocked-bg', 'Nur mit Umparken'],
   ]
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-subtle">

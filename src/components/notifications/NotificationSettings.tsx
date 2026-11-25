@@ -96,7 +96,7 @@ export function NotificationSettings() {
         <p className="text-sm text-subtle">
           {device && !device.active
             ? 'Dieses Gerät wurde von Benachrichtigungen abgemeldet. Hier wieder anmelden.'
-            : 'Hinweise zu neuen Buchungen, Umbuchungen, Umsetzen, Ankunft, Abholung und Shuttle – auch wenn die App geschlossen ist.'}
+            : 'Hinweise zu neuen Buchungen, Umbuchungen, Umparken, Ankunft, Abholung und Shuttle – auch wenn die App geschlossen ist.'}
         </p>
         <Field label="Gerätename">
           <TextInput value={label} maxLength={60} onChange={(e) => setLabel(e.target.value)} placeholder="z. B. Tablet Halle" />

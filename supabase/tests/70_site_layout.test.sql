@@ -52,8 +52,12 @@ select pg_temp.assert_eq((select qr_code from public.locations where code = 'R9-
 select pg_temp.assert_eq(public.set_hall_layout(8, 3) ->> 'deactivated', '12', '12 Plätze deaktiviert');
 select pg_temp.assert_eq((select count(*)::int from public.locations where area = 'hall'), 36, 'Plätze bleiben gespeichert');
 select pg_temp.assert_eq((select count(*)::int from public.location_board where area = 'hall'), 24, 'Lageplan zeigt 8 × 3');
+-- Buchung mit abgeschlossenem Annahmeprotokoll, damit die Platzprüfung greift (0.45.0)
+select public.upsert_booking(jsonb_build_object('external_ref', 'L-1', 'customer_name', 'Layout', 'plate', 'M-LY 1',
+  'start_at', now(), 'end_at', now() + interval '3 days', 'parking_type', 'indoor'), 'layouttest') ->> 'id' as lyb \gset
+insert into public.protocols (booking_id, type, status) values (:'lyb', 'intake', 'final');
 select pg_temp.assert_eq(pg_temp.error_of(
-  'select public.move_vehicle((select id from public.bookings where status not in (''completed'', ''cancelled'') limit 1), ''R9-E1'')'),
+  format('select public.move_vehicle(%L, ''R9-E1'')', :'lyb')),
   'Platz R9-E1 ist deaktiviert', 'deaktivierter Platz nicht belegbar');
 
 -- Erneut vergrößern aktiviert die vorhandenen Plätze wieder

@@ -3,6 +3,73 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.51.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Knopf „Fahrzeug übergeben“ unter dem Scanner entfällt.** Der Scanner hat nur noch einen Ablauf: QR-Code scannen oder suchen, die App fragt, was zu tun ist (Annahme, Übergeben oder Umparken)
+- Der reine Übergabe-Modus bleibt über die Adresse `/scan?modus=uebergabe` erreichbar (z. B. Lesezeichen an einem reinen Übergabeplatz), mit Knopf „Zurück zu Annahme und Parken“
+
+## 0.50.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Suche im Scanner findet alle offenen Buchungen:** auch Fahrzeuge, die schon geparkt sind. Treffer zeigen **Annahme** (noch nicht angenommen bzw. geparkt) oder **Geparkt** mit Parkplatz und Abholung. Ein geparktes Fahrzeug öffnet wie beim Scannen die Frage **Fahrzeug übergeben** oder **Umparken**; die übrigen führen zur Annahme
+- Im Modus „Fahrzeug übergeben“ zeigt die Suche weiterhin nur Fahrzeuge auf dem Gelände
+
+## 0.49.0 – 25.11.2026
+
+### Neu (Scanner)
+- **Annahme direkt aus dem Übergabe-Modus:** Wird im Modus „Fahrzeug übergeben“ der Kunden-QR eines Fahrzeugs gescannt, das noch nicht angenommen ist, zeigt der Scanner Kennzeichen und Buchung mit dem Knopf **Fahrzeug annehmen**. Er öffnet das Annahmeprotokoll (danach wie gewohnt Parken). Annahme und Übergabe gehen so mit demselben Scanner, ohne den Modus zu wechseln
+
+## 0.48.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Umparken im Scanner vereinfacht:** nur noch zwei Ziele, **Übergabezone** und **Anderer Parkplatz**. Bei „Anderer Parkplatz“ scannt man den QR-Code am neuen Platz, Code-Feld und Grund entfallen. Belegte oder gesperrte Plätze meldet der Scanner, derselbe Platz wird abgelehnt. Hol- & Bringservice und Übergeben stehen hier nicht mehr (Übergeben hat einen eigenen Knopf)
+- **Kunden-QR im Modus „Fahrzeug übergeben“:** wird erkannt und öffnet direkt das Übergabeprotokoll. Schon übergeben: Hinweis „… ist bereits übergeben“; noch nicht angenommen: Hinweis „… ist noch nicht angenommen“
+- Der Modus steht in der Adresse (`/scan?modus=uebergabe`), z. B. für ein Lesezeichen am Übergabeplatz
+
+### Geändert
+- **„Umsetzen“ heißt bei Fahrzeugen jetzt „Umparken“** (Knöpfe, Aufgaben, Übersicht, Parkplätze, Benachrichtigungen, Verlauf „Umgeparkt“). Beim Shuttle bleibt „Fahrgäste umsetzen“
+
+## 0.47.0 – 25.11.2026
+
+### Neu (Scanner)
+- **Parkplatz-QR scannen fragt nach:** Steht dort ein Fahrzeug, zeigt der Scanner Kennzeichen, Kunde und Abholung und fragt **Fahrzeug übergeben** oder **Umparken**
+  - **Fahrzeug übergeben** öffnet das Übergabeprotokoll; nach den Unterschriften „Fahrzeug übergeben“ schließt die Buchung ab
+  - **Umparken** öffnet die Auswahl: anderer Parkplatz (Code eintippen), Übergabezone oder Hol- & Bringservice
+  - Freier Parkplatz: wie bisher Parken auf diesem Platz
+- **Kunden-QR eines schon geparkten Fahrzeugs** fragt ebenso nach Übergeben oder Umparken (bisher landeten Scanner-Zugänge wieder auf „Scannen“)
+- **Knopf „Fahrzeug übergeben“ unter dem Scanner:** Danach führen Kunden-QR, Parkplatz-QR oder die Suche nach Name, Kennzeichen oder Buchungsnummer direkt ins Übergabeprotokoll. Die Suche zeigt nur Fahrzeuge auf dem Gelände, früheste Abholung zuerst. „Zurück zu Annahme und Parken“ wechselt zurück
+- Alles auch mit dem Scanner-Zugang (PIN) nutzbar
+
+## 0.46.1 – 25.11.2026
+
+### Behoben
+- **Abmelden im Scanner führte zum Login mit E-Mail und Passwort.** Scanner- und Tageszugänge kommen nach „Abmelden“ (Kopfzeile, Einstellungen, „Zugang beendet“) jetzt wieder zur **PIN-Anmeldung** unter `/scanner`, mit gemerktem Namen
+- Login mit E-Mail und Passwort: Link **„Ohne Konto: Scanner mit PIN“**, falls man dort doch einmal landet
+
+## 0.46.0 – 25.11.2026
+
+### Geändert
+- **Neue Begriffe in der App** (Navigation, Überschriften, Knöpfe, Hinweise):
+  - **Dashboard → Übersicht**
+  - **Lageplan → Parkplätze**
+  - **Fahrzeuge → Buchungen** (Liste und Rückweg im Fahrzeug-Detail)
+  - **Einchecken → Parken** (Menüpunkt, „Fahrzeug parken“, Knopf im Fahrzeug-Detail, „Parken auf <Platz>“ nach dem Protokoll, „Fahrzeug hier parken“)
+  - **Stellplatz → Parkplatz**
+- Adressen der Seiten bleiben gleich (z. B. `/lageplan`, `/fahrzeuge`, `/einchecken`), Lesezeichen und QR-Links funktionieren weiter
+- Fehlermeldung der Datenbank-Sperre aus 0.45.0 lautet jetzt „Parken von … erst nach abgeschlossenem Annahmeprotokoll“. Ältere Meldungen der Datenbank (z. B. in Umsetz-Aufgaben „Stellplatz“) bleiben vorerst
+
+## 0.45.0 – 25.11.2026
+
+### Geändert
+- **Einchecken erst nach abgeschlossenem Annahmeprotokoll** (Scanner und Dashboard): Ist das Annahmeprotokoll noch nicht unterschrieben, zeigt „Fahrzeug einchecken“ keinen Lageplan und keinen Bestätigen-Knopf mehr, sondern **Annahmeprotokoll starten** bzw. **Protokoll fortsetzen**. Bisher war das nur ein Hinweis, Einparken ging trotzdem
+  - Gilt für alle Wege: Kunden-QR, Buchungssuche, freier Stellplatz gescannt, Menüpunkt „Einchecken“, Lageplan „Fahrzeug hier einchecken“
+  - Ein vorher **gescannter Stellplatz** geht mit ins Protokoll; nach dem Abschluss heißt der Knopf **Einchecken auf <Platz>** und führt genau dorthin (sonst wie bisher der empfohlene Platz)
+  - Kann das Protokoll nicht geprüft werden (z. B. kein Netz), bleibt das Einchecken gesperrt und eine Fehlermeldung erscheint
+
+### Datenbank
+- Migration `20261125000600_checkin_requires_intake.sql` (**noch nicht live eingespielt**): `move_vehicle` lehnt die erste Platzierung eines Fahrzeugs ohne abgeschlossenes Annahmeprotokoll ab („Parken von … erst nach abgeschlossenem Annahmeprotokoll“). Gilt damit auch für ältere App-Versionen und direkte Aufrufe. Umsetzen, Auslagern und Übergabe stehender Fahrzeuge sind nicht betroffen
+
 ## 0.44.0 – 25.11.2026
 
 ### Geändert

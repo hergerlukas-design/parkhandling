@@ -65,7 +65,7 @@ export function HelperAccess() {
     <div className="flex flex-col gap-4">
       <p className="text-sm text-subtle">
         Für Aushilfen ohne eigenes Konto: Namen eingeben, QR-Code zeigen, die Person scannt ihn mit der
-        Handykamera und hat bis Tagesende Zugang zum ganzen Dashboard. Nur für Annahme, Einparken und Rückgabe
+        Handykamera und hat bis Tagesende Zugang zur ganzen App. Nur für Annahme, Einparken und Rückgabe
         reicht der Scanner mit PIN.
       </p>
       <form onSubmit={submit} className="flex flex-wrap items-end gap-2">
@@ -107,7 +107,7 @@ export function HelperAccess() {
                 <span className="min-w-0">
                   <span className="font-medium">{h.display_name}</span>
                   <span className="block text-xs text-muted">
-                    {h.kind === 'scanner' ? 'Scanner (PIN)' : 'Dashboard (QR)'} · bis Tagesende{h.invited_by ? ` · freigeschaltet von ${h.invited_by}` : ''}
+                    {h.kind === 'scanner' ? 'Scanner (PIN)' : 'Ganze App (QR)'} · bis Tagesende{h.invited_by ? ` · freigeschaltet von ${h.invited_by}` : ''}
                   </span>
                 </span>
                 <Button variant="danger" onClick={() => void revoke(h)}>Sperren</Button>

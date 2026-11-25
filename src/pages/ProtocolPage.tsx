@@ -226,6 +226,8 @@ export function ProtocolPage() {
   // Aus „Übergeben“ im Auschecken-Dialog: direkt zu den Unterschriften springen
   const [searchParams] = useSearchParams()
   const jumpToSignature = searchParams.get('unterschrift') === '1'
+  // Vom Einchecken mit gescanntem Stellplatz gekommen: danach auf genau diesen Platz
+  const scannedSlot = searchParams.get('platz')
 
   const [booking, setBooking] = useState<ProtocolBooking | null>(null)
   const [row, setRow] = useState<ProtocolRow | null>(null)
@@ -524,6 +526,7 @@ export function ProtocolPage() {
   const fieldsDisabled = isFinal || !!busy
   const unsavedDamages = draftDamages.length + Object.values(dirtyDamages).filter(Boolean).length
   const canCheckIn = booking.status === 'booked' || booking.status === 'arrived'
+  const checkinSlot = scannedSlot ?? recommendation?.code ?? null
   const handedOver = booking.status === 'completed'
   const isExtra = (slot?: string | null) => slot === EXTRA_SLOT || slot === LEGACY_SCHEIN_SLOT
   const extraMedia = media.filter((m) => isExtra(m.slot))
@@ -581,9 +584,14 @@ export function ProtocolPage() {
                     : 'PDF gespeichert, E-Mail wird vorbereitet …'
                   : 'PDF wird gespeichert …'}
             </p>
-            {type === 'intake' && canCheckIn && recommendation && (
+            {type === 'intake' && canCheckIn && scannedSlot && (
               <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
-                <span className="font-semibold">Empfohlener Stellplatz {recommendation.code}</span> – {recommendation.reason}
+                <span className="font-semibold">Gescannter Parkplatz {scannedSlot}</span>
+              </p>
+            )}
+            {type === 'intake' && canCheckIn && !scannedSlot && recommendation && (
+              <p className="mt-2 rounded-xl bg-accent-soft px-3 py-2 text-accent-dark">
+                <span className="font-semibold">Empfohlener Parkplatz {recommendation.code}</span> – {recommendation.reason}
               </p>
             )}
           </div>
@@ -592,8 +600,8 @@ export function ProtocolPage() {
               <Button onClick={() => void resendMail()} disabled={!!busy}>E-Mail erneut senden</Button>
             )}
             {type === 'intake' && canCheckIn && (
-              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${recommendation ? `&platz=${encodeURIComponent(recommendation.code)}` : ''}`)}>
-                {recommendation ? `Einchecken auf ${recommendation.code}` : 'Weiter zum Einchecken'}
+              <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${checkinSlot ? `&platz=${encodeURIComponent(checkinSlot)}` : ''}`)}>
+                {checkinSlot ? `Parken auf ${checkinSlot}` : 'Weiter zum Parken'}
               </Button>
             )}
             {type === 'handover' && !handedOver && (

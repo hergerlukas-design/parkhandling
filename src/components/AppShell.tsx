@@ -2,7 +2,7 @@ import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
-import { isDayAccess, isDriverOnly, isHelperOnly, signOut, useAuth } from '../lib/auth'
+import { isDayAccess, isDriverOnly, isHelperOnly, signOutToScanner, useAuth } from '../lib/auth'
 import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, HELPER_ITEMS, helperMayOpen, NAV_ITEMS, SCAN_ENABLED, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
@@ -12,7 +12,7 @@ import { useStore } from '../lib/store'
 
 /** Seitentitel für Ansichten ohne eigenen Navigationseintrag */
 const EXTRA_TITLES = [
-  { to: '/einchecken', label: 'Einchecken' },
+  { to: '/einchecken', label: 'Parken' },
   { to: '/scan', label: 'Scannen' },
   { to: '/changelog', label: 'Änderungen' },
 ]
@@ -67,7 +67,7 @@ export function AppShell() {
               <span className="hidden sm:inline">
                 {helperOnly ? 'Scanner' : 'Tageszugang'} · {profile?.display_name} · bis Tagesende
               </span>
-              <button type="button" onClick={() => void signOut()} className="rounded-full bg-chip px-3 py-1.5 font-semibold text-ink">
+              <button type="button" onClick={() => void signOutToScanner()} className="rounded-full bg-chip px-3 py-1.5 font-semibold text-ink">
                 Abmelden
               </button>
             </span>

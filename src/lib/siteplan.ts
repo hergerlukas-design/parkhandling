@@ -140,6 +140,18 @@ export interface CheckinCandidate {
   task_chips: { title: string | null; status: string }[]
 }
 
+/** Suchfilter für Name, Kennzeichen (auch ohne Stadtkürzel) und Buchungsnummer; null = keine Suche */
+export function bookingSearchFilter(search: string): string | null {
+  const text = search.trim()
+  if (!text) return null
+  const plate = text.toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g, '')
+  const clean = text.replace(/[%,()"]/g, ' ')
+  const filters = [`customer_name.ilike.%${clean}%`, `external_ref.ilike.${clean}%`]
+  // Kennzeichen auch ohne Stadtkürzel finden („AB1234“ in „MAB1234“); nur Buchstaben/Ziffern
+  if (plate) filters.unshift(`plate_normalized.like.%${plate}%`)
+  return filters.join(',')
+}
+
 /** Buchungen, die eingecheckt werden können (gebucht/angekommen, noch ohne Stellplatz). */
 export async function listCheckinCandidates(search = ''): Promise<CheckinCandidate[]> {
   let q = db()
@@ -148,18 +160,58 @@ export async function listCheckinCandidates(search = ''): Promise<CheckinCandida
     .in('status', ['booked', 'arrived', 'in_transit'])
     .order('start_at')
     .limit(30)
-  const text = search.trim()
-  if (text) {
-    const plate = text.toUpperCase().replace(/[^A-Z0-9ÄÖÜ]/g, '')
-    const clean = text.replace(/[%,()"]/g, ' ')
-    const filters = [`customer_name.ilike.%${clean}%`, `external_ref.ilike.${clean}%`]
-    // Kennzeichen auch ohne Stadtkürzel finden („AB1234“ in „MAB1234“); nur Buchstaben/Ziffern
-    if (plate) filters.unshift(`plate_normalized.like.%${plate}%`)
-    q = q.or(filters.join(','))
-  }
+  const filter = bookingSearchFilter(search)
+  if (filter) q = q.or(filter)
   const { data, error } = await q
   if (error) throw new Error(error.message)
   return (data ?? []) as CheckinCandidate[]
+}
+
+/** Geparktes Fahrzeug (für Übergeben / Umparken im Scanner) */
+export interface ParkedVehicle {
+  id: string
+  plate: string
+  customer_name: string
+  external_ref: string | null
+  start_at: string
+  end_at: string
+  status: BookingStatus
+  location_code: string | null
+}
+
+const PARKED_COLUMNS = 'id, plate, customer_name, external_ref, start_at, end_at, status, location_code'
+/** Status, in denen ein Fahrzeug bei uns ist und übergeben werden kann */
+const ON_SITE: BookingStatus[] = ['arrived', 'stored', 'in_service', 'ready', 'in_transit']
+
+export async function getParkedVehicle(id: string): Promise<ParkedVehicle | null> {
+  const { data, error } = await db().from('booking_list').select(PARKED_COLUMNS).eq('id', id).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data as ParkedVehicle | null
+}
+
+/** Scanner-Suche im normalen Modus: noch anzunehmende Buchungen und Fahrzeuge auf dem Gelände */
+export async function listScanCandidates(search = ''): Promise<ParkedVehicle[]> {
+  let q = db()
+    .from('booking_list')
+    .select(PARKED_COLUMNS)
+    .in('status', ['booked', ...ON_SITE])
+    .order('start_at')
+    .limit(30)
+  const filter = bookingSearchFilter(search)
+  if (filter) q = q.or(filter)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ParkedVehicle[]
+}
+
+/** Fahrzeuge auf dem Gelände, früheste Abholung zuerst (Übergabe-Suche im Scanner) */
+export async function listHandoverCandidates(search = ''): Promise<ParkedVehicle[]> {
+  let q = db().from('booking_list').select(PARKED_COLUMNS).in('status', ON_SITE).order('end_at').limit(30)
+  const filter = bookingSearchFilter(search)
+  if (filter) q = q.or(filter)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ParkedVehicle[]
 }
 
 export async function getCheckinCandidate(id: string): Promise<CheckinCandidate | null> {
@@ -204,7 +256,7 @@ export function keyHint(from: string | null, to: string | null): string | null {
 
 /** Wo Fahrzeug und Schlüssel gerade sind, für Listen und Suche */
 export function whereabouts(code: string | null | undefined): string {
-  if (!code) return 'nicht eingecheckt'
+  if (!code) return 'nicht geparkt'
   if (KEY_SLOT_CODE.test(code)) return `Fach ${code}`
   if (code.startsWith('W-AUF')) return 'in Aufbereitung'
   if (code.startsWith('W-LAD')) return 'am Ladeplatz'

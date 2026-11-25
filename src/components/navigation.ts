@@ -8,9 +8,9 @@ export interface NavItem {
 
 /** Hauptnavigation */
 export const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: 'today' },
-  { to: '/lageplan', label: 'Lageplan', icon: 'map' },
-  { to: '/fahrzeuge', label: 'Fahrzeuge', icon: 'car' },
+  { to: '/', label: 'Übersicht', icon: 'today' },
+  { to: '/lageplan', label: 'Parkplätze', icon: 'map' },
+  { to: '/fahrzeuge', label: 'Buchungen', icon: 'car' },
   { to: '/aufgaben', label: 'Aufgaben', icon: 'tasks' },
   { to: '/shuttle', label: 'Shuttle', icon: 'shuttle' },
 ]
@@ -28,7 +28,7 @@ export function driverMayOpen(pathname: string): boolean {
 /** Aushilfe: Scannen und Einchecken (Annahme/Rückgabe starten über den Kunden-QR) */
 export const HELPER_ITEMS: NavItem[] = [
   { to: '/scan', label: 'Scannen', icon: 'scan' },
-  { to: '/einchecken', label: 'Einchecken', icon: 'car' },
+  { to: '/einchecken', label: 'Parken', icon: 'car' },
 ]
 
 /** Seiten, die eine Aushilfe öffnen darf */
