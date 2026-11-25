@@ -206,4 +206,7 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Format der CarHandling-Buchungstabelle: entweder wie unsere `bookings` oder wie das Rechner-Formular; Kennung `booking_ref` (sonst `external_ref`/`id`). Anpassen, sobald ein echter Datensatz vorliegt
 - [ANNAHME] Felder des CarHandling-Backends überschreiben bei jeder Änderung die Werte in der App (auch die Notiz); „bezahlt“ wird nie auf „offen“ zurückgesetzt
 - [OFFEN] Kapazität: Das CarHandling-Backend kennt Parkos- und manuelle Buchungen nicht (Halle kann doppelt vergeben werden). Abgleich in Gegenrichtung noch nicht umgesetzt
-- [OFFEN] Ankünfte aus dem CarHandling-Check-in kommen nicht als Ankunft in die App
+- [BELEGT 25.11.2026] Annahme per Kunden-QR läuft im Dashboard (Annahmeprotokoll, Stellplatz); das Dashboard meldet Check-in/Check-out an CarHandling (`carhandling-checkin` → `checkin-status`)
+- [ANNAHME] Annahme = Annahmeprotokoll abgeschlossen (→ `checkin`), Rückgabe = Übergabeprotokoll abgeschlossen (→ `checkout`)
+- [ANNAHME] Ein Check-in nur bei CarHandling wird angezeigt („Ticket CarHandling“), setzt aber bei uns keine Ankunft
+- [ANNAHME] Der Ticket-Code wird nur als SHA-256 gespeichert (der Ticket-Link steht wie bisher in der Notiz)

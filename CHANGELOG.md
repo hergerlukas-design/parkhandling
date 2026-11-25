@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.39.0 – 25.11.2026
+
+### Neu
+- **Kunden-QR-Code im Dashboard:** Den QR-Code aus der Buchungsbestätigung des Rechners (Check-in-Ticket bei CarHandling) kann jetzt der Scan-Knopf der App lesen. Er öffnet direkt die **Annahme**: erst das Annahmeprotokoll, danach Einchecken mit Platzvorschlag. Steht das Fahrzeug schon, öffnet sich das Fahrzeug. Storniert, schon zurückgegeben oder unbekannt: Hinweis statt Weiterleitung
+  - Auch die **Buchungsnummer** (`PH261215-OEC-SH-002`) kann im Scan eingetippt werden
+  - Neue Einstiege für die Mitarbeiterseite des Rechners: `/annahme#<Ticket-Code>` (Annahme) und `/rueckgabe#<Ticket-Code>` (Übergabeprotokoll)
+- **Annahme und Rückgabe an CarHandling melden:** Wird bei einer Rechner-Buchung das Annahme- bzw. Übergabeprotokoll abgeschlossen, meldet die neue Edge Function `carhandling-checkin` Check-in bzw. Check-out an CarHandling (`checkin-status`, Header `x-ref-secret` mit `CARHANDLING_REF_SECRET`). Ging die Meldung nicht durch (kein Netz, CarHandling nicht erreichbar), holt die Fahrzeugliste sie beim nächsten Öffnen nach. Solange CarHandling `checkin-status` nicht anbietet, bleibt es bei der Anzeige im Dashboard
+- **Fahrzeug-Detail:** Zeile „Ticket CarHandling“ mit dem Check-in-Stand bei CarHandling (angenommen/ausgecheckt mit Zeitpunkt)
+
+### Datenbank
+- Migration `20261125000100_ticket_checkin.sql`: Spalten `checkin_token_hash` (Ticket-Code nur als SHA-256), `carhandling_checked_in_at`, `carhandling_checked_out_at`; Funktion `find_booking_by_scan` (nur Mitarbeitende); `sync_external_booking` übernimmt Ticket-Code und Check-in-Stand aus dem Webhook. Bestehende Rechner-Buchungen bekommen den Ticket-Code aus dem Link in der Notiz
+- Function `booking-sync` gibt Ticket-Code, `checked_in_at` und `checked_out_at` weiter
+
 ## 0.38.1 – 25.11.2026
 
 ### Behoben

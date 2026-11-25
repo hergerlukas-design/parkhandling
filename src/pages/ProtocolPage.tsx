@@ -53,6 +53,7 @@ import {
   type SlotMedia,
 } from '../lib/protocols'
 import { getCheckinCandidate, keyHint, moveVehicle, recommendedSuggestion, suggestLocations, type Suggestion } from '../lib/siteplan'
+import { reportCheckin } from '../lib/ticket'
 import { useUpdateBlocker } from '../lib/update/updateGuard'
 import type { ProtocolType } from '../types/domain'
 
@@ -402,6 +403,8 @@ export function ProtocolPage() {
     try {
       const final = await finalizeProtocol(row.id, form)
       setRow(final)
+      // Rechner-Buchungen: Annahme bzw. Rückgabe an CarHandling melden (Ticket zeigt dann denselben Stand)
+      void reportCheckin(row.booking_id)
       await del(draftKey(row.booking_id, row.type)).catch(() => undefined)
       setBusy('PDF wird erstellt …')
       const file = await makePdf('final', form, final)

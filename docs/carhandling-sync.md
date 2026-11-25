@@ -109,6 +109,32 @@ mit Header `x-ref-secret` (Secret `CARHANDLING_REF_SECRET` bei uns, `PARKHANDLIN
 Body `{ arrival_date, tariff, service, reference }` auf; Antwort `{ booking_ref }`. Gleiche `reference` (unsere
 Buchungs-ID) liefert immer dieselbe Nummer.
 
+## Kunden-QR-Code und Annahme (0.39.0)
+
+Der Kunde bekommt nach der Buchung einen QR-Code mit dem Link `https://parkhandling-rechner.pplx.app/ticket.html#<Ticket-Code>`
+(32 Hex-Zeichen, Spalte `checkin_token` bei CarHandling). Die Annahme läuft im Dashboard:
+
+```
+Kunden-QR ──scan──► Dashboard: find_booking_by_scan → Annahmeprotokoll → Einchecken (Stellplatz)
+                                         │ Protokoll abgeschlossen
+                                         ▼
+                    carhandling-checkin ──POST──► CarHandling checkin-status (checked_in_at)
+                                                          │ Database Webhook
+                                                          ▼
+                    booking-sync ◄─────────────── carhandling_checked_in_at bei uns
+```
+
+- `booking-sync` speichert den Ticket-Code nur als SHA-256 (`bookings.checkin_token_hash`) sowie `checked_in_at`/`checked_out_at`
+  als `carhandling_checked_in_at`/`carhandling_checked_out_at`.
+- Scan in der App (`/scan`): Ticket-Link, reiner Ticket-Code oder Buchungsnummer `PH…`.
+- Einstiege für die Mitarbeiterseite von `ticket.html`: `https://parkhandling.fly.dev/annahme#<Ticket-Code>` und
+  `https://parkhandling.fly.dev/rueckgabe#<Ticket-Code>`.
+- Meldung an CarHandling: Annahmeprotokoll abgeschlossen → `op: "checkin"`, Übergabeprotokoll abgeschlossen → `op: "checkout"`.
+  `POST https://orqkeiveksshijktxepv.supabase.co/functions/v1/checkin-status`, Header `x-ref-secret`, Body
+  `{ booking_ref, op, at }`, Antwort `{ booking_ref, checked_in_at, checked_out_at }`. Gemeldet wird nur, was dort laut
+  Webhook noch fehlt; nicht durchgegangene Meldungen holt die Fahrzeugliste einmal je Sitzung nach (`{ pending: true }`).
+- Auf CarHandling-Seite noch umzusetzen: Edge Function `checkin-status`, Knöpfe auf `ticket.html` (Auftrag an Perplexity, 25.11.2026).
+
 ## Prüfen
 
 1. Im Rechner eine Testbuchung abschicken (oder im CarHandling-Projekt eine Zeile ändern).
@@ -120,7 +146,8 @@ Buchungs-ID) liefert immer dieselbe Nummer.
 
 - **Kapazität:** Das CarHandling-Backend kennt Parkos- und manuelle Buchungen aus unserem Dashboard nicht. Die Halle
   kann dort also als frei gelten, obwohl sie bei uns voll ist. **Entschieden (24.11.2026): Der Abgleich in Gegenrichtung wird gebraucht**, als nächster Schritt.
-- **Check-in:** Ankünfte, die im CarHandling-Check-in gescannt werden, kommen nicht als Ankunft in unsere App
-  (nur der Ticket-Link steht in der Notiz). **Entschieden (24.11.2026):** erst in einem späteren Schritt zusammenführen.
+- **Check-in:** Seit 0.39.0 läuft die Annahme per Kunden-QR im Dashboard und wird an CarHandling gemeldet. Ein Check-in,
+  der nur bei CarHandling gedrückt wird, steht im Fahrzeug-Detail („Ticket CarHandling“), setzt aber keine Ankunft und
+  keinen Stellplatz bei uns.
 - Das Format der CarHandling-Tabelle ist noch nicht bestätigt; die Zuordnung oben ist eine [ANNAHME] und wird
   angepasst, sobald ein echter Datensatz vorliegt.

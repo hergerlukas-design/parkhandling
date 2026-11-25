@@ -10,6 +10,7 @@ import { ScanPage } from './pages/ScanPage'
 import { ShuttlePage } from './pages/ShuttlePage'
 import { SitePlanPage } from './pages/SitePlanPage'
 import { TasksPage } from './pages/TasksPage'
+import { TicketPage } from './pages/TicketPage'
 import { ProtocolPage } from './pages/ProtocolPage'
 import { TodayPage } from './pages/TodayPage'
 import { VehicleDetailPage } from './pages/VehicleDetailPage'
@@ -33,6 +34,8 @@ export function App() {
               <Route path="shuttle" element={<ShuttlePage />} />
               <Route path="scan" element={<ScanPage />} />
               <Route path="einchecken" element={<CheckinPage />} />
+              <Route path="annahme" element={<TicketPage mode="intake" />} />
+              <Route path="rueckgabe" element={<TicketPage mode="handover" />} />
               <Route path="protokoll/:type/:bookingId" element={<ProtocolPage />} />
               <Route path="einstellungen" element={<SettingsPage />} />
               <Route path="changelog" element={<ChangelogPage />} />

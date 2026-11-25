@@ -169,7 +169,8 @@ export async function getCheckinCandidate(id: string): Promise<CheckinCandidate 
 }
 
 export interface ScanTarget {
-  kind: 'key' | 'location' | 'unknown'
+  /** ticket = Kunden-QR des Rechners (code = Ticket-Code), booking_ref = Buchungsnummer PH… */
+  kind: 'key' | 'location' | 'ticket' | 'booking_ref' | 'unknown'
   code: string
 }
 
@@ -208,9 +209,15 @@ export function whereabouts(code: string | null | undefined): string {
   return code
 }
 
-/** QR-Inhalt deuten: PF-LOC:R3-E1, ein reiner Stellplatz-Code oder PF-KEY:R3-E1 (Anhänger aus 0.17.0). */
+/**
+ * QR-Inhalt deuten: PF-LOC:R3-E1, ein reiner Stellplatz-Code, PF-KEY:R3-E1 (Anhänger aus 0.17.0),
+ * der Kunden-QR des Rechners (…/ticket.html#<32 Hex>) oder eine Buchungsnummer (PH261215-OEC-SH-002).
+ */
 export function parseScan(raw: string): ScanTarget {
+  const ticket = /^(?:https?:\/\/\S*ticket\.html#)?([0-9a-f]{32})$/i.exec(raw.trim())
+  if (ticket) return { kind: 'ticket', code: ticket[1].toLowerCase() }
   const text = raw.trim().toUpperCase()
+  if (/^PH\d{6}-[A-Z+]{2,3}-[A-Z]{2}-\d{3}$/.test(text)) return { kind: 'booking_ref', code: text }
   const key = /^PF-KEY:([A-Z0-9-]+)$/.exec(text)
   if (key && hasKeySlot(key[1])) return { kind: 'key', code: key[1] }
   const loc = /^PF-LOC:([A-Z0-9-]+)$/.exec(text)

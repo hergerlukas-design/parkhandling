@@ -74,6 +74,9 @@ export interface Booking extends Row {
   import_flags: string[]
   /** Tarif der Online-Buchung (Landingpage, seit 0.33.0; ältere Datenbank: fehlt) */
   tariff_code?: string | null
+  /** Check-in/Check-out laut CarHandling-Backend (Rechner-Buchungen, seit 0.39.0) */
+  carhandling_checked_in_at?: string | null
+  carhandling_checked_out_at?: string | null
 }
 
 export interface Service extends Row {
