@@ -13,8 +13,8 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - **Fahrzeug-Detail:** Zeile „Ticket CarHandling“ mit dem Check-in-Stand bei CarHandling (angenommen/ausgecheckt mit Zeitpunkt)
 
 ### Datenbank
-- Migration `20261125000100_ticket_checkin.sql`: Spalten `checkin_token_hash` (Ticket-Code nur als SHA-256), `carhandling_checked_in_at`, `carhandling_checked_out_at`; Funktion `find_booking_by_scan` (nur Mitarbeitende); `sync_external_booking` übernimmt Ticket-Code und Check-in-Stand aus dem Webhook. Bestehende Rechner-Buchungen bekommen den Ticket-Code aus dem Link in der Notiz
-- Function `booking-sync` gibt Ticket-Code, `checked_in_at` und `checked_out_at` weiter
+- Migration `20261125000100_ticket_checkin.sql` (live eingespielt am 25.11.2026, alle 8 Rechner-Buchungen haben ihren Ticket-Code): Spalten `checkin_token_hash` (Ticket-Code nur als SHA-256), `carhandling_checked_in_at`, `carhandling_checked_out_at`; Funktion `find_booking_by_scan` (nur Mitarbeitende); `sync_external_booking` übernimmt Ticket-Code und Check-in-Stand aus dem Webhook. Bestehende Rechner-Buchungen bekommen den Ticket-Code aus dem Link in der Notiz
+- Function `booking-sync` gibt Ticket-Code, `checked_in_at` und `checked_out_at` weiter (live als Version 5); `carhandling-checkin` live als Version 1 (mit JWT-Prüfung)
 
 ## 0.38.1 – 25.11.2026
 
