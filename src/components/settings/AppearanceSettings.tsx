@@ -32,7 +32,7 @@ export function AppearanceSettings() {
           )
         })}
       </div>
-      <p className="text-xs text-muted">Gilt nur für dieses Gerät. Der Website-Modus ist ein Entwurf zum Ausprobieren.</p>
+      <p className="text-xs text-muted">Gilt nur für dieses Gerät.</p>
     </div>
   )
 }
