@@ -3,6 +3,20 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.40.0 – 25.11.2026
+
+### Neu
+- **Aushilfen per QR-Code freischalten:** Aushilfen brauchen kein eigenes Konto. Unter Einstellungen → Team → **Aushilfe freischalten** gibt jemand mit der Rolle Personal den Namen ein, die App zeigt einen QR-Code (15 Minuten gültig, nur einmal). Die Aushilfe scannt ihn mit der Kamera ihres eigenen Handys und ist ohne E-Mail und Passwort angemeldet
+  - Zugang **bis Tagesende** (Berliner Zeit), danach „Zugang beendet“. Vorher jederzeit über **Sperren** beendbar; die Liste zeigt, wer heute freigeschaltet ist und von wem
+  - Aushilfen sehen nur **Scannen** und **Einchecken** und können Annahme- und Übergabeprotokolle ausfüllen. Fahrzeugliste, Lageplan, Aufgaben, Shuttle und Einstellungen sind für sie gesperrt
+  - Ihr Name steht automatisch als Prüfer im Protokoll
+  - Aushilfen können keine weiteren Aushilfen freischalten; ein Gerät mit eigenem Konto wird nie zur Aushilfe umgebaut
+- **Scan-Knopf wieder sichtbar** (Kopfzeile und Smartphone-Leiste) für Stellplatz- und Kunden-QR
+
+### Datenbank
+- Migration `20261125000200_helper_access.sql`: Rolle `helper`, `profiles.access_until`, Tabelle `helper_invites` (nur Hash des Codes), Funktionen `create_helper_invite`, `redeem_helper_invite`, `list_helpers`, `revoke_helper`, `is_personnel`. `is_staff`/`is_member` berücksichtigen `access_until`
+- Voraussetzung: In Supabase **Authentication → Sign In / Providers → „Allow anonymous sign-ins“** einschalten
+
 ## 0.39.0 – 25.11.2026
 
 ### Neu

@@ -2,8 +2,8 @@ import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { formatDate } from '../lib/format'
 import { APP_VERSION } from '../lib/version'
 import { Icon } from './Icon'
-import { isDriverOnly, useAuth } from '../lib/auth'
-import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, NAV_ITEMS, SCAN_ENABLED, SETTINGS_ITEM } from './navigation'
+import { isDriverOnly, isHelperOnly, signOut, useAuth } from '../lib/auth'
+import { BOTTOM_ITEMS, DRIVER_ITEMS, driverMayOpen, HELPER_ITEMS, helperMayOpen, NAV_ITEMS, SCAN_ENABLED, SETTINGS_ITEM } from './navigation'
 import { UploadStatus } from './media/UploadStatus'
 import { PushMessages } from './notifications/PushMessages'
 import { UpdateBanner } from './UpdateBanner'
@@ -27,8 +27,10 @@ export function AppShell() {
   const { pathname } = useLocation()
   const { profile } = useAuth()
   const driverOnly = isDriverOnly(profile)
-  const navItems = driverOnly ? DRIVER_ITEMS : NAV_ITEMS
-  const bottomItems = driverOnly ? DRIVER_ITEMS : BOTTOM_ITEMS
+  const helperOnly = isHelperOnly(profile)
+  const navItems = helperOnly ? HELPER_ITEMS : driverOnly ? DRIVER_ITEMS : NAV_ITEMS
+  const bottomItems = helperOnly ? HELPER_ITEMS : driverOnly ? DRIVER_ITEMS : BOTTOM_ITEMS
+  const home = helperOnly ? '/scan' : driverOnly ? '/shuttle' : '/'
   const current = [...NAV_ITEMS, SETTINGS_ITEM, ...EXTRA_TITLES].find((i) =>
     i.to === '/' ? pathname === '/' : pathname.startsWith(i.to),
   )
@@ -36,12 +38,14 @@ export function AppShell() {
 
   // Reiner Fahrer: alles außer Shuttle und Einstellungen führt zur Shuttle-Ansicht
   if (driverOnly && !driverMayOpen(pathname)) return <Navigate to="/shuttle" replace />
+  // Aushilfe: nur Scannen, Annahme, Rückgabe, Einchecken
+  if (helperOnly && !helperMayOpen(pathname)) return <Navigate to="/scan" replace />
 
   return (
     <div className="flex h-full flex-col">
       {/* Kopfzeile */}
       <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5 md:px-6 md:py-3">
-        <Link to={driverOnly ? '/shuttle' : '/'} className="text-lg font-bold tracking-tight md:text-xl">
+        <Link to={home} className="text-lg font-bold tracking-tight md:text-xl">
           Park &amp; Fly
         </Link>
         <span className="text-sm text-muted md:text-base">{current?.label}</span>
@@ -49,20 +53,28 @@ export function AppShell() {
           {WEEKDAY.format(now).replace('.', '')}, {formatDate(now)}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          {!driverOnly && SCAN_ENABLED && <NavLink
+          {helperOnly && (
+            <span className="flex items-center gap-2 text-xs text-muted">
+              <span className="hidden sm:inline">Aushilfe {profile?.display_name} · bis Tagesende</span>
+              <button type="button" onClick={() => void signOut()} className="rounded-full bg-chip px-3 py-1.5 font-semibold text-ink">
+                Abmelden
+              </button>
+            </span>
+          )}
+          {!driverOnly && !helperOnly && SCAN_ENABLED && <NavLink
             to="/scan"
             className="touch-target hidden items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark md:inline-flex"
           >
             <Icon name="scan" className="size-5" />
             Scannen
           </NavLink>}
-          <NavLink
+          {!helperOnly && <NavLink
             to={SETTINGS_ITEM.to}
             aria-label={SETTINGS_ITEM.label}
             className="touch-target flex items-center justify-center rounded-full bg-chip text-ink md:hidden"
           >
             <Icon name={SETTINGS_ITEM.icon} className="size-5" />
-          </NavLink>
+          </NavLink>}
         </div>
       </header>
 
@@ -79,10 +91,10 @@ export function AppShell() {
               </li>
             ))}
           </ul>
-          <NavLink to={SETTINGS_ITEM.to} className={({ isActive }) => railClass(isActive)}>
+          {!helperOnly && <NavLink to={SETTINGS_ITEM.to} className={({ isActive }) => railClass(isActive)}>
             <Icon name={SETTINGS_ITEM.icon} className="size-5" />
             Setup
-          </NavLink>
+          </NavLink>}
         </nav>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -99,7 +111,7 @@ export function AppShell() {
 
       {/* Bottom-Bar (Smartphone) mit zentralem Scan-Button */}
       <nav aria-label="Hauptnavigation" className="border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
-        <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : bottomItems.length === 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
+        <ul className={`grid items-end ${driverOnly ? 'grid-cols-1' : helperOnly ? 'grid-cols-2' : bottomItems.length === 6 ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {bottomItems.map((item) =>
             item === 'scan' ? (
               <li key="scan" className="flex justify-center">

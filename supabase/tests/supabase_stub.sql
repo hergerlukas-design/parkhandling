@@ -32,6 +32,10 @@ create or replace function auth.role() returns text language sql stable as $$
   select nullif(current_setting('request.jwt.claim.role', true), '')
 $$;
 
+create or replace function auth.jwt() returns jsonb language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+$$;
+
 create table if not exists storage.buckets (
   id text primary key,
   name text not null,

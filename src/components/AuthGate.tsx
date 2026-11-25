@@ -1,5 +1,6 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { signIn, signOut, useAuth } from '../lib/auth'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { accessExpired, redeemHelperCode, signIn, signOut, useAuth } from '../lib/auth'
+import { codeFromHash } from '../lib/helpers'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { SetPassword } from './users/SetPassword'
 import { APP_VERSION } from '../lib/version'
@@ -56,9 +57,57 @@ function LoginForm() {
   )
 }
 
-/** Zugang nur für angemeldetes, freigeschaltetes Personal. */
+/** /aushilfe#<Code>: Aushilfe mit dem eigenen Handy freischalten (anonyme Anmeldung + Code einlösen) */
+function HelperRedeem() {
+  const [error, setError] = useState<string | null>(null)
+  const [blocked, setBlocked] = useState(false)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (started.current) return
+    started.current = true
+    const code = codeFromHash(window.location.hash)
+    if (!code) {
+      setError('Der Link enthält keinen gültigen Freischalt-Code.')
+      return
+    }
+    redeemHelperCode(code).then((err) => {
+      if (!err) window.location.replace('/scan')
+      else {
+        setError(err)
+        setBlocked(err.startsWith('Auf diesem Gerät'))
+      }
+    })
+  }, [])
+
+  return (
+    <Screen title="Aushilfe freischalten">
+      {!error && <p className="text-sm text-subtle">Wird freigeschaltet …</p>}
+      {error && (
+        <>
+          <p className="text-sm text-danger">{error}</p>
+          <p className="mt-2 text-sm text-subtle">
+            {blocked ? 'Festes Personal braucht keine Freischaltung.' : 'Bitte einen neuen QR-Code erzeugen lassen.'}
+          </p>
+          {blocked && (
+            <button type="button" onClick={() => void signOut().then(() => window.location.reload())}
+              className="touch-target mt-4 w-full rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">
+              Abmelden und als Aushilfe fortfahren
+            </button>
+          )}
+        </>
+      )}
+    </Screen>
+  )
+}
+
+/** Zugang nur für angemeldetes, freigeschaltetes Personal (oder freigeschaltete Aushilfen). */
 export function AuthGate({ children }: { children: ReactNode }) {
   const { loading, session, profile } = useAuth()
+
+  if (isSupabaseConfigured && window.location.pathname === '/aushilfe') {
+    return <HelperRedeem />
+  }
 
   if (!isSupabaseConfigured) {
     return (
@@ -79,7 +128,21 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </Screen>
     )
   }
-  if (!profile?.active) {
+  if (session.user.is_anonymous && (!profile?.active || accessExpired(profile))) {
+    return (
+      <Screen title="Zugang beendet">
+        <p className="text-sm text-subtle">
+          Der Aushilfen-Zugang ist abgelaufen oder wurde beendet. Für die nächste Schicht bitte einen neuen QR-Code
+          beim Personal scannen.
+        </p>
+        <button type="button" onClick={() => void signOut()}
+          className="touch-target mt-4 w-full rounded-lg border border-line-strong px-4 py-2 text-sm font-semibold">
+          Abmelden
+        </button>
+      </Screen>
+    )
+  }
+  if (!profile?.active || accessExpired(profile)) {
     return (
       <Screen title="Konto nicht freigeschaltet">
         <p className="text-sm text-subtle">

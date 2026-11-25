@@ -210,3 +210,8 @@ Alle Werte mit [ANNAHME] liegen als Seed-Daten oder in `settings` und sind ohne 
 - [ANNAHME] Annahme = Annahmeprotokoll abgeschlossen (→ `checkin`), Rückgabe = Übergabeprotokoll abgeschlossen (→ `checkout`)
 - [ANNAHME] Ein Check-in nur bei CarHandling wird angezeigt („Ticket CarHandling“), setzt aber bei uns keine Ankunft
 - [ANNAHME] Der Ticket-Code wird nur als SHA-256 gespeichert (der Ticket-Link steht wie bisher in der Notiz)
+
+## Aushilfen (0.40.0)
+- [BELEGT 25.11.2026] Aushilfen nutzen ihr eigenes Handy ohne Registrierung; freischalten darf jeder mit Rolle Personal (oder Admin); Zugang bis Tagesende (Lukas)
+- [ANNAHME] Freischalt-Code 15 Minuten gültig und nur einmal verwendbar; Anmeldung über anonyme Supabase-Anmeldung
+- [ANNAHME] Aushilfen haben für die Datenrechte dieselben Lese-/Schreibrechte wie Personal (nötig für Protokolle, Fotos, Einchecken); eingeschränkt ist die App-Oberfläche (nur Scannen, Annahme, Rückgabe, Einchecken). Über die Schnittstelle könnten sie während ihrer Schicht Buchungsdaten lesen

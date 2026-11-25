@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router'
 import { Card, Page } from '../components/Page'
-import { isAdminProfile, isDriverOnly, profileRoles, signOut, useAuth } from '../lib/auth'
+import { isAdminProfile, isDriverOnly, isStaffProfile, profileRoles, signOut, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { useStore } from '../lib/store'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -8,6 +8,7 @@ import { checkForUpdate, updateStore } from '../lib/update/updateController'
 import { NotificationAdmin } from '../components/notifications/NotificationAdmin'
 import { NotificationSettings } from '../components/notifications/NotificationSettings'
 import { SiteLayoutSettings } from '../components/siteplan/SiteLayoutSettings'
+import { HelperAccess } from '../components/users/HelperAccess'
 import { UserManagement } from '../components/users/UserManagement'
 import { rolesLabel } from '../lib/users'
 import { APP_VERSION, BUILD_TIME } from '../lib/version'
@@ -114,6 +115,11 @@ export function SettingsPage() {
           {admin && (
             <Card title="Benachrichtigungen: Einstellungen & Geräte">
               <NotificationAdmin />
+            </Card>
+          )}
+          {isStaffProfile(profile) && (
+            <Card title="Aushilfe freischalten">
+              <HelperAccess />
             </Card>
           )}
           {admin && (

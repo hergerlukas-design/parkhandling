@@ -25,10 +25,23 @@ export function driverMayOpen(pathname: string): boolean {
   return DRIVER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
+/** Aushilfe: Scannen und Einchecken (Annahme/Rückgabe starten über den Kunden-QR) */
+export const HELPER_ITEMS: NavItem[] = [
+  { to: '/scan', label: 'Scannen', icon: 'scan' },
+  { to: '/einchecken', label: 'Einchecken', icon: 'car' },
+]
+
+/** Seiten, die eine Aushilfe öffnen darf */
+export const HELPER_PATHS = ['/scan', '/einchecken', '/annahme', '/rueckgabe', '/protokoll', '/changelog']
+
+export function helperMayOpen(pathname: string): boolean {
+  return HELPER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
 export const SETTINGS_ITEM: NavItem = { to: '/einstellungen', label: 'Einstellungen', icon: 'settings' }
 
-/** Zentraler Scan-Button (Kopfzeile und Smartphone-Leiste). Vorerst aus, wird nicht genutzt; Seite /scan bleibt erreichbar. */
-export const SCAN_ENABLED = false
+/** Zentraler Scan-Button (Kopfzeile und Smartphone-Leiste): Stellplatz- und Kunden-QR (seit 0.40.0 an) */
+export const SCAN_ENABLED = true
 
 /** Smartphone: fünf Ziele (plus zentraler Scan-Button, falls aktiv); Einstellungen über das Zahnrad oben rechts. */
 export const BOTTOM_ITEMS: (NavItem | 'scan')[] = SCAN_ENABLED

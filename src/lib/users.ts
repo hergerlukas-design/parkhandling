@@ -13,7 +13,7 @@ export interface StaffProfile {
   invited_at: string | null
 }
 
-export const ROLE_LABEL: Record<Role, string> = { admin: 'Admin', staff: 'Personal', driver: 'Fahrer' }
+export const ROLE_LABEL: Record<Role, string> = { admin: 'Admin', staff: 'Personal', driver: 'Fahrer', helper: 'Aushilfe' }
 
 /** Rollen sortiert und ohne Doppelte; mindestens eine */
 export function normalizeRoles(roles: readonly Role[]): Role[] {
@@ -36,6 +36,9 @@ export async function listStaff(): Promise<StaffProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, email, display_name, role, roles, active, invited_at')
+    // Aushilfen und anonyme Geräte stehen in der eigenen Liste „Aushilfen“
+    .not('email', 'is', null)
+    .not('roles', 'cs', '{helper}')
     .order('display_name')
   if (error) throw new Error('Personal konnte nicht geladen werden')
   return (data ?? []) as StaffProfile[]
