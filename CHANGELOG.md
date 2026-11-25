@@ -17,7 +17,7 @@ Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer
 - Abgelaufener Tageszugang: Hinweis mit Knopf **Zum Scanner**
 
 ### Datenbank
-- Migration `20261125000300_scanner_pin.sql`: Tabellen `scanner_pin` (nur gesalzener Hash) und `scanner_login_attempts`, Funktionen `set_scanner_pin`, `scanner_pin_status`, `redeem_scanner_pin`; `redeem_helper_invite` vergibt `staff`; `is_personnel` nur noch für Konten ohne Ablaufdatum; `list_helpers` mit Art
+- Migration `20261125000300_scanner_pin.sql` (live eingespielt am 25.11.2026): Tabellen `scanner_pin` (nur gesalzener Hash) und `scanner_login_attempts`, Funktionen `set_scanner_pin`, `scanner_pin_status`, `redeem_scanner_pin`; `redeem_helper_invite` vergibt `staff`; `is_personnel` nur noch für Konten ohne Ablaufdatum; `list_helpers` mit Art
 
 ## 0.40.0 – 25.11.2026
 
