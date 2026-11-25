@@ -3,6 +3,12 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.51.0 – 25.11.2026
+
+### Geändert (Scanner)
+- **Knopf „Fahrzeug übergeben“ unter dem Scanner entfällt.** Der Scanner hat nur noch einen Ablauf: QR-Code scannen oder suchen, die App fragt, was zu tun ist (Annahme, Übergeben oder Umparken)
+- Der reine Übergabe-Modus bleibt über die Adresse `/scan?modus=uebergabe` erreichbar (z. B. Lesezeichen an einem reinen Übergabeplatz), mit Knopf „Zurück zu Annahme und Parken“
+
 ## 0.50.0 – 25.11.2026
 
 ### Geändert (Scanner)

@@ -33,8 +33,8 @@ const HANDOVER_ZONE = 'W-UEB'
  *  Parkplatz belegt         → Frage: Fahrzeug übergeben oder umparken
  *  Parkplatz frei           → Parken auf diesem Platz (Fahrzeug zuordnen, bestätigen)
  *  Kunden-QR / Buchungsnr.  → Annahme (Annahmeprotokoll, dann Parken); steht das Fahrzeug schon: Frage wie oben
- * Darunter die Buchungssuche (z. B. Telefonbuchung ohne QR-Code) und der Knopf „Fahrzeug übergeben“:
- * danach führen Kunden-QR, Parkplatz-QR und Suche direkt ins Übergabeprotokoll.
+ * Darunter die Buchungssuche (z. B. Telefonbuchung ohne QR-Code): noch nicht angenommen → Annahme, geparkt → Frage wie oben.
+ * /scan?modus=uebergabe: Kunden-QR, Parkplatz-QR und Suche führen direkt ins Übergabeprotokoll.
  */
 export function ScanPage() {
   const navigate = useNavigate()
@@ -336,12 +336,9 @@ export function ScanPage() {
         </section>
       )}
 
-      {!vehicle && !intakeOffer && (
-        handover ? (
-          <Button onClick={() => switchMode('parken')}>Zurück zu Annahme und Parken</Button>
-        ) : (
-          <Button variant="primary" onClick={() => switchMode('uebergabe')}>Fahrzeug übergeben</Button>
-        )
+      {/* Nur-Übergabe-Modus gibt es nur noch über die Adresse /scan?modus=uebergabe (z. B. Lesezeichen am Übergabeplatz) */}
+      {!vehicle && !intakeOffer && handover && (
+        <Button onClick={() => switchMode('parken')}>Zurück zu Annahme und Parken</Button>
       )}
     </div>
   )
