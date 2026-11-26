@@ -114,3 +114,37 @@ export function ErrorList({ errors }: { errors: string[] }) {
     </ul>
   )
 }
+
+/** Ein/Aus-Schalter mit Beschriftung links (Checkbox mit role="switch") */
+export function Switch({
+  checked,
+  onChange,
+  label,
+  ariaLabel,
+  disabled,
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  label: ReactNode
+  ariaLabel: string
+  disabled?: boolean
+}) {
+  return (
+    <label className="touch-target inline-flex cursor-pointer items-center gap-2 text-sm text-subtle">
+      {label}
+      <input
+        type="checkbox"
+        role="switch"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span
+        aria-hidden="true"
+        className="relative h-6 w-11 shrink-0 rounded-full bg-line-strong transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-accent peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent peer-disabled:opacity-50"
+      />
+    </label>
+  )
+}

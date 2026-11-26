@@ -26,7 +26,8 @@ function chargeText(percent: number | null): string {
 }
 
 /** Kilometerstand deutsch formatiert: „84.213,5 km“ */
-function kmText(km: number): string {
+function kmText(km: number | null): string {
+  if (km == null) return '–'
   return `${km.toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`
 }
 
@@ -261,8 +262,10 @@ export interface PdfData {
   inspector_name: string
   /** For annahme: Standort. For transfer: "Von → Nach". */
   location: string
-  /** Kilometerstand mit optionaler Nachkommastelle */
-  odometer: number
+  /** Kilometerstand mit optionaler Nachkommastelle, null = nicht erfasst */
+  odometer: number | null
+  /** false = Zustand (KM-Stand, Tank-/Ladestand, Bedingungen) nicht erfasst: Abschnitt 2 entfällt */
+  condition_recorded?: boolean
   /** Tankstand in Segmenten 0–8, null = nicht erfasst */
   fuel_level: number | null
   /** Ladestand in Prozent 0–100, null = nicht erfasst */
@@ -580,8 +583,10 @@ function drawSection1Basisdaten(
       drawCell(page, fonts, ML, cursorY, CW, ROW8, _L.transfer_type_label, data.transfer_type)
       cursorY -= ROW8
     }
-    drawCell(page, fonts, ML, cursorY, CW, ROW8, _L.conditions, data.conditions.join(', '))
-    cursorY -= ROW8
+    if (data.condition_recorded !== false) {
+      drawCell(page, fonts, ML, cursorY, CW, ROW8, _L.conditions, data.conditions.join(', '))
+      cursorY -= ROW8
+    }
   }
 
   return cursorY
@@ -1216,7 +1221,7 @@ export async function generatePdf(
 
   let cursorY = top(CONTENT_TOP)
   cursorY = drawSection1Basisdaten(page1, fonts, cursorY, data)
-  cursorY = drawSection2Technik(page1, fonts, cursorY, data)
+  if (data.condition_recorded !== false) cursorY = drawSection2Technik(page1, fonts, cursorY, data)
   cursorY = drawSection3Checkliste(page1, fonts, cursorY, data)
   cursorY = drawSection4Bemerkungen(page1, fonts, cursorY, data)
   void cursorY

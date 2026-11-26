@@ -118,6 +118,12 @@ describe('validateForFinalize', () => {
     expect(errors).toEqual(['Kennzeichen fehlt', 'Antrieb wählen (Verbrenner, Hybrid oder Elektro)'])
   })
 
+  it('verlangt bei ausgeschaltetem Zustand weder KM-Stand noch Antrieb, Tank- oder Ladestand', () => {
+    const off = form({ condition_recorded: false, mileage: '', fuel_type: null, fuel_level: null })
+    expect(validateForFinalize(off, { staff: true, customer: true })).toEqual([])
+    expect(validateForFinalize(off, { staff: false, customer: false })).toEqual(['Unterschrift Mitarbeiter fehlt', 'Unterschrift Kunde fehlt'])
+  })
+
   it('verlangt vollständige Schadensangaben', () => {
     const errors = validateForFinalize(
       form({ damages: [{ id: 'a', pos: 'Dach', desc: '  ' }, { id: 'b', pos: '', desc: 'Delle' }] }),
@@ -200,6 +206,14 @@ describe('pickSlotUrls / buildPdfData', () => {
     expect([c.drive, c.fuel_level, c.charge_level]).toEqual(['Verbrenner', 5, null])
     const h = buildPdfData({ ...base, form: form({ fuel_type: 'hybrid', fuel_level: 5, charge_level: 70 }) })
     expect([h.drive, h.fuel_level, h.charge_level]).toEqual(['Hybrid', 5, 70])
+  })
+
+  it('lässt den Zustand im PDF weg, wenn er ausgeschaltet ist', () => {
+    const base = { type: 'intake' as const, status: 'final' as const, booking, slotUrls: {}, inspectionDate: '2026-10-06T08:00:00Z' }
+    const d = buildPdfData({ ...base, form: form({ condition_recorded: false, fuel_level: 5, conditions: ['Regen'] }) })
+    expect([d.condition_recorded, d.odometer, d.fuel_level, d.charge_level, d.conditions]).toEqual([false, null, null, null, []])
+    expect(pdfLabels('intake', null, false).section4).toBe('2. Bemerkungen')
+    expect(pdfLabels('intake').section4).toBe('3. Bemerkungen')
   })
 
   it('beschriftet das Anzeige-Foto nach Antriebsart', () => {

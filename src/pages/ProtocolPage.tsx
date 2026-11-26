@@ -6,7 +6,7 @@ import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
 import { DamageCard } from '../components/protocols/DamageCard'
 import { SignaturePad } from '../components/protocols/SignaturePad'
-import { Button, Dialog, ErrorList, Field, TextInput } from '../components/ui'
+import { Button, Dialog, ErrorList, Field, Switch, TextInput } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, useUploadQueue, type MediaOwner } from '../lib/media/mediaService'
@@ -491,7 +491,7 @@ export function ProtocolPage() {
     try {
       const res = await moveVehicle(row.booking_id, null, 'Übergabe an Kunde')
       setBooking({ ...booking, status: 'completed' })
-      setNotice(['Protokoll abgeschlossen, Fahrzeug übergeben.', keyHint(res.from, res.to), ...res.warnings].filter(Boolean).join(' '))
+      setNotice(['Protokoll abgeschlossen, Fahrzeug übergeben.', keyHint(res.from, res.to, res.key_with_customer), ...res.warnings].filter(Boolean).join(' '))
     } catch (e) {
       setErrors([(e as Error).message])
     } finally {
@@ -643,7 +643,22 @@ export function ProtocolPage() {
             </div>
           </Section>
 
-          <Section title="Zustand">
+          <Section
+            title="Zustand"
+            aside={
+              <Switch
+                checked={form.condition_recorded}
+                onChange={(on) => update({ condition_recorded: on })}
+                label={form.condition_recorded ? 'erfassen' : 'nicht erfassen'}
+                ariaLabel="Zustand erfassen"
+              />
+            }
+          >
+            {!form.condition_recorded ? (
+              <p className="text-sm text-muted">
+                Zustand wird nicht erfasst: Kilometerstand, Antrieb, Tank-/Ladestand und Bedingungen sind für den Abschluss nicht nötig und erscheinen nicht im PDF.
+              </p>
+            ) : <>
             {type === 'handover' && intake?.mileage != null ? (
               <MileageSinceIntake intakeMileage={intake.mileage} value={form.mileage} onChange={(mileage) => update({ mileage })} />
             ) : (
@@ -674,6 +689,7 @@ export function ProtocolPage() {
                 })}
               </div>
             </div>
+            </>}
           </Section>
 
         </div>

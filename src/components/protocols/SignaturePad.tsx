@@ -21,18 +21,30 @@ export function SignaturePad({
 
   useEffect(() => {
     const c = canvas.current!
+    // Größenänderung (Tastatur, Adressleiste, Drehen) darf das Gezeichnete nicht löschen:
+    // nur bei echter Größenänderung neu aufbauen und den bisherigen Inhalt übernehmen
     const resize = () => {
       const ratio = Math.max(window.devicePixelRatio || 1, 1)
       const rect = c.getBoundingClientRect()
-      c.width = rect.width * ratio
-      c.height = rect.height * ratio
+      const width = Math.round(rect.width * ratio)
+      const height = Math.round(rect.height * ratio)
+      if (width === c.width && height === c.height) return
+      let snapshot: HTMLCanvasElement | null = null
+      if (c.width > 0 && c.height > 0) {
+        snapshot = document.createElement('canvas')
+        snapshot.width = c.width
+        snapshot.height = c.height
+        snapshot.getContext('2d')!.drawImage(c, 0, 0)
+      }
+      c.width = width
+      c.height = height
       const ctx = c.getContext('2d')!
+      if (snapshot) ctx.drawImage(snapshot, 0, 0, snapshot.width, snapshot.height, 0, 0, width, height)
       ctx.scale(ratio, ratio)
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
       ctx.lineWidth = 2.5
       ctx.strokeStyle = '#0b1f3a'
-      setEmpty(true)
     }
     resize()
     window.addEventListener('resize', resize)

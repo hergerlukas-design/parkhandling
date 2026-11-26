@@ -141,7 +141,10 @@ function VehicleRow({ b, hidePending, onOpen }: { b: BookingListItem; hidePendin
       <td className="px-3 py-3">{b.vehicle_model ?? '–'}</td>
       <td className="px-3 py-3 whitespace-nowrap">
         {hasKeySlot(code) ? (
-          <span className="font-mono font-semibold">{code}</span>
+          <span>
+            <span className="font-mono font-semibold">{code}</span>
+            {b.key_with_customer && <span className="ml-1 text-xs text-subtle">· Schlüssel beim Kunden</span>}
+          </span>
         ) : code ? (
           <span>{whereabouts(code)} <span className="font-mono text-xs text-muted">{code}</span></span>
         ) : (
@@ -186,7 +189,10 @@ function VehicleCard({ b, hidePending, onOpen }: { b: BookingListItem; hidePendi
               <span className="font-mono text-base font-semibold">{b.plate}</span>
               <SourceBadges b={b} hidePending={hidePending} />
             </span>
-            <span className="text-sm text-subtle">{hasKeySlot(code) ? code : code ? whereabouts(code) : ''}</span>
+            <span className="text-right text-sm text-subtle">
+              {hasKeySlot(code) ? code : code ? whereabouts(code) : ''}
+              {code && b.key_with_customer && <span className="block text-xs">Schlüssel beim Kunden</span>}
+            </span>
           </span>
           {b.external_ref && <span className="truncate font-mono text-[11px] text-muted">{b.external_ref}</span>}
           <span className="truncate text-sm text-subtle">{b.vehicle_model ?? b.customer_name}</span>

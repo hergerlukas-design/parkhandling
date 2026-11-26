@@ -6,8 +6,8 @@ import { BookingQrPanel } from '../components/bookings/BookingQrPanel'
 import { MoveDialog } from '../components/siteplan/MoveDialog'
 import { TaskSheet } from '../components/tasks/TaskSheet'
 import { Icon } from '../components/Icon'
-import { Button, Dialog, PaymentBadge, StatusBadge } from '../components/ui'
-import { cancelBooking, confirmImportFlag, getBookingDetail, type BookingDetail } from '../lib/bookings'
+import { Button, Dialog, PaymentBadge, StatusBadge, Switch } from '../components/ui'
+import { cancelBooking, confirmImportFlag, getBookingDetail, setKeyWithCustomer, type BookingDetail } from '../lib/bookings'
 import { listWithdrawals, tariffLabel, type Withdrawal } from '../lib/landing'
 import { DUE_STYLE, dueCategory, formatPickup } from '../lib/due'
 import { formatDate, formatDateTime, formatMoney, formatTime } from '../lib/format'
@@ -206,6 +206,18 @@ export function VehicleDetailPage() {
     { at: b.received_at ?? b.created_at, text: `Buchung eingegangen · ${SOURCE_LABEL[b.source] ?? b.source}`, tone: 'bg-muted' },
   ].sort((x, y) => y.at.localeCompare(x.at))
 
+  async function toggleKeyWithCustomer(value: boolean) {
+    setBusy(true)
+    try {
+      await setKeyWithCustomer(b.id, value)
+      setData((d) => (d ? { ...d, booking: { ...d.booking, key_with_customer: value } } : d))
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function doConfirmFlag(flag: string) {
     setBusy(true)
     try {
@@ -388,12 +400,32 @@ export function VehicleDetailPage() {
               </div>
               <div className="rounded-xl bg-ground p-3">
                 <div className="text-xs text-subtle">Schlüsselfach</div>
-                <div className="font-mono text-xl font-bold">{keySlot ?? '–'}</div>
-                <div className="text-xs text-subtle">
-                  {keySlot ? 'Fach = Parkplatz' : b.location ? `Schlüssel beim Fahrzeug, ${whereabouts(b.location.code)}` : 'noch nicht geparkt'}
-                </div>
+                {b.key_with_customer ? (
+                  <>
+                    <div className="text-base font-bold">Beim Kunden</div>
+                    <div className="text-xs text-subtle">Kunde hat den Schlüssel mitgenommen, Fach bleibt leer</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-mono text-xl font-bold">{keySlot ?? '–'}</div>
+                    <div className="text-xs text-subtle">
+                      {keySlot ? 'Fach = Parkplatz' : b.location ? `Schlüssel beim Fahrzeug, ${whereabouts(b.location.code)}` : 'noch nicht geparkt'}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+            {!closed && (
+              <div className="mt-2 flex justify-end">
+                <Switch
+                  checked={b.key_with_customer}
+                  disabled={busy}
+                  onChange={(on) => void toggleKeyWithCustomer(on)}
+                  label="Kunde hat Schlüssel mitgenommen"
+                  ariaLabel="Kunde hat Schlüssel mitgenommen"
+                />
+              </div>
+            )}
             {!closed && (
               <div className="mt-3 flex flex-col gap-2">
                 {b.location ? (

@@ -108,6 +108,8 @@ export interface MoveResult {
   to: string | null
   status: BookingStatus
   warnings: string[]
+  /** Kunde hat den Schlüssel mitgenommen: kein Schlüssel umzulegen */
+  key_with_customer?: boolean
 }
 
 /** Ein-/Auschecken, Umsetzen, Übergabe (toCode = null). Regeln prüft die Datenbank. */
@@ -123,7 +125,10 @@ export async function moveVehicle(
     p_reason: reason ?? null,
   })
   if (error) throw new Error(error.message)
-  return data as MoveResult
+  const result = data as MoveResult
+  // Schlüssel beim Kunden: Hinweise zum Schlüsselfach entfallen (Lesefehler → Hinweis wie bisher)
+  const { data: key } = await db().from('bookings').select('key_with_customer').eq('id', bookingId).maybeSingle()
+  return { ...result, key_with_customer: !!(key as { key_with_customer?: boolean } | null)?.key_with_customer }
 }
 
 export interface CheckinCandidate {
@@ -243,8 +248,9 @@ export function hasKeySlot(code: string | null | undefined): code is string {
   return !!code && KEY_SLOT_CODE.test(code)
 }
 
-/** Was nach einer Bewegung mit dem Schlüssel zu tun ist (null = nichts) */
-export function keyHint(from: string | null, to: string | null): string | null {
+/** Was nach einer Bewegung mit dem Schlüssel zu tun ist (null = nichts, auch wenn der Kunde den Schlüssel hat) */
+export function keyHint(from: string | null, to: string | null, keyWithCustomer = false): string | null {
+  if (keyWithCustomer) return null
   const fromSlot = hasKeySlot(from) ? from : null
   const toSlot = hasKeySlot(to) ? to : null
   if (fromSlot === toSlot) return null

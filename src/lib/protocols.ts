@@ -94,6 +94,8 @@ export interface ProtocolForm {
   plate: string
   /** Antrieb laut Protokoll (geht in die Buchung); steuert Tank- und Ladestand */
   fuel_type: FuelType | null
+  /** Karte „Zustand“ an (Standard). Aus: KM-Stand, Tank-/Ladestand und Bedingungen weder Pflicht noch im PDF */
+  condition_recorded: boolean
   /** Eingabe mit Dezimalkomma, z. B. „84213,5“ */
   mileage: string
   fuel_level: number | null
@@ -116,6 +118,8 @@ export interface ProtocolRow {
   vin: string | null
   plate: string | null
   fuel_type: FuelType | null
+  /** Zustand erfasst (seit 0.52.0; false = Karte „Zustand“ ausgeschaltet) */
+  condition_recorded: boolean
   /** numeric(10,1) – Punkt in der Datenbank */
   mileage: number | null
   /** smallint 0–8 */
@@ -183,6 +187,7 @@ export function formFromRow(
     location_text: row?.location_text ?? defaultLocation(ctx.type, ctx.booking.customer_name),
     plate: row?.plate ?? base?.plate ?? ctx.booking.plate,
     fuel_type: row?.fuel_type ?? base?.fuel_type ?? ctx.booking.fuel_type ?? null,
+    condition_recorded: row?.condition_recorded ?? true,
     // Übergabe: KM-Stand der Annahme übernehmen, dazu kommen nur die Meter bis zum Kunden
     mileage: row?.mileage != null ? formatMileage(row.mileage) : base?.mileage != null ? formatMileage(base.mileage) : '',
     fuel_level: row?.fuel_level ?? null,
@@ -225,11 +230,14 @@ export function validateForFinalize(
   const fuel = form.fuel_type
   if (!form.inspector_name.trim()) errors.push('Name des Mitarbeiters fehlt')
   if (!form.plate.trim()) errors.push('Kennzeichen fehlt')
-  if (parseMileage(form.mileage) == null) errors.push('Kilometerstand fehlt oder ist ungültig')
-  if (!fuel) errors.push('Antrieb wählen (Verbrenner, Hybrid oder Elektro)')
-  else {
-    if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
-    if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt')
+  // Zustand ausgeschaltet: KM-Stand, Antrieb, Tank- und Ladestand sind für den Abschluss nicht nötig
+  if (form.condition_recorded) {
+    if (parseMileage(form.mileage) == null) errors.push('Kilometerstand fehlt oder ist ungültig')
+    if (!fuel) errors.push('Antrieb wählen (Verbrenner, Hybrid oder Elektro)')
+    else {
+      if (showsFuel(fuel) && form.fuel_level == null) errors.push('Tankstand fehlt')
+      if (showsCharge(fuel) && form.charge_level == null) errors.push('Ladestand fehlt')
+    }
   }
   for (const [i, d] of form.damages.entries()) {
     if (!d.pos || !d.desc.trim()) errors.push(`Schaden ${i + 1}: Position und Beschreibung angeben`)
@@ -259,11 +267,12 @@ export function compareWithIntake(
   intake: Pick<ProtocolRow, 'mileage' | 'fuel_level' | 'charge_level' | 'damages'> | null,
   form: ProtocolForm,
 ): Comparison {
-  const mileage = parseMileage(form.mileage)
+  const off = !form.condition_recorded
+  const mileage = off ? null : parseMileage(form.mileage)
   const mileageDiff = intake?.mileage != null && mileage != null ? Math.round((mileage - intake.mileage) * 10) / 10 : null
-  const fuelDiff = intake?.fuel_level != null && form.fuel_level != null ? form.fuel_level - intake.fuel_level : null
+  const fuelDiff = !off && intake?.fuel_level != null && form.fuel_level != null ? form.fuel_level - intake.fuel_level : null
   const chargeDiff =
-    intake?.charge_level != null && form.charge_level != null ? form.charge_level - intake.charge_level : null
+    !off && intake?.charge_level != null && form.charge_level != null ? form.charge_level - intake.charge_level : null
   // Freitext lässt sich nicht verlässlich vergleichen: neu ist ein Schaden an einer Position ohne Schaden bei der Annahme
   const known = new Set((intake?.damages ?? []).map((d) => d.pos))
   const newDamages = intake ? form.damages.filter((d) => d.pos && !known.has(d.pos)) : []
@@ -296,13 +305,22 @@ const SECTION_LABELS: Partial<PdfLabels> = {
   section7: '6. Weitere Fotos',
 }
 
+/** Ohne Zustand entfällt zusätzlich Abschnitt 2 (Technik & Betriebsstoffe) */
+const SECTION_LABELS_NO_CONDITION: Partial<PdfLabels> = {
+  section4: '2. Bemerkungen',
+  section5: '3. Fotodokumentation',
+  section6: '4. Erfasste Schäden',
+  section7: '5. Weitere Fotos',
+}
+
 /** Beschriftungen der Vorlage für Park & Fly */
-export function pdfLabels(type: ProtocolType, fuel: FuelType | null = null): Partial<PdfLabels> {
+export function pdfLabels(type: ProtocolType, fuel: FuelType | null = null, conditionRecorded = true): Partial<PdfLabels> {
   const photo = { vorne: 'Vorne', hinten: 'Hinten', links: 'Links', rechts: 'Rechts', anzeige: gaugePhotoLabel(fuel) }
+  const sections = conditionRecorded ? SECTION_LABELS : SECTION_LABELS_NO_CONDITION
   return type === 'intake'
-    ? { ...SECTION_LABELS, photo, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
+    ? { ...sections, photo, carrier_sig: 'Übergabe durch Kunde', creator_sig_label: 'Annahme durch (Mitarbeiter)', creator: 'Mitarbeiter' }
     : {
-        ...SECTION_LABELS,
+        ...sections,
         photo,
         title_transfer: 'Fahrzeug-Übergabeprotokoll',
         creator: 'Mitarbeiter',
@@ -362,16 +380,17 @@ export function buildPdfData(input: {
     status: input.status,
     inspector_name: form.inspector_name,
     location: form.location_text,
-    odometer: parseMileage(form.mileage) ?? 0,
-    fuel_level: showsFuel(form.fuel_type) ? form.fuel_level : null,
-    charge_level: showsCharge(form.fuel_type) ? form.charge_level : null,
+    odometer: form.condition_recorded ? parseMileage(form.mileage) : null,
+    condition_recorded: form.condition_recorded,
+    fuel_level: form.condition_recorded && showsFuel(form.fuel_type) ? form.fuel_level : null,
+    charge_level: form.condition_recorded && showsCharge(form.fuel_type) ? form.charge_level : null,
     remarks,
     inspection_date: input.inspectionDate,
     license_plate: form.plate.trim() || booking.plate,
     brand_model: booking.vehicle_model ?? '',
     drive: driveLabel(form.fuel_type),
     photos,
-    conditions: form.conditions,
+    conditions: form.condition_recorded ? form.conditions : [],
     damage_records: form.damages.map(({ pos, desc }) => ({ pos, desc: desc.trim() })),
     receiver_name: type === 'handover' ? form.customer_signer_name : undefined,
     transfer_type: type === 'handover' ? 'Rückgabe an Kunde' : undefined,
@@ -383,7 +402,7 @@ export function buildPdfData(input: {
 // ---------------------------------------------------------------------------
 
 const PROTOCOL_COLUMNS =
-  'id, booking_id, type, status, inspector_name, location_text, vin, plate, fuel_type, mileage, fuel_level, charge_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
+  'id, booking_id, type, status, inspector_name, location_text, vin, plate, fuel_type, condition_recorded, mileage, fuel_level, charge_level, conditions, damages, remarks, customer_signer_name, signature_media_id, customer_signature_media_id, pdf_media_id, finalized_at, sent_at, mail_status, mail_error, created_at, updated_at'
 
 export async function getProtocolBooking(bookingId: string): Promise<ProtocolBooking> {
   const { data, error } = await db()
@@ -438,11 +457,13 @@ function formToColumns(form: ProtocolForm) {
     location_text: form.location_text.trim() || null,
     plate: form.plate.trim().toUpperCase() || null,
     fuel_type: form.fuel_type,
-    mileage: parseMileage(form.mileage),
+    // Zustand ausgeschaltet: als „nicht erfasst“ speichern (Vergleich bei der Übergabe, PDF)
+    condition_recorded: form.condition_recorded,
+    mileage: form.condition_recorded ? parseMileage(form.mileage) : null,
     // Nur was zum Antrieb passt (Wechsel des Antriebs lässt sonst alte Werte stehen)
-    fuel_level: showsFuel(form.fuel_type) ? form.fuel_level : null,
-    charge_level: showsCharge(form.fuel_type) ? form.charge_level : null,
-    conditions: form.conditions,
+    fuel_level: form.condition_recorded && showsFuel(form.fuel_type) ? form.fuel_level : null,
+    charge_level: form.condition_recorded && showsCharge(form.fuel_type) ? form.charge_level : null,
+    conditions: form.condition_recorded ? form.conditions : [],
     damages: form.damages,
     remarks: form.remarks.trim() || null,
     customer_signer_name: form.customer_signer_name.trim() || null,

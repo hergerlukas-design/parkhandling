@@ -122,7 +122,7 @@ export function ScanPage() {
     setError(null)
     try {
       const res = await moveVehicle(vehicle.id, code, reason)
-      setNotice([`${vehicle.plate} umgeparkt: ${res.from ?? '–'} → ${res.to ?? '–'}.`, keyHint(res.from, res.to), ...res.warnings]
+      setNotice([`${vehicle.plate} umgeparkt: ${res.from ?? '–'} → ${res.to ?? '–'}.`, keyHint(res.from, res.to, res.key_with_customer), ...res.warnings]
         .filter(Boolean).join(' '))
       closeVehicle()
     } catch (e) {
