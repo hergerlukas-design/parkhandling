@@ -6,8 +6,8 @@ import { MediaThumb, PendingThumb } from '../components/media/MediaThumb'
 import { PhotoCapture } from '../components/media/PhotoCapture'
 import { DamageCard } from '../components/protocols/DamageCard'
 import { SignaturePad } from '../components/protocols/SignaturePad'
-import { Button, Dialog, ErrorList, Field, TextInput } from '../components/ui'
-import { useAuth } from '../lib/auth'
+import { Button, Dialog, ErrorList, Field, Switch, TextInput } from '../components/ui'
+import { isAdminProfile, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, useUploadQueue, type MediaOwner } from '../lib/media/mediaService'
 import { getMediaStore } from '../lib/media'
@@ -38,6 +38,7 @@ import {
   PDF_SLOT,
   pendingSlotItems,
   PHOTO_SLOTS,
+  preferLinkedSignatures,
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
@@ -382,11 +383,13 @@ export function ProtocolPage() {
     slot,
   })
 
+  // Abgeschlossen: die am Protokoll verknüpfte Unterschrift zeigen (Entwurf: die neueste, die Verknüpfung folgt nach dem Upload)
   const latest = useMemo(() => {
     const bySlot = new Map<string, SlotMedia>()
-    for (const m of media) if (m.slot && m.kind !== 'pdf') bySlot.set(m.slot, m)
+    const list = row?.status === 'final' ? preferLinkedSignatures(media, row) : media
+    for (const m of list) if (m.slot && m.kind !== 'pdf') bySlot.set(m.slot, m)
     return bySlot
-  }, [media])
+  }, [media, row])
   const latestPending = useMemo(() => {
     const bySlot = new Map<string, QueueItem>()
     for (const p of pending) if (p.slot) bySlot.set(p.slot, p)
@@ -410,13 +413,15 @@ export function ProtocolPage() {
   const fuel = form.fuel_type
   const title = PROTOCOL_TITLE[type]
 
-  async function makePdf(status: 'draft' | 'final', f: ProtocolForm, protocol: ProtocolRow) {
+  /** linkedSignatures: Unterschriften laut Verknüpfung am Protokoll statt der neuesten (PDF neu erstellen) */
+  async function makePdf(status: 'draft' | 'final', f: ProtocolForm, protocol: ProtocolRow, linkedSignatures = false) {
+    const all = (await listProtocolMedia(protocol.id)) as SlotMedia[]
     return createProtocolPdf({
       type,
       status,
       form: f,
       booking: booking!,
-      media: (await listProtocolMedia(protocol.id)) as SlotMedia[],
+      media: linkedSignatures ? preferLinkedSignatures(all, protocol) : all,
       pending: pendingSlotItems(uploadQueue.getItems().filter((i) => i.ownerId === protocol.id)),
       inspectionDate: protocol.finalized_at ?? new Date().toISOString(),
       comparison,
@@ -475,6 +480,26 @@ export function ProtocolPage() {
     }
   }
 
+  // Admin: PDF eines abgeschlossenen Protokolls neu erstellen (z. B. nach korrigierter Unterschrift) und erneut senden
+  async function regeneratePdf() {
+    if (!row || !form) return
+    setBusy('PDF wird neu erstellt …')
+    setErrors([])
+    try {
+      const fresh = (await getProtocol(row.booking_id, row.type)) ?? row
+      setRow(fresh)
+      const file = await makePdf('final', form, fresh, true)
+      setPdf(file)
+      // Upload-Nachlauf verknüpft das neue PDF (pdf_media_id) und versendet die E-Mail erneut
+      await addPdf(file.blob, owner(PDF_SLOT))
+      setNotice('PDF neu erstellt. Es wird gespeichert und erneut versendet.')
+    } catch (e) {
+      setErrors([(e as Error).message])
+    } finally {
+      setBusy(null)
+    }
+  }
+
   async function resendMail() {
     if (!row) return
     setBusy('E-Mail wird versendet …')
@@ -491,7 +516,7 @@ export function ProtocolPage() {
     try {
       const res = await moveVehicle(row.booking_id, null, 'Übergabe an Kunde')
       setBooking({ ...booking, status: 'completed' })
-      setNotice(['Protokoll abgeschlossen, Fahrzeug übergeben.', keyHint(res.from, res.to), ...res.warnings].filter(Boolean).join(' '))
+      setNotice(['Protokoll abgeschlossen, Fahrzeug übergeben.', keyHint(res.from, res.to, res.key_with_customer), ...res.warnings].filter(Boolean).join(' '))
     } catch (e) {
       setErrors([(e as Error).message])
     } finally {
@@ -599,6 +624,9 @@ export function ProtocolPage() {
             {row.pdf_media_id && row.mail_status !== 'sent' && (
               <Button onClick={() => void resendMail()} disabled={!!busy}>E-Mail erneut senden</Button>
             )}
+            {isAdminProfile(profile) && !pdfPending && (
+              <Button onClick={() => void regeneratePdf()} disabled={!!busy}>PDF neu erstellen & senden</Button>
+            )}
             {type === 'intake' && canCheckIn && (
               <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${checkinSlot ? `&platz=${encodeURIComponent(checkinSlot)}` : ''}`)}>
                 {checkinSlot ? `Parken auf ${checkinSlot}` : 'Weiter zum Parken'}
@@ -643,7 +671,22 @@ export function ProtocolPage() {
             </div>
           </Section>
 
-          <Section title="Zustand">
+          <Section
+            title="Zustand"
+            aside={
+              <Switch
+                checked={form.condition_recorded}
+                onChange={(on) => update({ condition_recorded: on })}
+                label={form.condition_recorded ? 'erfassen' : 'nicht erfassen'}
+                ariaLabel="Zustand erfassen"
+              />
+            }
+          >
+            {!form.condition_recorded ? (
+              <p className="text-sm text-muted">
+                Zustand wird nicht erfasst: Kilometerstand, Antrieb, Tank-/Ladestand und Bedingungen sind für den Abschluss nicht nötig und erscheinen nicht im PDF.
+              </p>
+            ) : <>
             {type === 'handover' && intake?.mileage != null ? (
               <MileageSinceIntake intakeMileage={intake.mileage} value={form.mileage} onChange={(mileage) => update({ mileage })} />
             ) : (
@@ -674,6 +717,7 @@ export function ProtocolPage() {
                 })}
               </div>
             </div>
+            </>}
           </Section>
 
         </div>

@@ -289,6 +289,12 @@ export async function cancelBooking(id: string): Promise<void> {
 }
 
 /** Import-Hinweis (z. B. „Kennzeichen prüfen“) als geprüft bestätigen; gibt die offenen Hinweise zurück. */
+/** Kunde hat den Schlüssel mitgenommen (Fahrzeug bleibt auf dem Parkplatz, Schlüsselfach leer) */
+export async function setKeyWithCustomer(id: string, value: boolean): Promise<void> {
+  const { error } = await db().from('bookings').update({ key_with_customer: value }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 export async function confirmImportFlag(id: string, flag: string): Promise<string[]> {
   const { data, error } = await db().rpc('confirm_booking_import_flag', { p_id: id, p_flag: flag })
   if (error) throw new Error(error.message)

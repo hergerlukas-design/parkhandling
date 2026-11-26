@@ -3,6 +3,19 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.52.0 – 26.11.2026
+
+### Neu
+- **Annahme- und Übergabeprotokoll: Karte „Zustand“ mit Schalter an/aus.** Ausgeschaltet sind Kilometerstand, Antrieb, Tank-/Ladestand und Bedingungen für den Abschluss nicht mehr nötig und erscheinen nicht im PDF (Abschnitt „Technik & Betriebsstoffe“ entfällt, KM-Stand „–“). Standard bleibt „an“
+- **Fahrzeug → „Ort & Schlüssel“: Schalter „Kunde hat Schlüssel mitgenommen“.** Das Fahrzeug steht weiter auf dem Parkplatz, das Schlüsselfach zeigt „Beim Kunden“. Beim Parken, Umparken und Übergeben entfallen dann die Hinweise zum Schlüsselfach; die Fahrzeugliste zeigt „Schlüssel beim Kunden“
+
+- **Admin: „PDF neu erstellen & senden“** bei abgeschlossenen Protokollen, z. B. nach einer korrigierten Unterschrift
+
+### Behoben
+- **Fotos im abgeschlossenen Protokoll lassen sich wieder vergrößern.** Das gesperrte Formular hat bisher auch das Antippen der Vorschaubilder blockiert
+- **Abgeschlossenes Protokoll zeigt die am Protokoll gespeicherte Unterschrift**, nicht einfach die zuletzt hochgeladene (bei versehentlich doppelt gespeicherter Unterschrift)
+- **Unterschriftenfeld löscht das Gezeichnete nicht mehr**, wenn sich die Bildschirmgröße während des Unterschreibens ändert (z. B. Tastatur schließt, Adressleiste blendet ein/aus, Tablet wird gedreht). Bisher konnte dadurch ein Teil der Unterschrift fehlen
+
 ## 0.51.2 – 26.11.2026
 
 ### Behoben

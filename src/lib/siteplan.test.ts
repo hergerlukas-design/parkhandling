@@ -37,6 +37,9 @@ describe('Schlüsselfächer', () => {
     expect(keyHint('R1-E1', 'W-AUF1')).toBe('Schlüssel aus Fach R1-E1 nehmen, er geht mit dem Fahrzeug.')
     expect(keyHint('R1-E1', null)).toBe('Schlüssel aus Fach R1-E1 nehmen und mit dem Fahrzeug übergeben.')
     expect(keyHint('W-AUF1', 'P-01')).toBeNull()
+    // Kunde hat den Schlüssel mitgenommen: nichts umzulegen
+    expect(keyHint('R1-E1', 'R4-E2', true)).toBeNull()
+    expect(keyHint(null, 'A1-07', true)).toBeNull()
     expect(keyHint(null, 'W-AUF1')).toBeNull()
   })
   it('meldet unbekannte Inhalte', () => {

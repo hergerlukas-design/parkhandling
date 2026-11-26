@@ -72,6 +72,8 @@ export interface Booking extends Row {
   portal_payout: number | null
   /** Hinweise aus dem Import, z. B. plate_unverified */
   import_flags: string[]
+  /** Kunde hat den Schlüssel mitgenommen: Fahrzeug auf dem Parkplatz, Schlüsselfach leer (seit 0.52.0) */
+  key_with_customer: boolean
   /** Tarif der Online-Buchung (Landingpage, seit 0.33.0; ältere Datenbank: fehlt) */
   tariff_code?: string | null
   /** Check-in/Check-out laut CarHandling-Backend (Rechner-Buchungen, seit 0.39.0) */

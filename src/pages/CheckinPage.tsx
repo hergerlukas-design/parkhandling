@@ -181,7 +181,7 @@ export function CheckinPage() {
         ? [`Abweichung vom Vorschlag ${recommended}.`]
         : []
       const all = [...extra, ...res.warnings]
-      const keyTodo = keyHint(res.from, res.to)
+      const keyTodo = keyHint(res.from, res.to, res.key_with_customer)
       if (all.length || keyTodo) {
         setHint(keyTodo)
         setWarnings(all)

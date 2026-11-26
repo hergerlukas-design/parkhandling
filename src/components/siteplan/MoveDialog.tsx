@@ -47,7 +47,7 @@ export function MoveDialog({
     setError(null)
     try {
       const res = await moveVehicle(bookingId, toCode, reason.trim() || preset?.reason || (mode === 'relocate' ? 'Umparken' : undefined))
-      if (res.warnings.length || keyHint(res.from, res.to) || res.to === HANDOVER_ZONE) setResult(res)
+      if (res.warnings.length || keyHint(res.from, res.to, res.key_with_customer) || res.to === HANDOVER_ZONE) setResult(res)
       else onDone(res)
     } catch (e) {
       setError((e as Error).message)
@@ -57,7 +57,7 @@ export function MoveDialog({
   }
 
   if (result) {
-    const hint = keyHint(result.from, result.to)
+    const hint = keyHint(result.from, result.to, result.key_with_customer)
     const askProtocol = result.to === HANDOVER_ZONE
     return (
       <Dialog title="Bewegung gespeichert" onClose={() => onDone(result)}

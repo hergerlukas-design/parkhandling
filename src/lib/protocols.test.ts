@@ -4,6 +4,7 @@ import {
   buildPdfData,
   gaugePhotoLabel,
   pdfLabels,
+  preferLinkedSignatures,
   compareWithIntake,
   formFromRow,
   formatMileage,
@@ -118,6 +119,12 @@ describe('validateForFinalize', () => {
     expect(errors).toEqual(['Kennzeichen fehlt', 'Antrieb wählen (Verbrenner, Hybrid oder Elektro)'])
   })
 
+  it('verlangt bei ausgeschaltetem Zustand weder KM-Stand noch Antrieb, Tank- oder Ladestand', () => {
+    const off = form({ condition_recorded: false, mileage: '', fuel_type: null, fuel_level: null })
+    expect(validateForFinalize(off, { staff: true, customer: true })).toEqual([])
+    expect(validateForFinalize(off, { staff: false, customer: false })).toEqual(['Unterschrift Mitarbeiter fehlt', 'Unterschrift Kunde fehlt'])
+  })
+
   it('verlangt vollständige Schadensangaben', () => {
     const errors = validateForFinalize(
       form({ damages: [{ id: 'a', pos: 'Dach', desc: '  ' }, { id: 'b', pos: '', desc: 'Delle' }] }),
@@ -202,6 +209,14 @@ describe('pickSlotUrls / buildPdfData', () => {
     expect([h.drive, h.fuel_level, h.charge_level]).toEqual(['Hybrid', 5, 70])
   })
 
+  it('lässt den Zustand im PDF weg, wenn er ausgeschaltet ist', () => {
+    const base = { type: 'intake' as const, status: 'final' as const, booking, slotUrls: {}, inspectionDate: '2026-10-06T08:00:00Z' }
+    const d = buildPdfData({ ...base, form: form({ condition_recorded: false, fuel_level: 5, conditions: ['Regen'] }) })
+    expect([d.condition_recorded, d.odometer, d.fuel_level, d.charge_level, d.conditions]).toEqual([false, null, null, null, []])
+    expect(pdfLabels('intake', null, false).section4).toBe('2. Bemerkungen')
+    expect(pdfLabels('intake').section4).toBe('3. Bemerkungen')
+  })
+
   it('beschriftet das Anzeige-Foto nach Antriebsart', () => {
     expect(gaugePhotoLabel('electric')).toBe('Ladestand')
     expect(gaugePhotoLabel('hybrid')).toBe('Tank-/Ladestand')
@@ -236,5 +251,20 @@ describe('protocolFilename', () => {
   it('nutzt das Datum in Europe/Berlin', () => {
     expect(protocolFilename('intake', 'M-PF 1001', '2026-10-05T22:30:00Z')).toBe('Annahme_M-PF-1001_2026-10-06.pdf')
     expect(protocolFilename('handover', 'M-PF 1001', '2026-10-06T10:00:00Z')).toBe('Uebergabe_M-PF-1001_2026-10-06.pdf')
+  })
+})
+
+describe('preferLinkedSignatures', () => {
+  const media = [
+    { id: 'k1', slot: 'signature_customer' },
+    { id: 'k2', slot: 'signature_customer' },
+    { id: 'm1', slot: 'signature' },
+    { id: 'f1', slot: 'vorne' },
+  ]
+  it('behält nur die verknüpfte Unterschrift, Fotos bleiben', () => {
+    expect(preferLinkedSignatures(media, { signature_media_id: 'm1', customer_signature_media_id: 'k1' }).map((m) => m.id)).toEqual(['k1', 'm1', 'f1'])
+  })
+  it('lässt alles stehen, wenn keine oder eine unbekannte Verknüpfung besteht', () => {
+    expect(preferLinkedSignatures(media, { signature_media_id: null, customer_signature_media_id: 'x' })).toHaveLength(4)
   })
 })
