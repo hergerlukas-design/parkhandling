@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { ACCOUNT_ON_DEVICE, accessExpired, redeemHelperCode, redeemScannerPin, signIn, signOut, signOutToScanner, useAuth } from '../lib/auth'
 import { codeFromHash, validPin } from '../lib/helpers'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -120,7 +120,9 @@ function ScannerLogin() {
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium">
           PIN
-          <input className={`${input} tracking-[0.5em]`} type="password" inputMode="numeric" autoComplete="off"
+          {/* Kein type="password": Chrome meldet 4-stellige PINs sonst als „in Datenpanne gefunden“ */}
+          <input className={`${input} tracking-[0.5em]`} type="text" inputMode="numeric" autoComplete="off"
+            style={{ WebkitTextSecurity: 'disc' } as CSSProperties} name="scanner-pin" data-1p-ignore data-lpignore="true"
             pattern="[0-9]{4}" maxLength={4} required value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} />
         </label>
