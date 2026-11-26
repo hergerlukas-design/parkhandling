@@ -7,7 +7,11 @@ import { Lightbox } from './Lightbox'
 
 const box = 'relative size-20 shrink-0 overflow-hidden rounded-lg bg-chip sm:size-24'
 
-/** Zeigt ausschließlich das Thumbnail; das Vollbild wird erst in der Lightbox geladen. */
+/**
+ * Zeigt ausschließlich das Thumbnail; das Vollbild wird erst in der Lightbox geladen.
+ * Bewusst kein <button>: in gesperrten Formularen (<fieldset disabled>, z. B. abgeschlossenes Protokoll)
+ * wäre er deaktiviert, das Vergrößern soll aber immer gehen.
+ */
 export function MediaThumb({
   media,
   alt = 'Foto',
@@ -19,7 +23,19 @@ export function MediaThumb({
   const { url, error } = useMediaUrl(thumbRef(media))
   return (
     <>
-      <button type="button" className={box} onClick={() => setOpen(true)} aria-label={`${alt} vergrößern`}>
+      <div
+        role="button"
+        tabIndex={0}
+        className={`${box} cursor-zoom-in`}
+        onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
+        aria-label={`${alt} vergrößern`}
+      >
         {url ? (
           <img src={url} alt={alt} loading="lazy" decoding="async" className="size-full object-cover" />
         ) : (
@@ -27,7 +43,7 @@ export function MediaThumb({
             <Icon name={error ? 'cloudOff' : 'image'} />
           </span>
         )}
-      </button>
+      </div>
       {open && <Lightbox media={fullRef(media)} alt={alt} onClose={() => setOpen(false)} />}
     </>
   )

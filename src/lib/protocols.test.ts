@@ -4,6 +4,7 @@ import {
   buildPdfData,
   gaugePhotoLabel,
   pdfLabels,
+  preferLinkedSignatures,
   compareWithIntake,
   formFromRow,
   formatMileage,
@@ -250,5 +251,20 @@ describe('protocolFilename', () => {
   it('nutzt das Datum in Europe/Berlin', () => {
     expect(protocolFilename('intake', 'M-PF 1001', '2026-10-05T22:30:00Z')).toBe('Annahme_M-PF-1001_2026-10-06.pdf')
     expect(protocolFilename('handover', 'M-PF 1001', '2026-10-06T10:00:00Z')).toBe('Uebergabe_M-PF-1001_2026-10-06.pdf')
+  })
+})
+
+describe('preferLinkedSignatures', () => {
+  const media = [
+    { id: 'k1', slot: 'signature_customer' },
+    { id: 'k2', slot: 'signature_customer' },
+    { id: 'm1', slot: 'signature' },
+    { id: 'f1', slot: 'vorne' },
+  ]
+  it('behält nur die verknüpfte Unterschrift, Fotos bleiben', () => {
+    expect(preferLinkedSignatures(media, { signature_media_id: 'm1', customer_signature_media_id: 'k1' }).map((m) => m.id)).toEqual(['k1', 'm1', 'f1'])
+  })
+  it('lässt alles stehen, wenn keine oder eine unbekannte Verknüpfung besteht', () => {
+    expect(preferLinkedSignatures(media, { signature_media_id: null, customer_signature_media_id: 'x' })).toHaveLength(4)
   })
 })

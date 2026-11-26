@@ -7,7 +7,7 @@ import { PhotoCapture } from '../components/media/PhotoCapture'
 import { DamageCard } from '../components/protocols/DamageCard'
 import { SignaturePad } from '../components/protocols/SignaturePad'
 import { Button, Dialog, ErrorList, Field, Switch, TextInput } from '../components/ui'
-import { useAuth } from '../lib/auth'
+import { isAdminProfile, useAuth } from '../lib/auth'
 import { formatDateTime } from '../lib/format'
 import { addPdf, addSignature, fullRef, uploadQueue, useMediaUrl, useObjectUrl, useUploadQueue, type MediaOwner } from '../lib/media/mediaService'
 import { getMediaStore } from '../lib/media'
@@ -38,6 +38,7 @@ import {
   PDF_SLOT,
   pendingSlotItems,
   PHOTO_SLOTS,
+  preferLinkedSignatures,
   PROTOCOL_TITLE,
   saveDraft,
   sendProtocolMail,
@@ -382,11 +383,13 @@ export function ProtocolPage() {
     slot,
   })
 
+  // Abgeschlossen: die am Protokoll verknüpfte Unterschrift zeigen (Entwurf: die neueste, die Verknüpfung folgt nach dem Upload)
   const latest = useMemo(() => {
     const bySlot = new Map<string, SlotMedia>()
-    for (const m of media) if (m.slot && m.kind !== 'pdf') bySlot.set(m.slot, m)
+    const list = row?.status === 'final' ? preferLinkedSignatures(media, row) : media
+    for (const m of list) if (m.slot && m.kind !== 'pdf') bySlot.set(m.slot, m)
     return bySlot
-  }, [media])
+  }, [media, row])
   const latestPending = useMemo(() => {
     const bySlot = new Map<string, QueueItem>()
     for (const p of pending) if (p.slot) bySlot.set(p.slot, p)
@@ -410,13 +413,15 @@ export function ProtocolPage() {
   const fuel = form.fuel_type
   const title = PROTOCOL_TITLE[type]
 
-  async function makePdf(status: 'draft' | 'final', f: ProtocolForm, protocol: ProtocolRow) {
+  /** linkedSignatures: Unterschriften laut Verknüpfung am Protokoll statt der neuesten (PDF neu erstellen) */
+  async function makePdf(status: 'draft' | 'final', f: ProtocolForm, protocol: ProtocolRow, linkedSignatures = false) {
+    const all = (await listProtocolMedia(protocol.id)) as SlotMedia[]
     return createProtocolPdf({
       type,
       status,
       form: f,
       booking: booking!,
-      media: (await listProtocolMedia(protocol.id)) as SlotMedia[],
+      media: linkedSignatures ? preferLinkedSignatures(all, protocol) : all,
       pending: pendingSlotItems(uploadQueue.getItems().filter((i) => i.ownerId === protocol.id)),
       inspectionDate: protocol.finalized_at ?? new Date().toISOString(),
       comparison,
@@ -468,6 +473,26 @@ export function ProtocolPage() {
       }
       if (!file) file = await makePdf(isFinal ? 'final' : 'draft', form, row)
       await sharePdfBlob(file.blob, file.filename)
+    } catch (e) {
+      setErrors([(e as Error).message])
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  // Admin: PDF eines abgeschlossenen Protokolls neu erstellen (z. B. nach korrigierter Unterschrift) und erneut senden
+  async function regeneratePdf() {
+    if (!row || !form) return
+    setBusy('PDF wird neu erstellt …')
+    setErrors([])
+    try {
+      const fresh = (await getProtocol(row.booking_id, row.type)) ?? row
+      setRow(fresh)
+      const file = await makePdf('final', form, fresh, true)
+      setPdf(file)
+      // Upload-Nachlauf verknüpft das neue PDF (pdf_media_id) und versendet die E-Mail erneut
+      await addPdf(file.blob, owner(PDF_SLOT))
+      setNotice('PDF neu erstellt. Es wird gespeichert und erneut versendet.')
     } catch (e) {
       setErrors([(e as Error).message])
     } finally {
@@ -598,6 +623,9 @@ export function ProtocolPage() {
           <div className="flex flex-wrap gap-2">
             {row.pdf_media_id && row.mail_status !== 'sent' && (
               <Button onClick={() => void resendMail()} disabled={!!busy}>E-Mail erneut senden</Button>
+            )}
+            {isAdminProfile(profile) && !pdfPending && (
+              <Button onClick={() => void regeneratePdf()} disabled={!!busy}>PDF neu erstellen & senden</Button>
             )}
             {type === 'intake' && canCheckIn && (
               <Button variant="primary" onClick={() => navigate(`/einchecken?booking=${booking.id}${checkinSlot ? `&platz=${encodeURIComponent(checkinSlot)}` : ''}`)}>

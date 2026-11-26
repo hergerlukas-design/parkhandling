@@ -495,6 +495,24 @@ export async function finalizeProtocol(protocolId: string, form: ProtocolForm): 
 }
 
 /** Fotos und Dateien eines Protokolls; Schadensfotos hängen mit owner_type „damage“ am Protokoll */
+/**
+ * Bei mehrfach gespeicherten Unterschriften gilt die am Protokoll verknüpfte (nicht einfach die neueste),
+ * damit Anzeige und PDF dieselbe Unterschrift zeigen und eine Korrektur der Verknüpfung wirkt.
+ */
+export function preferLinkedSignatures<M extends { id: string; slot: string | null }>(
+  media: M[],
+  row: Pick<ProtocolRow, 'signature_media_id' | 'customer_signature_media_id'>,
+): M[] {
+  const linked: Record<string, string | null> = {
+    [SIGNATURE_STAFF]: row.signature_media_id,
+    [SIGNATURE_CUSTOMER]: row.customer_signature_media_id,
+  }
+  return media.filter((m) => {
+    const id = m.slot ? linked[m.slot] : null
+    return !id || !media.some((x) => x.id === id) || m.id === id
+  })
+}
+
 export async function listProtocolMedia(protocolId: string): Promise<Media[]> {
   const { data, error } = await db()
     .from('media')
