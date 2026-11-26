@@ -3,6 +3,11 @@
 Alle nennenswerten Änderungen am Park & Fly Manager. Versionierung nach [SemVer](https://semver.org/lang/de/):
 `patch` = Fehlerbehebung, `minor` = neue Funktion, `major` = Breaking Change (Pflicht-Update).
 
+## 0.51.2 – 26.11.2026
+
+### Behoben
+- **Scanner-Anmeldung: Chrome meldet die PIN nicht mehr als „in einer Datenpanne gefunden“.** Das PIN-Feld wird weiterhin verdeckt angezeigt, gilt für den Browser aber nicht mehr als Passwort – Chrome bietet daher auch nicht mehr an, die PIN zu speichern
+
 ## 0.51.1 – 25.11.2026
 
 ### Geändert
